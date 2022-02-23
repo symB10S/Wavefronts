@@ -1,0 +1,38 @@
+HOFF EXAMPLE:
+=============
+## INPUT VARIABLES ##
+# Circuit
+Voltage_Souce_Magnitude = 10
+Voltage_Source_Frequency = 50000
+Voltage_Source_Duty_cycle = 0.6
+Load_Resistance = 40
+
+# Inductor
+Inductor_Inductance_Per_Length = 200e-6
+Inductor_Capacitance_Per_Length = 0.2e-9
+Inductor_Length = 1
+
+# Capacitor
+Capacitor_Inductance_Per_Length = 42e-9
+Capacitor_Capacitance_Per_Length = 4.2e-6
+Capacitor_Length = 1
+_______________________________________________________
+
+BY HAND 63:
+============
+## INPUT VARIABLES ##
+# Circuit
+Voltage_Souce_Magnitude = Decimal('63')
+Voltage_Source_Frequency = Decimal('50000')
+Voltage_Source_Duty_cycle = Decimal('0.6')
+Load_Resistance = Decimal('12')
+
+# Inductor
+Inductor_Inductance_Per_Length = Decimal('36')
+Inductor_Capacitance_Per_Length = Decimal('0.01')
+Inductor_Length = Decimal('1')
+
+# Capacitor
+Capacitor_Inductance_Per_Length = Decimal('0.8')
+Capacitor_Capacitance_Per_Length =Decimal(' 0.05')
+Capacitor_Length = Decimal('1')
