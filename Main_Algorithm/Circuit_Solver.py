@@ -1,7 +1,7 @@
 import math
 from decimal import *
 
-Simulation_Stop_Time = Decimal('15')
+Simulation_Stop_Time = Decimal('50')
 
 ## INPUT VARIABLES ##
 # Circuit
