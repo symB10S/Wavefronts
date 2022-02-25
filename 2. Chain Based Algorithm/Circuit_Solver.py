@@ -1,11 +1,11 @@
 import math
 from decimal import *
 
-Simulation_Stop_Time = Decimal('10')
+Simulation_Stop_Time = Decimal('15')
 
 ## INPUT VARIABLES ##
 # Circuit
-Voltage_Souce_Magnitude = Decimal('63')
+Voltage_Souce_Magnitude = Decimal('50')
 Voltage_Source_Frequency = Decimal('50000')
 Voltage_Source_Duty_cycle = Decimal('0.6')
 Load_Resistance = Decimal('12')
@@ -17,7 +17,7 @@ Inductor_Length = Decimal('1')
 
 # Capacitor
 Capacitor_Inductance_Per_Length = Decimal('0.8')
-Capacitor_Capacitance_Per_Length =Decimal(' 0.05')
+Capacitor_Capacitance_Per_Length =Decimal(' 0.07')
 Capacitor_Length = Decimal('1')
 
 ## CALCULATED VARIABLES ##
