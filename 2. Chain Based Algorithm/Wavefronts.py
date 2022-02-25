@@ -47,14 +47,14 @@ class Wavefront:
 class Wavefront_Source( Wavefront ):
 
     def __init__(self,magnitude,time_start,time_end,excitation_number):
-        self.position_start = 0
-        self.position_end = 0
+        self.position_start = Decimal(0)
+        self.position_end = Decimal(0)
 
-        self.time_start = time_start
-        self.time_end = time_end
+        self.time_start = Decimal(time_start)
+        self.time_end = Decimal(time_end)
 
-        self.magnitude_voltage = magnitude
-        self.magnitude_current = 0
+        self.magnitude_voltage = Decimal(magnitude)
+        self.magnitude_current = Decimal(0)
 
         if magnitude > 0:
             self.excitation_event_type = True
@@ -159,6 +159,16 @@ class Wavefront_Capacitive( Wavefront ):
             Wavefront_Storage_Capacitor.append(Wavefront_Capacitive(self,True))
         else:
             Wavefront_Storage_Capacitor.append(Wavefront_Capacitive(self,True,self.refelections_current_chain+1))
+    
+    def Generate_Return(self):
+        if self.position_end == 0:
+            return Wavefront_Inductive(self,False), Wavefront_Capacitive(self,True)
+        else :
+            return Wavefront_Capacitive(self,True,self.refelections_current_chain+1)
+
+    def Merge(self, Wavefront_Other : Wavefront):
+        self.magnitude_voltage = self.magnitude_voltage + Wavefront_Other.magnitude_voltage
+        self.magnitude_current = self.magnitude_current + Wavefront_Other.magnitude_current
 
 class Wavefront_Inductive( Wavefront ):
 
@@ -243,3 +253,14 @@ class Wavefront_Inductive( Wavefront ):
             Wavefront_Storage_Capacitor.append(Wavefront_Capacitive(self,False))
         else :
             Wavefront_Storage_Inductor.append(Wavefront_Inductive(self,True,self.refelections_current_chain+1))
+
+    def Generate_Return(self):
+        if self.position_end == 0:
+            return Wavefront_Inductive(self,True), Wavefront_Capacitive(self,False)
+        else :
+            return Wavefront_Inductive(self,True,self.refelections_current_chain+1)
+
+    def Merge(self, Wavefront_Other : Wavefront):
+        self.magnitude_voltage = self.magnitude_voltage + Wavefront_Other.magnitude_voltage
+        self.magnitude_current = self.magnitude_current + Wavefront_Other.magnitude_current
+
