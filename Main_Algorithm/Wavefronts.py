@@ -3,6 +3,7 @@ from Circuit_Solver import *
 
 class Wavefront:
     velocity = Decimal()
+    length = Decimal()
     
     position_start = Decimal()
     position_end = Decimal()
@@ -42,11 +43,22 @@ class Wavefront:
         print(f"{'Current Chain Reflections :':<35}{self.refelections_current_chain}")
         print(f"{'Transmission Ind -> Cap :':<35}{self.transmisions_inductor_to_capacitor}")
         print(f"{'Transmission Cap -> Ind :':<35}{self.transmisions_capacitor_to_inductor}")
+    
+    def Time_at_position(self,position):
+        x = Decimal(position)
+
+        if self.position_start == 0 :
+            return (self.time_start + x/self.velocity)
+        else:
+            return (self.time_start + (self.length -x)/self.velocity)
 
 
 class Wavefront_Source( Wavefront ):
 
     def __init__(self,magnitude,time_start,time_end,excitation_number):
+        
+        self.length = Decimal(0)
+
         self.position_start = Decimal(0)
         self.position_end = Decimal(0)
 
@@ -75,12 +87,14 @@ class Wavefront_Source( Wavefront ):
     def Generate(self, Wavefront_Storage_Inductor : list, Wavefront_Storage_Capacitor : list):
         Wavefront_Storage_Inductor.append(Wavefront_Inductive(self,False))
         Wavefront_Storage_Capacitor.append(Wavefront_Capacitive(self,False))
+
         
 class Wavefront_Capacitive( Wavefront ):
 
     def __init__(self, Wavefront_Parent : Wavefront, is_reflection : bool, reflections_current_chain = 0):
         
         self.velocity = Capacitor_Velocity
+        self.length = Capacitor_Length
 
         self.position_start = Wavefront_Parent.position_end
 
@@ -175,6 +189,7 @@ class Wavefront_Inductive( Wavefront ):
     def __init__(self, Wavefront_Parent : Wavefront, is_reflection : bool, reflections_current_chain = 0):
         
         self.velocity = Inductor_Velocity
+        self.length = Inductor_Length
 
         self.position_start = Wavefront_Parent.position_end
 
