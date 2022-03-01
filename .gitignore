@@ -53,5 +53,7 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 Main_Algorithm/my_animation.mp4
+Main_Algorithm/Videos/
 Main_Algorithm/Videos/Current_In_Capacitor.mp4
 Main_Algorithm/Videos/Voltage_Inductor_50.mp4
+Main_Algorithm/Videos/Pulse_Response_Capacitor_Current_10s-900f.mp4

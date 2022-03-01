@@ -52,6 +52,17 @@ class Wavefront:
         else:
             return (self.time_start + (self.length -x)/self.velocity)
 
+    def Position_at_time(self,time):
+        t = Decimal(time)
+
+        if self.time_start <= t <= self.time_end:
+            if self.position_start == 0 :
+                return (t-self.time_start)*self.velocity
+            else:
+                return self.length - (t-self.time_start)*self.velocity
+        else:
+            return -1
+
 
 class Wavefront_Source( Wavefront ):
 
