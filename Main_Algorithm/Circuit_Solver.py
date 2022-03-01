@@ -13,12 +13,12 @@ Load_Resistance = Decimal('12')
 
 # Inductor
 Inductor_Inductance_Per_Length = Decimal('36')
-Inductor_Capacitance_Per_Length = Decimal('0.01')
+Inductor_Capacitance_Per_Length = Decimal('0.00001')
 Inductor_Length = Decimal('1')
 
 # Capacitor
-Capacitor_Inductance_Per_Length = Decimal('0.8')
-Capacitor_Capacitance_Per_Length =Decimal(' 0.05')
+Capacitor_Inductance_Per_Length = Decimal('37')
+Capacitor_Capacitance_Per_Length =Decimal(' 0.00005')
 Capacitor_Length = Decimal('1')
 
 ## CALCULATED VARIABLES ##
