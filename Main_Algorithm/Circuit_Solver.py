@@ -1,24 +1,36 @@
-import math
 from decimal import *
 
-Simulation_Stop_Time = Decimal('10')
+ctx = getcontext()
+ctx.traps[FloatOperation] = True
+
+Is_Buck = False
+Simulation_Stop_Time = Decimal('2000')
 
 ## INPUT VARIABLES ##
-## INPUT VARIABLES ##
 # Circuit
-Voltage_Souce_Magnitude = Decimal('63')
+Voltage_Souce_Magnitude = Decimal('1')
 Voltage_Source_Frequency = Decimal('50000')
 Voltage_Source_Duty_cycle = Decimal('0.6')
 Load_Resistance = Decimal('12')
 
-# Inductor
-Inductor_Inductance_Per_Length = Decimal('36')
-Inductor_Capacitance_Per_Length = Decimal('0.00001')
+# Inductor 
+T = Decimal('23')/Decimal('2')
+Z = Decimal('10')
+L = T*Z
+C = T/Z
+
+Inductor_Inductance_Per_Length = Decimal(L) #Decimal('200e-6') # L = Z0_T
+Inductor_Capacitance_Per_Length = Decimal(C) #Decimal('0.2e-9') # C = T/Z0
 Inductor_Length = Decimal('1')
 
 # Capacitor
-Capacitor_Inductance_Per_Length = Decimal('37')
-Capacitor_Capacitance_Per_Length =Decimal(' 0.00005')
+T = Decimal('7')/Decimal('2')
+Z = Decimal('0.1')
+L = T*Z
+C = T/Z
+
+Capacitor_Inductance_Per_Length = Decimal(L) #Decimal('42e-9') # L = Z0_T
+Capacitor_Capacitance_Per_Length = Decimal(C) #Decimal('4.2e-6') # C = T/Z0
 Capacitor_Length = Decimal('1')
 
 ## CALCULATED VARIABLES ##
@@ -43,21 +55,90 @@ Capacitor_Impedance = Decimal.sqrt(Capacitor_Inductance_Per_Length/Capacitor_Cap
 
 
 # Circuit Solvers
-## Inductor
-Load_Parallel_Inductor = 1/(1/Load_Resistance + 1/Inductor_Impedance)
-Load_Parallel_Capacitor = 1/(1/Load_Resistance + 1/Capacitor_Impedance)
+# Globally Define Variables
+Load_Parallel_Inductor = Decimal('0')
+Load_Parallel_Capacitor = Decimal('0')
 
-Inductor_Solver_Term_VL  = Inductor_Impedance/( Inductor_Impedance + Load_Parallel_Capacitor )
-Inductor_Solver_Term_VC  = Load_Parallel_Inductor/( Capacitor_Impedance + Load_Parallel_Inductor )
-Inductor_Solver_Term_IL  = Capacitor_Impedance * Inductor_Impedance * Load_Resistance /(Load_Resistance*Inductor_Impedance + Load_Resistance*Capacitor_Impedance + Inductor_Impedance * Capacitor_Impedance)
-Inductor_Solver_Term_IC  = Inductor_Solver_Term_IL
-Inductor_Solver_Term_VS  = Inductor_Impedance / ( Inductor_Impedance + Load_Parallel_Capacitor )
+Inductor_Solver_Term_VL  = Decimal('0')
+Inductor_Solver_Term_VC  = Decimal('0')
+Inductor_Solver_Term_IL  = Decimal('0')
+Inductor_Solver_Term_IC  =Decimal('0')
+Inductor_Solver_Term_VS  = Decimal('0')
 
-Inductor_Solver_Term_VL_I  = Inductor_Solver_Term_VL / Inductor_Impedance
-Inductor_Solver_Term_VC_I  = Inductor_Solver_Term_VC / Inductor_Impedance
-Inductor_Solver_Term_IL_I  = Inductor_Solver_Term_IL / Inductor_Impedance
-Inductor_Solver_Term_IC_I  = Inductor_Solver_Term_IC / Inductor_Impedance
-Inductor_Solver_Term_VS_I  = Inductor_Solver_Term_VS / Inductor_Impedance
+Inductor_Solver_Term_VL_I  = Decimal('0')
+Inductor_Solver_Term_VC_I  = Decimal('0')
+Inductor_Solver_Term_IL_I  = Decimal('0')
+Inductor_Solver_Term_IC_I  = Decimal('0')
+Inductor_Solver_Term_VS_I  = Decimal('0')
+
+Capacitor_Solver_Term_VC  = Decimal('0')
+Capacitor_Solver_Term_VL  = Decimal('0')
+Capacitor_Solver_Term_IC  = Decimal('0')
+Capacitor_Solver_Term_IL  = Decimal('0')
+Capacitor_Solver_Term_VS  = Decimal('0')
+
+Capacitor_Solver_Term_VC_I  = Decimal('0')
+Capacitor_Solver_Term_VL_I  = Decimal('0')
+Capacitor_Solver_Term_IC_I  = Decimal('0')
+Capacitor_Solver_Term_IL_I  = Decimal('0')
+Capacitor_Solver_Term_VS_I  = Decimal('0')
+
+if(Is_Buck):
+    
+    Load_Parallel_Inductor = 1/(1/Load_Resistance + 1/Inductor_Impedance)
+    Load_Parallel_Capacitor = 1/(1/Load_Resistance + 1/Capacitor_Impedance)
+
+    Inductor_Solver_Term_VL  = Inductor_Impedance/( Inductor_Impedance + Load_Parallel_Capacitor )
+    Inductor_Solver_Term_VC  = Load_Parallel_Inductor/( Capacitor_Impedance + Load_Parallel_Inductor )
+    Inductor_Solver_Term_IL  = Capacitor_Impedance * Inductor_Impedance * Load_Resistance /(Load_Resistance*Inductor_Impedance + Load_Resistance*Capacitor_Impedance + Inductor_Impedance * Capacitor_Impedance)
+    Inductor_Solver_Term_IC  = Inductor_Solver_Term_IL
+    Inductor_Solver_Term_VS  = Inductor_Impedance / ( Inductor_Impedance + Load_Parallel_Capacitor )
+
+    Inductor_Solver_Term_VL_I  = Inductor_Solver_Term_VL / Inductor_Impedance
+    Inductor_Solver_Term_VC_I  = Inductor_Solver_Term_VC / Inductor_Impedance
+    Inductor_Solver_Term_IL_I  = Inductor_Solver_Term_IL / Inductor_Impedance
+    Inductor_Solver_Term_IC_I  = Inductor_Solver_Term_IC / Inductor_Impedance
+    Inductor_Solver_Term_VS_I  = Inductor_Solver_Term_VS / Inductor_Impedance
+
+    Capacitor_Solver_Term_VC  = Capacitor_Impedance/( Capacitor_Impedance + Load_Parallel_Inductor )
+    Capacitor_Solver_Term_VL  = Load_Parallel_Capacitor/( Inductor_Impedance + Load_Parallel_Capacitor )
+    Capacitor_Solver_Term_IC  = Capacitor_Impedance * Inductor_Impedance * Load_Resistance /(Load_Resistance*Inductor_Impedance + Load_Resistance*Capacitor_Impedance + Inductor_Impedance * Capacitor_Impedance)
+    Capacitor_Solver_Term_IL  = Capacitor_Solver_Term_IC
+    Capacitor_Solver_Term_VS  = Load_Parallel_Capacitor / ( Inductor_Impedance + Load_Parallel_Capacitor )
+
+    Capacitor_Solver_Term_VC_I  = Capacitor_Solver_Term_VC / Capacitor_Impedance
+    Capacitor_Solver_Term_VL_I  = Capacitor_Solver_Term_VL / Capacitor_Impedance
+    Capacitor_Solver_Term_IC_I  = Capacitor_Solver_Term_IC / Capacitor_Impedance
+    Capacitor_Solver_Term_IL_I  = Capacitor_Solver_Term_IL / Capacitor_Impedance
+    Capacitor_Solver_Term_VS_I  = Capacitor_Solver_Term_VS / Capacitor_Impedance
+else:
+    Load_Parallel_Inductor = Inductor_Impedance
+    Load_Parallel_Capacitor = Capacitor_Impedance
+
+    Inductor_Solver_Term_VL  = Inductor_Impedance/( Inductor_Impedance + Capacitor_Impedance )
+    Inductor_Solver_Term_VC  = Inductor_Impedance/( Inductor_Impedance + Capacitor_Impedance )
+    Inductor_Solver_Term_IL  = Capacitor_Impedance * Inductor_Impedance /(Inductor_Impedance + Capacitor_Impedance )
+    Inductor_Solver_Term_IC  = Inductor_Solver_Term_IL
+    Inductor_Solver_Term_VS  = Inductor_Impedance / ( Inductor_Impedance + Capacitor_Impedance )
+
+    Inductor_Solver_Term_VL_I  = Inductor_Solver_Term_VL / Inductor_Impedance
+    Inductor_Solver_Term_VC_I  = Inductor_Solver_Term_VC / Inductor_Impedance
+    Inductor_Solver_Term_IL_I  = Inductor_Solver_Term_IL / Inductor_Impedance
+    Inductor_Solver_Term_IC_I  = Inductor_Solver_Term_IC / Inductor_Impedance
+    Inductor_Solver_Term_VS_I  = Inductor_Solver_Term_VS / Inductor_Impedance
+
+    Capacitor_Solver_Term_VC  = Capacitor_Impedance/( Capacitor_Impedance + Inductor_Impedance )
+    Capacitor_Solver_Term_VL  = Capacitor_Impedance/( Inductor_Impedance + Capacitor_Impedance )
+    Capacitor_Solver_Term_IC  = Capacitor_Impedance * Inductor_Impedance  /(Inductor_Impedance + Capacitor_Impedance )
+    Capacitor_Solver_Term_IL  = Capacitor_Solver_Term_IC
+    Capacitor_Solver_Term_VS  = Capacitor_Impedance / ( Inductor_Impedance + Capacitor_Impedance )
+
+    Capacitor_Solver_Term_VC_I  = Capacitor_Solver_Term_VC / Capacitor_Impedance
+    Capacitor_Solver_Term_VL_I  = Capacitor_Solver_Term_VL / Capacitor_Impedance
+    Capacitor_Solver_Term_IC_I  = Capacitor_Solver_Term_IC / Capacitor_Impedance
+    Capacitor_Solver_Term_IL_I  = Capacitor_Solver_Term_IL / Capacitor_Impedance
+    Capacitor_Solver_Term_VS_I  = Capacitor_Solver_Term_VS / Capacitor_Impedance
+
 
 def Circuit_Solver_Inductor_Voltage(VL,IL,VC,IC):
     return -VL * Inductor_Solver_Term_VL - VC * Inductor_Solver_Term_VC - IL * Inductor_Solver_Term_IL + IC * Inductor_Solver_Term_IC 
@@ -71,25 +152,11 @@ def Circuit_Solver_Inductor_Source_Voltage(VS):
 def Circuit_Solver_Inductor_Source_Current(VS):
     return VS * Inductor_Solver_Term_VS_I
 
-## Capacitor
-Capacitor_Solver_Term_VC  = Capacitor_Impedance/( Capacitor_Impedance + Load_Parallel_Inductor )
-Capacitor_Solver_Term_VL  = Load_Parallel_Capacitor/( Inductor_Impedance + Load_Parallel_Capacitor )
-Capacitor_Solver_Term_IC  = Capacitor_Impedance * Inductor_Impedance * Load_Resistance /(Load_Resistance*Inductor_Impedance + Load_Resistance*Capacitor_Impedance + Inductor_Impedance * Capacitor_Impedance)
-Capacitor_Solver_Term_IL  = Capacitor_Solver_Term_IC
-Capacitor_Solver_Term_VS  = Load_Parallel_Capacitor / ( Inductor_Impedance + Load_Parallel_Capacitor )
-
-Capacitor_Solver_Term_VC_I  = Capacitor_Solver_Term_VC / Capacitor_Impedance
-Capacitor_Solver_Term_VL_I  = Capacitor_Solver_Term_VL / Capacitor_Impedance
-Capacitor_Solver_Term_IC_I  = Capacitor_Solver_Term_IC / Capacitor_Impedance
-Capacitor_Solver_Term_IL_I  = Capacitor_Solver_Term_IL / Capacitor_Impedance
-Capacitor_Solver_Term_VS_I  = Capacitor_Solver_Term_VS / Capacitor_Impedance
-
 def Circuit_Solver_Capacitor_Voltage(VL,IL,VC,IC):
     return -VC * Capacitor_Solver_Term_VC - VL * Capacitor_Solver_Term_VL - IC * Capacitor_Solver_Term_IC + IL * Capacitor_Solver_Term_IL 
 
 def Circuit_Solver_Capacitor_Current(VL,IL,VC,IC):
     return -VC * Capacitor_Solver_Term_VC_I - VL * Capacitor_Solver_Term_VL_I - IC * Capacitor_Solver_Term_IC_I + IL * Capacitor_Solver_Term_IL_I 
-
 
 def Circuit_Solver_Capacitor_Source_Voltage(VS):
     return VS * Capacitor_Solver_Term_VS
@@ -132,3 +199,4 @@ def About_Network():
 
     print(f"\n- The Load -")
     print(f"{'Load Resistance :':<40}{Load_Resistance}")
+    print(f"{'Buck Converter :':<40}{Is_Buck}")
