@@ -4,18 +4,20 @@ ctx = getcontext()
 ctx.traps[FloatOperation] = True
 
 Is_Buck = False
-Simulation_Stop_Time = Decimal('2000')
 
 ## INPUT VARIABLES ##
 # Circuit
+
+Simulation_Stop_Time = Decimal('50')
+
 Voltage_Souce_Magnitude = Decimal('1')
 Voltage_Source_Frequency = Decimal('50000')
 Voltage_Source_Duty_cycle = Decimal('0.6')
 Load_Resistance = Decimal('12')
 
 # Inductor 
-T = Decimal('23')/Decimal('2')
-Z = Decimal('10')
+T = Decimal('1')/Decimal('2')
+Z = Decimal('1')
 L = T*Z
 C = T/Z
 
@@ -24,8 +26,8 @@ Inductor_Capacitance_Per_Length = Decimal(C) #Decimal('0.2e-9') # C = T/Z0
 Inductor_Length = Decimal('1')
 
 # Capacitor
-T = Decimal('7')/Decimal('2')
-Z = Decimal('0.1')
+T = Decimal('1')/Decimal('2')
+Z = Decimal('1')
 L = T*Z
 C = T/Z
 
