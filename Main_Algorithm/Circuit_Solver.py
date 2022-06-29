@@ -8,7 +8,10 @@ Is_Buck = False
 ## INPUT VARIABLES ##
 # Circuit
 
-Simulation_Stop_Time = Decimal('50')
+
+isPeriod = True
+Number_Periods = Decimal('0.5')
+Simulation_Stop_Time = Decimal('0.0001821')
 
 Voltage_Souce_Magnitude = Decimal('1')
 Voltage_Source_Frequency = Decimal('50000')
@@ -16,23 +19,23 @@ Voltage_Source_Duty_cycle = Decimal('0.6')
 Load_Resistance = Decimal('12')
 
 # Inductor 
-T = Decimal('1')/Decimal('2')
-Z = Decimal('1')
+T = Decimal('19')/Decimal('2')
+Z = Decimal('100000')
 L = T*Z
 C = T/Z
 
-Inductor_Inductance_Per_Length = Decimal(L) #Decimal('200e-6') # L = Z0_T
-Inductor_Capacitance_Per_Length = Decimal(C) #Decimal('0.2e-9') # C = T/Z0
+Inductor_Inductance_Per_Length =  Decimal('200e-6')#L
+Inductor_Capacitance_Per_Length =  Decimal('0.2e-9')#C
 Inductor_Length = Decimal('1')
 
 # Capacitor
-T = Decimal('1')/Decimal('2')
-Z = Decimal('1')
+T = Decimal('7')/Decimal('2')
+Z = Decimal('7')
 L = T*Z
 C = T/Z
 
-Capacitor_Inductance_Per_Length = Decimal(L) #Decimal('42e-9') # L = Z0_T
-Capacitor_Capacitance_Per_Length = Decimal(C) #Decimal('4.2e-6') # C = T/Z0
+Capacitor_Inductance_Per_Length =  Decimal('42e-9')#L
+Capacitor_Capacitance_Per_Length =  Decimal('4.2e-6')#C
 Capacitor_Length = Decimal('1')
 
 ## CALCULATED VARIABLES ##
@@ -54,6 +57,9 @@ Capacitor_Total_Capacitance = Capacitor_Capacitance_Per_Length * Capacitor_Lengt
 Capacitor_Velocity = 1/Decimal.sqrt(Capacitor_Inductance_Per_Length * Capacitor_Capacitance_Per_Length)
 Capacitor_Time = Capacitor_Length / Capacitor_Velocity
 Capacitor_Impedance = Decimal.sqrt(Capacitor_Inductance_Per_Length/Capacitor_Capacitance_Per_Length)
+
+if(isPeriod):
+    Simulation_Stop_Time = Number_Periods*Decimal('6.28318530718')*(Decimal.sqrt(Capacitor_Total_Capacitance*Inductor_Total_Inductance))
 
 
 # Circuit Solvers
