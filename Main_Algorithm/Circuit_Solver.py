@@ -3,12 +3,9 @@ from decimal import *
 ctx = getcontext()
 ctx.traps[FloatOperation] = True
 
-Is_Buck = False
-
 ## INPUT VARIABLES ##
 # Circuit
-
-
+Is_Buck = False
 isPeriod = True
 Number_Periods = Decimal('0.5')
 Simulation_Stop_Time = Decimal('0.0001821')
