@@ -195,7 +195,7 @@ def About_Network():
     print(f"{'Capacitor Length :':<40}{Capacitor_Length}")
     print(f"{'Capacitor Total Inductance :':<40}{Capacitor_Total_Inductance}")
     print(f"{'Capacitor Total Capacitance :':<40}{Capacitor_Total_Capacitance}")
-    print(f"{'Inductor Velocity :':<40}{Inductor_Velocity}")
+    print(f"{'Capacitor Velocity :':<40}{Capacitor_Velocity}")
     print(f"{'Capacitor Time Delay :':<40}{Capacitor_Time}")
     print(f"{'Capacitor Impedance :':<40}{Capacitor_Impedance}")
 
@@ -514,7 +514,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
     temp_wavefront.Generate(Storage_Away,Storage_Away)
     Storage_Voltage_Completed.append(temp_wavefront)
 
-    # Algorithm
+    # Merge_Algorithm
     is_Simulation_Completed = False
 
     while not is_Simulation_Completed:
