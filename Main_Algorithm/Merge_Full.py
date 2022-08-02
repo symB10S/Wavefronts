@@ -60,6 +60,12 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     global Capacitor_Solver_Term_IC_I  
     global Capacitor_Solver_Term_IL_I  
     global Capacitor_Solver_Term_VS_I  
+    
+    global Initial_Inductor_Voltage
+    global Initial_Inductor_Current
+    global Initial_Capacitor_Voltage
+    global Initial_Capacitor_Current
+    
 
     # INDUCTOR
     Inductor_Inductance_Per_Length =  Decimal(Inductor_List[0])
@@ -121,6 +127,13 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
         Capacitor_Solver_Term_IC_I  = Capacitor_Solver_Term_IC / Capacitor_Impedance
         Capacitor_Solver_Term_IL_I  = Capacitor_Solver_Term_IL / Capacitor_Impedance
         Capacitor_Solver_Term_VS_I  = Capacitor_Solver_Term_VS / Capacitor_Impedance
+        
+        Initial_Inductor_Current = Voltage_Souce_Magnitude/(Inductor_Impedance + Load_Parallel_Capacitor)
+        Initial_Inductor_Voltage = Initial_Inductor_Current * Inductor_Impedance
+        
+        Initial_Capacitor_Voltage = Initial_Inductor_Current * Load_Parallel_Capacitor
+        Initial_Capacitor_Current = Initial_Capacitor_Voltage/Capacitor_Impedance
+        
     else:
         Load_Parallel_Inductor = Inductor_Impedance
         Load_Parallel_Capacitor = Capacitor_Impedance
@@ -149,6 +162,13 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
         Capacitor_Solver_Term_IL_I  = Capacitor_Solver_Term_IL / Capacitor_Impedance
         Capacitor_Solver_Term_VS_I  = Capacitor_Solver_Term_VS / Capacitor_Impedance
 
+        Initial_Inductor_Current = Voltage_Souce_Magnitude/(Inductor_Impedance + Capacitor_Impedance)
+        Initial_Inductor_Voltage = Initial_Inductor_Current * Inductor_Impedance
+        
+        Initial_Capacitor_Current = Initial_Inductor_Current
+        Initial_Capacitor_Voltage = Initial_Capacitor_Current* Capacitor_Impedance
+        
+        
 def Circuit_Solver_Inductor_Voltage(VL,IL,VC,IC):
     return -VL * Inductor_Solver_Term_VL - VC * Inductor_Solver_Term_VC - IL * Inductor_Solver_Term_IL + IC * Inductor_Solver_Term_IC 
 
