@@ -23,6 +23,18 @@ def lcm_gcd(x:Decimal, y:Decimal):
     
     return LCM, GCD
 
+def delete_alternating(arr):
+    
+    x_len,ylen = arr.shape
+    
+    x_delete = np.arange(1,x_len,2)
+    y_delete = np.arange(1,ylen,2)
+
+    arr_deleted = np.delete(arr,x_delete, axis=0)
+    arr_deleted = np.delete(arr_deleted,y_delete, axis=1)
+    
+    return arr_deleted
+
 ## CALCULATED VARIABLES ##
 def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
 
@@ -576,6 +588,11 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
     Cartesian_Current_Away = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     Cartesian_Current_Return = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     
+    Cartesian_Voltage_Inductor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    Cartesian_Current_Inductor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    
+    Cartesian_Voltage_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    Cartesian_Current_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     
     Cartesian_Inductor_Sending_Time = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     Cartesian_Capacitor_Sending_Time = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
@@ -678,11 +695,10 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
                 Cartesian_Index_y = Cartesian_Index_y + 1
         
         # Generate Return Waves, Store Away Waves
-        ## Set Index    
         
+        ## Set Index for Away waves, will be 1 ahead! 
         Cartesian_Index_x = 2*(layer_number+1)-1
         Cartesian_Index_y = 0
-        print('start : ' + str(Cartesian_Index_x))
         
         while len(Storage_Away)> 0:
             # Get an Away wavefront (will be inductive)
@@ -704,8 +720,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
             Cartesian_Capacitor_Sending_Time[Cartesian_Index_x,Cartesian_Index_y-1] = temp_wavefront_capacitve.time_start
             Cartesian_Index_x = Cartesian_Index_x - 1
             Cartesian_Index_y = Cartesian_Index_y + 1
-            
-            print(Cartesian_Index_x)
 
 
     
