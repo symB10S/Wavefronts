@@ -570,20 +570,18 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
     Storage_Away : Wavefront = deque()
     Storage_Return : Wavefront = deque()
     
-    Cartesian_Voltage_Away = np.full((2*Number_of_Layers,2*Number_of_Layers),Decimal('0'))
-    Cartesian_Voltage_Return = np.full((2*Number_of_Layers,2*Number_of_Layers),Decimal('0'))
+    Cartesian_Voltage_Away = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    Cartesian_Voltage_Return = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     
-    Cartesian_Current_Away = np.full((2*Number_of_Layers,2*Number_of_Layers),Decimal('0'))
-    Cartesian_Current_Away = np.full((2*Number_of_Layers,2*Number_of_Layers),Decimal('0'))
+    Cartesian_Current_Away = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    Cartesian_Current_Return = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     
-    Cartesian_Wavefront_Away = np.full((2*Number_of_Layers,2*Number_of_Layers),None,dtype=np.object)
-    Cartesian_Wavefront_Return = np.full((2*Number_of_Layers,2*Number_of_Layers),None,dtype=np.object)
     
-    Cartesian_Inductor_Sending_Time = np.full((2*Number_of_Layers,2*Number_of_Layers),Decimal('0'))
-    Cartesian_Capacitor_Sending_Time = np.full((2*Number_of_Layers,2*Number_of_Layers),Decimal('0'))
+    Cartesian_Inductor_Sending_Time = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    Cartesian_Capacitor_Sending_Time = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     
-    Cartesian_Inductor_Arrival_Time = np.full((2*Number_of_Layers,2*Number_of_Layers),Decimal('0'))
-    Cartesian_Capacitor_Arrival_Time = np.full((2*Number_of_Layers,2*Number_of_Layers),Decimal('0'))
+    Cartesian_Inductor_Arrival_Time = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    Cartesian_Capacitor_Arrival_Time = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     
     Cartesian_Index_x = 0
     Cartesian_Index_y = 0
@@ -597,20 +595,24 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
     Storage_Voltage_Completed.append(temp_wavefront)
     
     # Generate Intial Return Waves, Store Away Waves
+    # Get First Sending Intial Inductive wavefront
     temp_wavefront_inductive = Storage_Away.popleft()
     temp_wavefront_inductive.Generate(Storage_Return)
     Storage_Inductor_Completed.append(temp_wavefront_inductive)
     Cartesian_Voltage_Away[1,0] = temp_wavefront_inductive.magnitude_voltage
     Cartesian_Current_Away[1,0] = temp_wavefront_inductive.magnitude_current 
+    Cartesian_Inductor_Sending_Time[1-1,0] = temp_wavefront_inductive.time_start
     
+    # Get Next Sending Initial Capacitive wavefront
     temp_wavefront_capacitive = Storage_Away.popleft()
     temp_wavefront_capacitive.Generate(Storage_Return)
     Storage_Capacitor_Completed.append(temp_wavefront_capacitive)
     Cartesian_Voltage_Away[0,1] = temp_wavefront_capacitive.magnitude_voltage
     Cartesian_Current_Away[0,1] = temp_wavefront_capacitive.magnitude_current 
+    Cartesian_Capacitor_Sending_Time[0,1-1] = temp_wavefront_capacitive.time_start
 
     # Merge_Algorithm
-    for layer_number in range(2,Number_of_Layers):
+    for layer_number in range(1,Number_of_Layers):
 
         # Manage return waves
         
@@ -618,7 +620,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
         Cartesian_Index_x = 2*layer_number-1
         Cartesian_Index_y = 0
         
-        # Get first inductive wavefront 
+        # Get first Returning inductive wavefront 
         temp_wavefront = Storage_Return.popleft()
 
         # Generate Away Waves, Store Return Waves
@@ -627,7 +629,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
         
         Storage_Inductor_Completed.append(temp_wavefront)
         Cartesian_Voltage_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront.magnitude_voltage
-        Cartesian_Current_Away[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront.magnitude_current 
+        Cartesian_Current_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront.magnitude_current 
         Cartesian_Inductor_Arrival_Time[Cartesian_Index_x+1,Cartesian_Index_y] = temp_wavefront.time_end
         Cartesian_Index_x = Cartesian_Index_x - 1
         Cartesian_Index_y = Cartesian_Index_y + 1
@@ -642,7 +644,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
                 temp_wavefront.Generate(Storage_Away)
                 Storage_Capacitor_Completed.append(temp_wavefront)
                 Cartesian_Voltage_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront.magnitude_voltage
-                Cartesian_Current_Away[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront.magnitude_current 
+                Cartesian_Current_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront.magnitude_current 
                 Cartesian_Capacitor_Arrival_Time[Cartesian_Index_x,Cartesian_Index_y+1] = temp_wavefront.time_end
                 Cartesian_Index_x = Cartesian_Index_x - 1
                 Cartesian_Index_y = Cartesian_Index_y + 1
@@ -663,14 +665,14 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
                 Storage_Capacitor_Completed.append(temp_wavefront)
                 Cartesian_Voltage_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront.magnitude_voltage
-                Cartesian_Current_Away[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront.magnitude_current
+                Cartesian_Current_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront.magnitude_current
                 Cartesian_Capacitor_Arrival_Time[Cartesian_Index_x,Cartesian_Index_y+1] = temp_wavefront.time_end
                 Cartesian_Index_x = Cartesian_Index_x - 1
                 Cartesian_Index_y = Cartesian_Index_y + 1
                 
                 Storage_Inductor_Completed.append(temp_next_wavefront)
                 Cartesian_Voltage_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_next_wavefront.magnitude_voltage
-                Cartesian_Current_Away[Cartesian_Index_x,Cartesian_Index_y] = temp_next_wavefront.magnitude_current 
+                Cartesian_Current_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_next_wavefront.magnitude_current 
                 Cartesian_Inductor_Arrival_Time[Cartesian_Index_x+1,Cartesian_Index_y] = temp_next_wavefront.time_end
                 Cartesian_Index_x = Cartesian_Index_x - 1
                 Cartesian_Index_y = Cartesian_Index_y + 1
@@ -678,8 +680,9 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
         # Generate Return Waves, Store Away Waves
         ## Set Index    
         
-        Cartesian_Index_x = 2*layer_number-1
+        Cartesian_Index_x = 2*(layer_number+1)-1
         Cartesian_Index_y = 0
+        print('start : ' + str(Cartesian_Index_x))
         
         while len(Storage_Away)> 0:
             # Get an Away wavefront (will be inductive)
@@ -701,6 +704,8 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
             Cartesian_Capacitor_Sending_Time[Cartesian_Index_x,Cartesian_Index_y-1] = temp_wavefront_capacitve.time_start
             Cartesian_Index_x = Cartesian_Index_x - 1
             Cartesian_Index_y = Cartesian_Index_y + 1
+            
+            print(Cartesian_Index_x)
 
 
     
@@ -711,5 +716,9 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
         Cartesian_Voltage_Away,
         Cartesian_Current_Away,
         Cartesian_Voltage_Return,
-        Cartesian_Current_Away
+        Cartesian_Current_Return,
+        Cartesian_Inductor_Sending_Time,
+        Cartesian_Capacitor_Sending_Time,
+        Cartesian_Inductor_Arrival_Time,
+        Cartesian_Capacitor_Arrival_Time
     )
