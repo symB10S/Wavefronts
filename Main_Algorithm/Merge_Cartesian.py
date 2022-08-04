@@ -1,5 +1,6 @@
 from decimal import *
 from collections import deque
+from re import L
 import numpy as np
 import math
 
@@ -101,41 +102,39 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     global LCM
     global Capacitor_LCM_Factor
     global Inductor_LCM_Factor
+    global is_Higher_Merging
     
     global Number_of_Wavefronts
     global Number_of_Layers
     
 
     # INDUCTOR
-    Inductor_Inductance_Per_Length =  Decimal(Inductor_List[0])
-    Inductor_Capacitance_Per_Length =  Decimal(Inductor_List[1])#C
+    Inductor_Impedance = Decimal(Inductor_List[0])
+    Inductor_Time = Decimal(Inductor_List[1])/2
     Inductor_Length = Decimal(Inductor_List[2])
+    
+    Inductor_Velocity = Inductor_Length/Inductor_Time
+    Inductor_Inductance_Per_Length =  Inductor_Time*Inductor_Impedance
+    Inductor_Capacitance_Per_Length =  Inductor_Time/Inductor_Impedance
+    Inductor_Total_Inductance = Inductor_Inductance_Per_Length * Inductor_Length
+    Inductor_Total_Capacitance = Inductor_Capacitance_Per_Length * Inductor_Length
 
     # CAPACITOR
-    Capacitor_Inductance_Per_Length =  Decimal(Capacitor_List[0])
-    Capacitor_Capacitance_Per_Length =  Decimal(Capacitor_List[1])#C
+    Capacitor_Impedance = Decimal(Capacitor_List[0])
+    Capacitor_Time = Decimal(Capacitor_List[1])/2
     Capacitor_Length = Decimal(Capacitor_List[2])
+    
+    Capacitor_Velocity = Capacitor_Length/Capacitor_Time
+    Capacitor_Inductance_Per_Length =  Capacitor_Time*Capacitor_Impedance
+    Capacitor_Capacitance_Per_Length =  Capacitor_Time/Capacitor_Impedance
+    Capacitor_Total_Inductance = Capacitor_Inductance_Per_Length * Capacitor_Length
+    Capacitor_Total_Capacitance = Capacitor_Capacitance_Per_Length * Capacitor_Length
 
     # CIRCUIT
     Voltage_Souce_Magnitude = Decimal(Circuit_List[0])
     Number_Periods = Decimal(Circuit_List[1])
     Is_Buck = Circuit_List[2]
     Load_Resistance = Decimal(Circuit_List[3])
-
-    ## Calculations
-    # Inductor
-    Inductor_Total_Inductance = Inductor_Inductance_Per_Length * Inductor_Length
-    Inductor_Total_Capacitance = Inductor_Capacitance_Per_Length * Inductor_Length
-    Inductor_Velocity = 1/Decimal.sqrt(Inductor_Inductance_Per_Length * Inductor_Capacitance_Per_Length)
-    Inductor_Time = Inductor_Length / Inductor_Velocity
-    Inductor_Impedance = Decimal.sqrt(Inductor_Inductance_Per_Length/Inductor_Capacitance_Per_Length)
-
-    # Capacitor
-    Capacitor_Total_Inductance = Capacitor_Inductance_Per_Length * Capacitor_Length
-    Capacitor_Total_Capacitance = Capacitor_Capacitance_Per_Length * Capacitor_Length
-    Capacitor_Velocity = 1/Decimal.sqrt(Capacitor_Inductance_Per_Length * Capacitor_Capacitance_Per_Length)
-    Capacitor_Time = Capacitor_Length / Capacitor_Velocity
-    Capacitor_Impedance = Decimal.sqrt(Capacitor_Inductance_Per_Length/Capacitor_Capacitance_Per_Length)
 
     Simulation_Stop_Time = Number_Periods*Decimal('6.28318530718')*(Decimal.sqrt(Capacitor_Total_Capacitance*Inductor_Total_Inductance))
     
@@ -152,6 +151,12 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     
     Inductor_LCM_Factor = int((Capacitor_Time*2)/(GCD))
     Capacitor_LCM_Factor = int((Inductor_Time*2)/(GCD))
+    
+    if(LCM > Simulation_Stop_Time):
+        is_Higher_Merging = False
+    else:
+        is_Higher_Merging = True
+    
 
     if(Is_Buck):
         Load_Parallel_Inductor = 1/(1/Load_Resistance + 1/Inductor_Impedance)
@@ -271,13 +276,23 @@ def About_Network():
     print(f"{'Capacitor Velocity :':<40}{Capacitor_Velocity}")
     print(f"{'Capacitor Time Delay :':<40}{Capacitor_Time}")
     print(f"{'Capacitor Impedance :':<40}{Capacitor_Impedance}")
-
-    print(f"\n- The Circuit -")
-    print(f"{'Votage Source Magnitude :':<40}{Voltage_Souce_Magnitude}")
+    
+    print(f"\n- The Time -")
     print(f"{'Number Periods :':<40}{Number_Periods}")
     print(f"{'Simulation Stop Time :':<40}{Simulation_Stop_Time}")
     print(f"{'Number of Wavefronts :':<40}{Number_of_Wavefronts}")
     print(f"{'Number of Layers :':<40}{Number_of_Layers}")
+    print(f"{'A :':<40}{Inductor_Time}")
+    print(f"{'B :':<40}{Capacitor_Time}")
+    print(f"{'a :':<40}{Inductor_LCM_Factor}")
+    print(f"{'b :':<40}{Capacitor_LCM_Factor}")
+    print(f"{'LCM :':<40}{LCM}")
+    print(f"{'GCD :':<40}{GCD}")
+    print(f"{'Higher Merging? :':<40}{is_Higher_Merging}")
+    
+
+    print(f"\n- The Circuit -")
+    print(f"{'Votage Source Magnitude :':<40}{Voltage_Souce_Magnitude}")
     print(f"{'Buck Converter :':<40}{Is_Buck}")
     print(f"{'Load Resistance :':<40}{Load_Resistance}")
 
