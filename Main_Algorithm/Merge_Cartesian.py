@@ -1,6 +1,6 @@
 from decimal import *
 from collections import deque
-from re import L
+from re import A, L
 import numpy as np
 import math
 
@@ -103,6 +103,8 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     global Capacitor_LCM_Factor
     global Inductor_LCM_Factor
     global is_Higher_Merging
+    global a 
+    global b
     
     global Number_of_Wavefronts
     global Number_of_Layers
@@ -151,6 +153,9 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     
     Inductor_LCM_Factor = int((Capacitor_Time*2)/(GCD))
     Capacitor_LCM_Factor = int((Inductor_Time*2)/(GCD))
+    
+    a = Inductor_LCM_Factor
+    b = Capacitor_LCM_Factor
     
     if(LCM > Simulation_Stop_Time):
         is_Higher_Merging = False
