@@ -322,6 +322,15 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
         excitation_event_type = Decimal()
         excitation_event_number = Decimal()
+        
+        def __add__(self, Wavefront_add ):
+            if(Wavefront_add.time_start == self.time_start and Wavefront_add.time_end == self.time_end ):
+                self.magnitude_voltage += Wavefront_add.magnitude_voltage
+                self.magnitude_current += Wavefront_add.magnitude_current
+            else:
+                raise Exception("Wavefronts cannot be added")
+            
+            
 
         def about(self) :
             print("\nSome Information about a wavefront")
