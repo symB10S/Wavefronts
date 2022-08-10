@@ -323,8 +323,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
         excitation_event_type = Decimal()
         excitation_event_number = Decimal()
 
-        order = Decimal()
-
         reflections_inductive = Decimal()
         reflections_capacitive = Decimal()
         refelections_current_chain = Decimal()
@@ -343,7 +341,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
             print(f"{'Current Magnitude :':<35}{self.magnitude_current}")
             print(f"{'Excitation Type :':<35}{'HIGH' if self.excitation_event_type else 'LOW' }")
             print(f"{'Excitation Number :':<35}{self.excitation_event_number}")
-            print(f"{'Order :':<35}{self.order}")
             print(f"{'Inductive Reflections :':<35}{self.reflections_inductive}")
             print(f"{'Capacitive Reflections :':<35}{self.reflections_capacitive}")
             print(f"{'Current Chain Reflections :':<35}{self.refelections_current_chain}")
@@ -391,8 +388,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
             self.excitation_event_number = excitation_number
 
-            self.order = 0
-
             self.reflections_capacitive = 0
             self.reflections_inductive = 0
             self.refelections_current_chain = 0
@@ -431,8 +426,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
                     self.transmisions_inductor_to_capacitor = Wavefront_Parent.transmisions_inductor_to_capacitor
                     self.transmisions_capacitor_to_inductor = Wavefront_Parent.transmisions_capacitor_to_inductor
 
-                    self.order = Wavefront_Parent.order 
-
                 elif isinstance(Wavefront_Parent, Wavefront_Source) : # A generate source wave (Vs)-|->
 
                     self.time_start = Wavefront_Parent.time_start
@@ -447,8 +440,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
                     self.transmisions_inductor_to_capacitor = Wavefront_Parent.transmisions_inductor_to_capacitor
                     self.transmisions_capacitor_to_inductor = Wavefront_Parent.transmisions_capacitor_to_inductor
 
-                    self.order = Wavefront_Parent.order 
-
                 else: # A transmitted wave at source side  -|->
 
                     self.magnitude_voltage = Circuit_Solver_Capacitor_Voltage(Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
@@ -459,8 +450,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
                     self.transmisions_inductor_to_capacitor = Wavefront_Parent.transmisions_inductor_to_capacitor + 1
                     self.transmisions_capacitor_to_inductor = Wavefront_Parent.transmisions_capacitor_to_inductor
-
-                    self.order = Wavefront_Parent.order + 1
 
             else: # A reflected wave at load side   -->|
 
@@ -474,8 +463,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
                 self.transmisions_inductor_to_capacitor = Wavefront_Parent.transmisions_inductor_to_capacitor
                 self.transmisions_capacitor_to_inductor = Wavefront_Parent.transmisions_capacitor_to_inductor
-
-                self.order = Wavefront_Parent.order 
 
             self.excitation_event_type = Wavefront_Parent.excitation_event_type
             self.excitation_event_number = Wavefront_Parent.excitation_event_number
@@ -526,8 +513,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
                     self.transmisions_inductor_to_capacitor = Wavefront_Parent.transmisions_inductor_to_capacitor
                     self.transmisions_capacitor_to_inductor = Wavefront_Parent.transmisions_capacitor_to_inductor
 
-                    self.order = Wavefront_Parent.order 
-
                 elif isinstance(Wavefront_Parent, Wavefront_Source) : # A generate source wave (Vs)-|->
 
                     self.time_start = Wavefront_Parent.time_start
@@ -541,9 +526,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
                     self.transmisions_inductor_to_capacitor = Wavefront_Parent.transmisions_inductor_to_capacitor
                     self.transmisions_capacitor_to_inductor = Wavefront_Parent.transmisions_capacitor_to_inductor
-
-                    self.order = Wavefront_Parent.order 
-
+                    
                 else: # A transmitted wave at source side  -|->
 
                     self.magnitude_voltage = Circuit_Solver_Inductor_Voltage(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
@@ -554,8 +537,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
                     self.transmisions_inductor_to_capacitor = Wavefront_Parent.transmisions_inductor_to_capacitor 
                     self.transmisions_capacitor_to_inductor = Wavefront_Parent.transmisions_capacitor_to_inductor +1
-
-                    self.order = Wavefront_Parent.order + 1
 
             else: # A reflected wave at load side   -->|
                 
@@ -569,8 +550,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
                 self.transmisions_inductor_to_capacitor = Wavefront_Parent.transmisions_inductor_to_capacitor
                 self.transmisions_capacitor_to_inductor = Wavefront_Parent.transmisions_capacitor_to_inductor
-
-                self.order = Wavefront_Parent.order 
 
             self.excitation_event_type = Wavefront_Parent.excitation_event_type
             self.excitation_event_number = Wavefront_Parent.excitation_event_number
@@ -728,6 +707,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
             Cartesian_Index_x = Cartesian_Index_x - 1
             Cartesian_Index_y = Cartesian_Index_y + 1
 
+    # Accumulation_Arrays
     for layer_number in range(0,Number_of_Layers):
         ## Reset Centre Index    
         Centre_Index_x = 2*layer_number
