@@ -328,6 +328,10 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
             
             if(Wavefront_add == 0):
                 pass
+            elif(self.time_start == 0 and self.time_end == 0 ):
+                pass
+            elif(Wavefront_add.time_start == 0 and Wavefront_add.time_end == 0 ):
+                pass
             elif(Wavefront_add.time_start == self.time_start and Wavefront_add.time_end == self.time_end ):
                 self.magnitude_voltage += Wavefront_add.magnitude_voltage
                 self.magnitude_current += Wavefront_add.magnitude_current
@@ -339,8 +343,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
         def __radd__(self, Wavefront_add ):
             return self.__add__(Wavefront_add)
             
-            
-
         def about(self) :
             print("\nSome Information about a wavefront")
             print(f"{'Type :':<35}{type(self)}")
@@ -529,8 +531,8 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
     Storage_Away : Wavefront = deque()
     Storage_Return : Wavefront = deque()
     
-    Wavefronts_Away = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
-    Wavefronts_Return = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    Wavefronts_Away = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Wavefront_Source(0,0,0,0))
+    Wavefronts_Return = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Wavefront_Source(0,0,0,0))
     
     Cartesian_Time = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     
@@ -540,11 +542,11 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
     Voltage_Interconnect_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     Current_Interconnect_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
     
-    Wavefronts_Sending_Inductor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Decimal('0'))
-    Wavefronts_Sending_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Decimal('0'))
+    Wavefronts_Sending_Inductor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
+    Wavefronts_Sending_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
     
-    Wavefronts_Returning_Inductor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Decimal('0'))
-    Wavefronts_Returning_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Decimal('0'))
+    Wavefronts_Returning_Inductor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
+    Wavefronts_Returning_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
     
     ## LAYER 0
     # Generate Intial Away Waves
@@ -673,8 +675,8 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
                 Wavefronts_Sending_Inductor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y]
                 Wavefronts_Sending_Capacitor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y]
                 
-                Wavefronts_Returning_Inductor[Centre_Index_x,Centre_Index_y] = Wavefronts_Return[Return_Index_Inductor_x,Return_Index_Inductor_y]
-                Wavefronts_Returning_Capacitor[Centre_Index_x,Centre_Index_y] = Wavefronts_Return[Return_Index_Capacitor_x,Return_Index_Capacitor_y]
+                Wavefronts_Returning_Inductor[Centre_Index_x,Centre_Index_y] = Wavefronts_Return[Away_Index_Inductor_x,Away_Index_Inductor_y]
+                Wavefronts_Returning_Capacitor[Centre_Index_x,Centre_Index_y] = Wavefronts_Return[Away_Index_Capacitor_x,Away_Index_Capacitor_y]
 
                 if(node_number == 0 and layer_number ==0): 
                         # Origin Node
