@@ -257,6 +257,48 @@ def Circuit_Solver_Capacitor_Source_Voltage(VS):
 def Circuit_Solver_Capacitor_Source_Current(VS):
     return VS * Capacitor_Solver_Term_VS_I
 
+def multiplicative_merge_cycle(arr,a_factor,b_factor):
+    
+    def make_upper_and_lower(arr,b_factor):
+        upper = arr[:,0:b_factor]
+        lower = arr[:,b_factor:]
+        
+        padding_for_upper = np.full(lower.shape,0,dtype=lower.dtype)
+        padding_for_lower = np.full(upper.shape,0,dtype=upper.dtype)
+        
+        upper= np.append(upper,padding_for_upper,axis=1)
+        lower= np.append(lower,padding_for_lower,axis=1)
+        
+        return upper,lower
+    
+    def shif_and_pad_array_x(arr,number_lines):
+    
+        rolled_arr = np.roll(arr, number_lines, axis=0)
+        
+        left_arr = rolled_arr[0:number_lines,:]
+        left_arr = np.full(left_arr.shape,0,dtype=left_arr.dtype)
+        
+        
+        rolled_arr= np.delete(rolled_arr,np.arange(0,number_lines,1),axis=0)
+        rolled_arr = np.append(left_arr,rolled_arr,axis=0)
+        
+        return rolled_arr
+    
+    upper_arr,lower_arr = make_upper_and_lower(arr,b_factor)
+    arr_merge_ready = shif_and_pad_array_x(lower_arr,a_factor)
+    
+    arr_merged = upper_arr + arr_merge_ready
+    
+    return arr_merged
+
+def multiplicative_merging(arr,a,b,number_of_layers):
+    
+    number_merge_cycles = math.ceil(number_of_layers/b) + 1
+    
+    for _ in range (0,number_merge_cycles):
+        arr = multiplicative_merge_cycle(arr,a,b)
+
+    return arr[:,0:b]
 
 def About_Network():
     print(f"\nInformation about this network : \n")
