@@ -3,6 +3,11 @@ from collections import deque
 import numpy as np
 import math
 from dataclasses import dataclass
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import copy
+
+getcontext().traps[FloatOperation] = True
 
 @dataclass
 class Data_Input_Storage :
@@ -92,10 +97,6 @@ class Data_Output_Storage:
     Wavefronts_Returning_Inductor : np.ndarray
     Wavefronts_Returning_Capacitor : np.ndarray
     
-
-
-getcontext().traps[FloatOperation] = True
-
 def lcm_gcd(x:Decimal, y:Decimal):
 
     x_num,x_den = x.as_integer_ratio()
@@ -126,7 +127,6 @@ def delete_alternating(arr):
     
     return arr_deleted
 
-## CALCULATED VARIABLES ##
 def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     
     # INDUCTOR
@@ -866,3 +866,22 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
         data_input_storage,
         data_output_storage
     ) 
+
+
+## Plotting
+
+def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False):
+    
+    max_boundary= 0
+    if (contrast):
+        Contrast = copy.copy(arr.astype(np.float))
+        Contrast[0,0] = 0
+        max_boundary = np.max(Contrast)  
+    else:
+        max_boundary = np.max(arr.astype(np.float))  
+    
+    ax.set_title(title)
+    c = ax.imshow(arr.astype(np.float),cmap=cm.seismic,vmax =max_boundary, vmin = - max_boundary)
+    
+    if(show_colour_bar):
+        plt.gcf().colorbar(c,ax=ax)
