@@ -73,8 +73,8 @@ class Data_Storage :
     a : int
     b : int
 
-    Number_of_Wavefronts = 0
-    Number_of_Layers = 0
+    Number_of_Wavefronts : int
+    Number_of_Layers : int
 
 
 getcontext().traps[FloatOperation] = True
@@ -111,78 +111,7 @@ def delete_alternating(arr):
 
 ## CALCULATED VARIABLES ##
 def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
-
-    global Number_Periods 
-    global Simulation_Stop_Time 
-    global Is_Buck
-
-    global Voltage_Souce_Magnitude 
-    global Load_Resistance 
-
-    global Inductor_Inductance_Per_Length 
-    global Inductor_Capacitance_Per_Length 
-    global Inductor_Length 
-
-    global Capacitor_Inductance_Per_Length 
-    global Capacitor_Capacitance_Per_Length 
-    global Capacitor_Length 
-
-    global Inductor_Total_Inductance 
-    global Inductor_Total_Capacitance 
-    global Inductor_Velocity 
-    global Inductor_Time 
-    global Inductor_Impedance 
-
-    global Capacitor_Total_Inductance 
-    global Capacitor_Total_Capacitance 
-    global Capacitor_Velocity 
-    global Capacitor_Time 
-    global Capacitor_Impedance 
-
-    global Load_Parallel_Inductor 
-    global Load_Parallel_Capacitor 
-
-    global Inductor_Solver_Term_VL  
-    global Inductor_Solver_Term_VC  
-    global Inductor_Solver_Term_IL  
-    global Inductor_Solver_Term_IC  
-    global Inductor_Solver_Term_VS  
-
-    global Inductor_Solver_Term_VL_I  
-    global Inductor_Solver_Term_VC_I  
-    global Inductor_Solver_Term_IL_I  
-    global Inductor_Solver_Term_IC_I  
-    global Inductor_Solver_Term_VS_I  
-
-    global Capacitor_Solver_Term_VC  
-    global Capacitor_Solver_Term_VL  
-    global Capacitor_Solver_Term_IC  
-    global Capacitor_Solver_Term_IL  
-    global Capacitor_Solver_Term_VS  
-
-    global Capacitor_Solver_Term_VC_I  
-    global Capacitor_Solver_Term_VL_I  
-    global Capacitor_Solver_Term_IC_I  
-    global Capacitor_Solver_Term_IL_I  
-    global Capacitor_Solver_Term_VS_I  
     
-    global Initial_Inductor_Voltage
-    global Initial_Inductor_Current
-    global Initial_Capacitor_Voltage
-    global Initial_Capacitor_Current
-    
-    global GCD
-    global LCM
-    global Capacitor_LCM_Factor
-    global Inductor_LCM_Factor
-    global is_Higher_Merging
-    global a 
-    global b
-    
-    global Number_of_Wavefronts
-    global Number_of_Layers
-    
-
     # INDUCTOR
     Inductor_Impedance = Decimal(Inductor_List[0])
     Inductor_Time = Decimal(Inductor_List[1])/2
@@ -304,31 +233,63 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
         Initial_Capacitor_Current = Initial_Inductor_Current
         Initial_Capacitor_Voltage = Initial_Capacitor_Current* Capacitor_Impedance
                
+    return Data_Storage(Number_Periods
+                                ,Simulation_Stop_Time 
+                                ,Is_Buck
+                                ,Voltage_Souce_Magnitude 
+                                ,Load_Resistance 
+                                ,Inductor_Inductance_Per_Length 
+                                ,Inductor_Capacitance_Per_Length 
+                                ,Inductor_Length 
+                                ,Capacitor_Inductance_Per_Length 
+                                ,Capacitor_Capacitance_Per_Length 
+                                ,Capacitor_Length 
+                                ,Inductor_Total_Inductance 
+                                ,Inductor_Total_Capacitance 
+                                ,Inductor_Velocity 
+                                ,Inductor_Time 
+                                ,Inductor_Impedance 
+                                ,Capacitor_Total_Inductance 
+                                ,Capacitor_Total_Capacitance 
+                                ,Capacitor_Velocity 
+                                ,Capacitor_Time 
+                                ,Capacitor_Impedance 
+                                ,Load_Parallel_Inductor 
+                                ,Load_Parallel_Capacitor 
+                                ,Inductor_Solver_Term_VL  
+                                ,Inductor_Solver_Term_VC  
+                                ,Inductor_Solver_Term_IL  
+                                ,Inductor_Solver_Term_IC  
+                                ,Inductor_Solver_Term_VS  
+                                ,Inductor_Solver_Term_VL_I  
+                                ,Inductor_Solver_Term_VC_I  
+                                ,Inductor_Solver_Term_IL_I  
+                                ,Inductor_Solver_Term_IC_I  
+                                ,Inductor_Solver_Term_VS_I  
+                                ,Capacitor_Solver_Term_VC  
+                                ,Capacitor_Solver_Term_VL  
+                                ,Capacitor_Solver_Term_IC  
+                                ,Capacitor_Solver_Term_IL  
+                                ,Capacitor_Solver_Term_VS  
+                                ,Capacitor_Solver_Term_VC_I  
+                                ,Capacitor_Solver_Term_VL_I  
+                                ,Capacitor_Solver_Term_IC_I  
+                                ,Capacitor_Solver_Term_IL_I  
+                                ,Capacitor_Solver_Term_VS_I  
+                                ,Initial_Inductor_Voltage
+                                ,Initial_Inductor_Current
+                                ,Initial_Capacitor_Voltage
+                                ,Initial_Capacitor_Current
+                                ,GCD
+                                ,LCM
+                                ,Capacitor_LCM_Factor
+                                ,Inductor_LCM_Factor
+                                ,is_Higher_Merging
+                                ,a 
+                                ,b
+                                ,Number_of_Wavefronts
+                                ,Number_of_Layers)
         
-def Circuit_Solver_Inductor_Voltage(VL,IL,VC,IC):
-    return -VL * Inductor_Solver_Term_VL - VC * Inductor_Solver_Term_VC - IL * Inductor_Solver_Term_IL + IC * Inductor_Solver_Term_IC 
-
-def Circuit_Solver_Inductor_Current(VL,IL,VC,IC):
-    return -VL * Inductor_Solver_Term_VL_I - VC * Inductor_Solver_Term_VC_I - IL * Inductor_Solver_Term_IL_I + IC * Inductor_Solver_Term_IC_I 
-
-def Circuit_Solver_Inductor_Source_Voltage(VS):
-    return VS * Inductor_Solver_Term_VS
-
-def Circuit_Solver_Inductor_Source_Current(VS):
-    return VS * Inductor_Solver_Term_VS_I
-
-def Circuit_Solver_Capacitor_Voltage(VL,IL,VC,IC):
-    return -VC * Capacitor_Solver_Term_VC - VL * Capacitor_Solver_Term_VL - IC * Capacitor_Solver_Term_IC + IL * Capacitor_Solver_Term_IL 
-
-def Circuit_Solver_Capacitor_Current(VL,IL,VC,IC):
-    return -VC * Capacitor_Solver_Term_VC_I - VL * Capacitor_Solver_Term_VL_I - IC * Capacitor_Solver_Term_IC_I + IL * Capacitor_Solver_Term_IL_I 
-
-def Circuit_Solver_Capacitor_Source_Voltage(VS):
-    return VS * Capacitor_Solver_Term_VS
-
-def Circuit_Solver_Capacitor_Source_Current(VS):
-    return VS * Capacitor_Solver_Term_VS_I
-
 def multiplicative_merge_cycle(arr,a_factor,b_factor):
     
     def make_upper_and_lower(arr,b_factor):
@@ -372,55 +333,78 @@ def multiplicative_merging(arr,a ,b ,number_of_layers):
 
     return arr[:,0:b]
 
-def About_Network():
+def About_Network(Data: Data_Storage):
     print(f"\nInformation about this network : \n")
 
 
     print(f"\n- The Inductor -")
-    print(f"{'Inductor Inductance Per Length :':<40}{Inductor_Inductance_Per_Length}")
-    print(f"{'Inductor Capacitance Per Length :':<40}{Inductor_Capacitance_Per_Length}")
-    print(f"{'Inductor Length :':<40}{Inductor_Length}")
-    print(f"{'Inductor Total Inductance :':<40}{Inductor_Total_Inductance}")
-    print(f"{'Inductor Total Capacitance :':<40}{Inductor_Total_Capacitance}")
-    print(f"{'Inductor Velocity :':<40}{Inductor_Velocity}")
-    print(f"{'Inductor Time Delay :':<40}{Inductor_Time}")
-    print(f"{'Inductor Impedance :':<40}{Inductor_Impedance}")
+    print(f"{'Inductor Inductance Per Length :':<40}{Data.Inductor_Inductance_Per_Length}")
+    print(f"{'Inductor Capacitance Per Length :':<40}{Data.Inductor_Capacitance_Per_Length}")
+    print(f"{'Inductor Length :':<40}{Data.Inductor_Length}")
+    print(f"{'Inductor Total Inductance :':<40}{Data.Inductor_Total_Inductance}")
+    print(f"{'Inductor Total Capacitance :':<40}{Data.Inductor_Total_Capacitance}")
+    print(f"{'Inductor Velocity :':<40}{Data.Inductor_Velocity}")
+    print(f"{'Inductor Time Delay :':<40}{Data.Inductor_Time}")
+    print(f"{'Inductor Impedance :':<40}{Data.Inductor_Impedance}")
     
 
     print(f"\n- The Capacitor -")
-    print(f"{'Capacitor Inductance Per Length :':<40}{Capacitor_Inductance_Per_Length}")
-    print(f"{'Capacitor Capacitance Per Length :':<40}{Capacitor_Capacitance_Per_Length}")
-    print(f"{'Capacitor Length :':<40}{Capacitor_Length}")
-    print(f"{'Capacitor Total Inductance :':<40}{Capacitor_Total_Inductance}")
-    print(f"{'Capacitor Total Capacitance :':<40}{Capacitor_Total_Capacitance}")
-    print(f"{'Capacitor Velocity :':<40}{Capacitor_Velocity}")
-    print(f"{'Capacitor Time Delay :':<40}{Capacitor_Time}")
-    print(f"{'Capacitor Impedance :':<40}{Capacitor_Impedance}")
+    print(f"{'Capacitor Inductance Per Length :':<40}{Data.Capacitor_Inductance_Per_Length}")
+    print(f"{'Capacitor Capacitance Per Length :':<40}{Data.Capacitor_Capacitance_Per_Length}")
+    print(f"{'Capacitor Length :':<40}{Data.Capacitor_Length}")
+    print(f"{'Capacitor Total Inductance :':<40}{Data.Capacitor_Total_Inductance}")
+    print(f"{'Capacitor Total Capacitance :':<40}{Data.Capacitor_Total_Capacitance}")
+    print(f"{'Capacitor Velocity :':<40}{Data.Capacitor_Velocity}")
+    print(f"{'Capacitor Time Delay :':<40}{Data.Capacitor_Time}")
+    print(f"{'Capacitor Impedance :':<40}{Data.Capacitor_Impedance}")
     
     print(f"\n- The Time -")
-    print(f"{'Number Periods :':<40}{Number_Periods}")
-    print(f"{'Simulation Stop Time :':<40}{Simulation_Stop_Time}")
-    print(f"{'Number of Wavefronts :':<40}{Number_of_Wavefronts}")
-    print(f"{'Number of Layers :':<40}{Number_of_Layers}")
-    print(f"{'A :':<40}{Inductor_Time}")
-    print(f"{'B :':<40}{Capacitor_Time}")
-    print(f"{'a :':<40}{Inductor_LCM_Factor}")
-    print(f"{'b :':<40}{Capacitor_LCM_Factor}")
-    print(f"{'LCM :':<40}{LCM}")
-    print(f"{'GCD :':<40}{GCD}")
-    print(f"{'Higher Merging? :':<40}{is_Higher_Merging}")
+    print(f"{'Number Periods :':<40}{Data.Number_Periods}")
+    print(f"{'Simulation Stop Time :':<40}{Data.Simulation_Stop_Time}")
+    print(f"{'Number of Wavefronts :':<40}{Data.Number_of_Wavefronts}")
+    print(f"{'Number of Layers :':<40}{Data.Number_of_Layers}")
+    print(f"{'A :':<40}{Data.Inductor_Time}")
+    print(f"{'B :':<40}{Data.Capacitor_Time}")
+    print(f"{'a :':<40}{Data.Inductor_LCM_Factor}")
+    print(f"{'b :':<40}{Data.Capacitor_LCM_Factor}")
+    print(f"{'LCM :':<40}{Data.LCM}")
+    print(f"{'GCD :':<40}{Data.GCD}")
+    print(f"{'Higher Merging? :':<40}{Data.is_Higher_Merging}")
     
 
     print(f"\n- The Circuit -")
-    print(f"{'Votage Source Magnitude :':<40}{Voltage_Souce_Magnitude}")
-    print(f"{'Buck Converter :':<40}{Is_Buck}")
-    print(f"{'Load Resistance :':<40}{Load_Resistance}")
-
+    print(f"{'Votage Source Magnitude :':<40}{Data.Voltage_Souce_Magnitude}")
+    print(f"{'Buck Converter :':<40}{Data.Is_Buck}")
+    print(f"{'Load Resistance :':<40}{Data.Load_Resistance}")
 
 def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
-    Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List)
-    About_Network()
+    data_storage = Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List)
+    About_Network(data_storage)
+    
+    def Circuit_Solver_Inductor_Voltage(VL,IL,VC,IC):
+        return -VL * data_storage.Inductor_Solver_Term_VL - VC * data_storage.Inductor_Solver_Term_VC - IL * data_storage.Inductor_Solver_Term_IL + IC * data_storage.Inductor_Solver_Term_IC 
+
+    def Circuit_Solver_Inductor_Current(VL,IL,VC,IC):
+        return -VL * data_storage.Inductor_Solver_Term_VL_I - VC * data_storage.Inductor_Solver_Term_VC_I - IL * data_storage.Inductor_Solver_Term_IL_I + IC * data_storage.Inductor_Solver_Term_IC_I 
+
+    def Circuit_Solver_Inductor_Source_Voltage(VS):
+        return VS * data_storage.Inductor_Solver_Term_VS
+
+    def Circuit_Solver_Inductor_Source_Current(VS):
+        return VS * data_storage.Inductor_Solver_Term_VS_I
+
+    def Circuit_Solver_Capacitor_Voltage(VL,IL,VC,IC):
+        return -VC * data_storage.Capacitor_Solver_Term_VC - VL * data_storage.Capacitor_Solver_Term_VL - IC * data_storage.Capacitor_Solver_Term_IC + IL * data_storage.Capacitor_Solver_Term_IL 
+
+    def Circuit_Solver_Capacitor_Current(VL,IL,VC,IC):
+        return -VC * data_storage.Capacitor_Solver_Term_VC_I - VL * data_storage.Capacitor_Solver_Term_VL_I - IC * data_storage.Capacitor_Solver_Term_IC_I + IL * data_storage.Capacitor_Solver_Term_IL_I 
+
+    def Circuit_Solver_Capacitor_Source_Voltage(VS):
+        return VS * data_storage.Capacitor_Solver_Term_VS
+
+    def Circuit_Solver_Capacitor_Source_Current(VS):
+        return VS * data_storage.Capacitor_Solver_Term_VS_I
     
     class Wavefront:
         velocity = Decimal()
@@ -518,17 +502,17 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
         def __init__(self, Wavefront_Parent : Wavefront, is_reflection : bool):
             
-            self.velocity = Capacitor_Velocity
-            self.length = Capacitor_Length
+            self.velocity = data_storage.Capacitor_Velocity
+            self.length = data_storage.Capacitor_Length
 
             self.position_start = Wavefront_Parent.position_end
 
             self.time_start = Wavefront_Parent.time_end
-            self.time_end = self.time_start + Capacitor_Time
+            self.time_end = self.time_start + data_storage.Capacitor_Time
 
             if self.position_start == 0:
 
-                self.position_end = Capacitor_Length
+                self.position_end = data_storage.Capacitor_Length
 
                 if is_reflection: # A reflected wave at source side   |<--
 
@@ -538,7 +522,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
                 elif isinstance(Wavefront_Parent, Wavefront_Source) : # A generate source wave (Vs)-|->
 
                     self.time_start = Wavefront_Parent.time_start
-                    self.time_end = self.time_start + Capacitor_Time
+                    self.time_end = self.time_start + data_storage.Capacitor_Time
 
                     self.magnitude_voltage = Circuit_Solver_Capacitor_Source_Voltage(Wavefront_Parent.magnitude_voltage)
                     self.magnitude_current = Circuit_Solver_Capacitor_Source_Current(Wavefront_Parent.magnitude_voltage)
@@ -579,17 +563,17 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
         def __init__(self, Wavefront_Parent : Wavefront, is_reflection : bool):
             
-            self.velocity = Inductor_Velocity
-            self.length = Inductor_Length
+            self.velocity = data_storage.Inductor_Velocity
+            self.length = data_storage.Inductor_Length
 
             self.position_start = Wavefront_Parent.position_end
 
             self.time_start = Wavefront_Parent.time_end
-            self.time_end = self.time_start + Inductor_Time
+            self.time_end = self.time_start + data_storage.Inductor_Time
 
             if self.position_start == 0:
 
-                self.position_end = Inductor_Length
+                self.position_end = data_storage.Inductor_Length
 
                 if is_reflection: # A reflected wave at source side   |<--
 
@@ -599,7 +583,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
                 elif isinstance(Wavefront_Parent, Wavefront_Source) : # A generate source wave (Vs)-|->
 
                     self.time_start = Wavefront_Parent.time_start
-                    self.time_end = self.time_start + Inductor_Time
+                    self.time_end = self.time_start + data_storage.Inductor_Time
 
                     self.magnitude_voltage = Circuit_Solver_Inductor_Source_Voltage(Wavefront_Parent.magnitude_voltage)
                     self.magnitude_current = Circuit_Solver_Inductor_Source_Current(Wavefront_Parent.magnitude_voltage)
@@ -645,26 +629,26 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
     Storage_Away : Wavefront = deque()
     Storage_Return : Wavefront = deque()
     
-    Wavefronts_Away = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Wavefront_Source(0,0,0,0))
-    Wavefronts_Return = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Wavefront_Source(0,0,0,0))
+    Wavefronts_Away = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)),Wavefront_Source(0,0,0,0))
+    Wavefronts_Return = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)),Wavefront_Source(0,0,0,0))
     
-    Cartesian_Time = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    Cartesian_Time = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)),Decimal('0'))
     
-    Voltage_Interconnect_Inductor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
-    Current_Interconnect_Inductor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    Voltage_Interconnect_Inductor = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)),Decimal('0'))
+    Current_Interconnect_Inductor = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)),Decimal('0'))
 
-    Voltage_Interconnect_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
-    Current_Interconnect_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)),Decimal('0'))
+    Voltage_Interconnect_Capacitor = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)),Decimal('0'))
+    Current_Interconnect_Capacitor = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)),Decimal('0'))
     
-    Wavefronts_Sending_Inductor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
-    Wavefronts_Sending_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
+    Wavefronts_Sending_Inductor = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
+    Wavefronts_Sending_Capacitor = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
     
-    Wavefronts_Returning_Inductor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
-    Wavefronts_Returning_Capacitor = np.full((2*(Number_of_Layers+1),2*(Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
+    Wavefronts_Returning_Inductor = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
+    Wavefronts_Returning_Capacitor = np.full((2*(data_storage.Number_of_Layers+1),2*(data_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
     
     ## LAYER 0
     # Generate Intial Away Waves
-    Storage_Voltage_Active.append(Wavefront_Source(Voltage_Souce_Magnitude,0,0,0))
+    Storage_Voltage_Active.append(Wavefront_Source(data_storage.Voltage_Souce_Magnitude,0,0,0))
     temp_wavefront = Storage_Voltage_Active.popleft()
     
     temp_wavefront.Generate(Storage_Away)
@@ -685,7 +669,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
     Wavefronts_Away[0,1] = temp_wavefront_capacitive
 
     # Merge_Algorithm
-    for layer_number in range(1,Number_of_Layers):
+    for layer_number in range(1,data_storage.Number_of_Layers):
 
         # Manage return waves
         
@@ -766,7 +750,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
             Cartesian_Index_y = Cartesian_Index_y + 1
 
     # Accumulation_Arrays
-    for layer_number in range(0,Number_of_Layers):
+    for layer_number in range(0,data_storage.Number_of_Layers):
         ## Reset Centre Index    
         Centre_Index_x = 2*layer_number
         Centre_Index_y = 0
@@ -848,8 +832,7 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
     
     
     return (
-        Storage_Inductor_Completed, # Wavefronts in layers
-        Storage_Capacitor_Completed, # Wavefronts in layers
+        data_storage,
         Voltage_Interconnect_Inductor, # Values at interconnect 
         Current_Interconnect_Inductor, # Values at interconnect
         Voltage_Interconnect_Capacitor, # Values at interconnect
