@@ -734,15 +734,15 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
     
     
     return (
-        Storage_Inductor_Completed, 
-        Storage_Capacitor_Completed,
-        Voltage_Interconnect_Inductor,
-        Current_Interconnect_Inductor,
-        Voltage_Interconnect_Capacitor,
-        Current_Interconnect_Capacitor,
-        delete_alternating(Cartesian_Time),
-        Wavefronts_Sending_Inductor,
-        Wavefronts_Sending_Capacitor,
-        Wavefronts_Returning_Inductor,
-        Wavefronts_Returning_Capacitor
-    )
+        Storage_Inductor_Completed, # Wavefronts in layers
+        Storage_Capacitor_Completed, # Wavefronts in layers
+        Voltage_Interconnect_Inductor, # Values at interconnect 
+        Current_Interconnect_Inductor, # Values at interconnect
+        Voltage_Interconnect_Capacitor, # Values at interconnect
+        Current_Interconnect_Capacitor, # Values at interconnect
+        delete_alternating(Cartesian_Time), # Merge Times
+        Wavefronts_Sending_Inductor, # Specific Wavefrotns at Nodes
+        Wavefronts_Sending_Capacitor, # Specific Wavefrotns at Nodes
+        Wavefronts_Returning_Inductor, # Specific Wavefrotns at Nodes
+        Wavefronts_Returning_Capacitor # Specific Wavefrotns at Nodes
+    ) 
