@@ -1,9 +1,81 @@
-from ast import Pass
 from decimal import *
 from collections import deque
-from re import A, L
 import numpy as np
 import math
+from dataclasses import dataclass
+
+@dataclass
+class Data_Storage :
+    Number_Periods  : Decimal
+    Simulation_Stop_Time  : Decimal
+    Is_Buck : bool
+
+    Voltage_Souce_Magnitude  : Decimal
+    Load_Resistance  : Decimal
+
+    Inductor_Inductance_Per_Length  : Decimal
+    Inductor_Capacitance_Per_Length  : Decimal
+    Inductor_Length  : Decimal
+
+    Capacitor_Inductance_Per_Length  : Decimal
+    Capacitor_Capacitance_Per_Length  : Decimal
+    Capacitor_Length  : Decimal
+
+    Inductor_Total_Inductance  : Decimal
+    Inductor_Total_Capacitance  : Decimal
+    Inductor_Velocity  : Decimal
+    Inductor_Time  : Decimal
+    Inductor_Impedance  : Decimal
+
+    Capacitor_Total_Inductance  : Decimal
+    Capacitor_Total_Capacitance  : Decimal
+    Capacitor_Velocity  : Decimal
+    Capacitor_Time  : Decimal
+    Capacitor_Impedance  : Decimal
+
+    Load_Parallel_Inductor  : Decimal
+    Load_Parallel_Capacitor  : Decimal
+
+    Inductor_Solver_Term_VL   : Decimal
+    Inductor_Solver_Term_VC   : Decimal
+    Inductor_Solver_Term_IL   : Decimal
+    Inductor_Solver_Term_IC   : Decimal
+    Inductor_Solver_Term_VS   : Decimal
+
+    Inductor_Solver_Term_VL_I   : Decimal
+    Inductor_Solver_Term_VC_I   : Decimal
+    Inductor_Solver_Term_IL_I   : Decimal
+    Inductor_Solver_Term_IC_I   : Decimal
+    Inductor_Solver_Term_VS_I   : Decimal
+
+    Capacitor_Solver_Term_VC   : Decimal
+    Capacitor_Solver_Term_VL   : Decimal
+    Capacitor_Solver_Term_IC   : Decimal
+    Capacitor_Solver_Term_IL   : Decimal
+    Capacitor_Solver_Term_VS   : Decimal
+
+    Capacitor_Solver_Term_VC_I   : Decimal
+    Capacitor_Solver_Term_VL_I   : Decimal
+    Capacitor_Solver_Term_IC_I   : Decimal
+    Capacitor_Solver_Term_IL_I   : Decimal
+    Capacitor_Solver_Term_VS_I   : Decimal
+
+    Initial_Inductor_Voltage : Decimal
+    Initial_Inductor_Current : Decimal
+    Initial_Capacitor_Voltage : Decimal
+    Initial_Capacitor_Current : Decimal
+
+    GCD : Decimal
+    LCM : Decimal
+    Capacitor_LCM_Factor : int
+    Inductor_LCM_Factor : int
+    is_Higher_Merging : bool
+    a : int
+    b : int
+
+    Number_of_Wavefronts = 0
+    Number_of_Layers = 0
+
 
 getcontext().traps[FloatOperation] = True
 
@@ -291,7 +363,7 @@ def multiplicative_merge_cycle(arr,a_factor,b_factor):
     
     return arr_merged
 
-def multiplicative_merging(arr,a,b,number_of_layers):
+def multiplicative_merging(arr,a ,b ,number_of_layers):
     
     number_merge_cycles = math.ceil(number_of_layers/b) + 1
     
