@@ -869,6 +869,20 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
 
 ## Plotting
+def get_voltage(wavefront):
+    return wavefront.magnitude_voltage
+
+get_voltage_array = np.vectorize(get_voltage)
+
+def get_current(wavefront):
+    return wavefront.magnitude_current
+
+get_current_array = np.vectorize(get_current)
+
+def clear_subplot(axs):
+    for ax in axs:
+        ax.cla()
+
 
 def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False):
     
@@ -885,3 +899,30 @@ def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour
     
     if(show_colour_bar):
         plt.gcf().colorbar(c,ax=ax)
+        
+def plot_fanout_colour(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False):
+    
+    max_boundary = np.max(arr.astype(np.float))  
+    
+    ax.set_title(title)
+    c = ax.imshow(arr.astype(np.float),cmap=cm.jet,vmax =max_boundary, vmin =0)
+    
+    if(show_colour_bar):
+        plt.gcf().colorbar(c,ax=ax)
+        
+def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str, show_colour_bar = True ,contrast : bool = False):
+    
+    clear_subplot(ax)
+    
+    plt.gcf().suptitle("Crossection of " + title+" Fanout at index " + str(row_number) )
+    
+    row_a = arr[row_number,:]
+    row_b = arr[:,row_number]
+    
+    ax[0].plot(row_a)
+    ax[1].plot(row_b)
+    
+    plot_fanout_seismic(arr,ax[2],"Fanout",show_colour_bar,contrast)
+    ax[2].plot([row_number,row_number],[0,arr.shape[0]],'m--')
+    ax[2].plot([0,arr.shape[0]],[row_number,row_number],'c--')
+    
