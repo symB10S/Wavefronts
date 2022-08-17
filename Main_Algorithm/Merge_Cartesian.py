@@ -9,6 +9,7 @@ import copy
 
 getcontext().traps[FloatOperation] = True
 
+# Data Storage Classes
 @dataclass
 class Data_Input_Storage :
     Number_Periods  : Decimal
@@ -1028,7 +1029,6 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
         data_output_storage
     ) 
 
-
 ## Plotting
 def get_voltage(wavefront):
     return wavefront.magnitude_voltage
@@ -1043,7 +1043,6 @@ get_current_array = np.vectorize(get_current)
 def clear_subplot(axs):
     for ax in axs:
         ax.cla()
-
 
 def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False):
     
@@ -1086,4 +1085,21 @@ def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str,
     plot_fanout_seismic(arr,ax[2],"Fanout",show_colour_bar,contrast)
     ax[2].plot([row_number,row_number],[0,arr.shape[0]],'m--')
     ax[2].plot([0,arr.shape[0]],[row_number,row_number],'c--')
+
+def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str):
     
+    allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+    if(which_string.lower() == allowed_strings[0] ):
+        ax.set_title("Inductor voltage at Interconnect")
+        ax.step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Inductor,where='post')
+    elif(which_string.lower() == allowed_strings[1] ):
+        ax.set_title("Inductor current at Interconnect")
+        ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Inductor,where='post')
+    elif(which_string.lower() == allowed_strings[2] ):
+        ax.set_title("Capacitor voltage at Interconnect")
+        ax.step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Capacitor,where='post')
+    elif(which_string.lower() == allowed_strings[3] ):
+        ax.set_title("Capacitor current at Interconnect")
+        ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Capacitor,where='post')
+    else:
+        raise ValueError("Incorrect plotting choise")
