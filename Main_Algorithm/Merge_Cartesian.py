@@ -2,7 +2,7 @@ from decimal import *
 from collections import deque
 import numpy as np
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import copy
@@ -540,8 +540,22 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
         
         latest_time = best_time
         x_index, y_index = best_time_index
-        
     
+    if(Data_Input.is_Higher_Merging):
+        Data_Output_Merged.Time = Data_Output_Merged.Time[0:out_indexes[-1][0],:]
+
+        Data_Output_Merged.Voltage_Interconnect_Inductor =  Data_Output_Merged.Voltage_Interconnect_Inductor[0:out_indexes[-1][0],:]
+        Data_Output_Merged.Current_Interconnect_Inductor = Data_Output_Merged.Current_Interconnect_Inductor[0:out_indexes[-1][0],:]
+
+        Data_Output_Merged.Voltage_Interconnect_Capacitor = Data_Output_Merged.Voltage_Interconnect_Capacitor[0:out_indexes[-1][0],:]
+        Data_Output_Merged.Current_Interconnect_Capacitor = Data_Output_Merged.Current_Interconnect_Capacitor[0:out_indexes[-1][0],:]
+
+        Data_Output_Merged.Wavefronts_Sending_Inductor = Data_Output_Merged.Wavefronts_Sending_Inductor[0:out_indexes[-1][0],:]
+        Data_Output_Merged.Wavefronts_Sending_Capacitor = Data_Output_Merged.Wavefronts_Sending_Capacitor[0:out_indexes[-1][0],:]
+
+        Data_Output_Merged.Wavefronts_Returning_Inductor = Data_Output_Merged.Wavefronts_Returning_Inductor[0:out_indexes[-1][0],:]
+        Data_Output_Merged.Wavefronts_Returning_Capacitor = Data_Output_Merged.Wavefronts_Returning_Capacitor[0:out_indexes[-1][0],:]
+            
         
     return Data_Output_Storage_Ordered(
         out_time ,
@@ -1086,20 +1100,66 @@ def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str,
     ax[2].plot([row_number,row_number],[0,arr.shape[0]],'m--')
     ax[2].plot([0,arr.shape[0]],[row_number,row_number],'c--')
 
-def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str):
-    
+def plot_fanout_interconnect(data_output_merged: Data_Output_Storage,ax, which_string :str):
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
     if(which_string.lower() == allowed_strings[0] ):
-        ax.set_title("Inductor voltage at Interconnect")
-        ax.step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Inductor,where='post')
+        plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Inductor,ax)
     elif(which_string.lower() == allowed_strings[1] ):
-        ax.set_title("Inductor current at Interconnect")
-        ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Inductor,where='post')
+        plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax)
     elif(which_string.lower() == allowed_strings[2] ):
-        ax.set_title("Capacitor voltage at Interconnect")
-        ax.step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Capacitor,where='post')
+        plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Inductor,ax)
     elif(which_string.lower() == allowed_strings[3] ):
-        ax.set_title("Capacitor current at Interconnect")
-        ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Capacitor,where='post')
+        plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax)
     else:
-        raise ValueError("Incorrect plotting choise")
+            raise ValueError("Incorrect plotting choice")
+
+def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = False): 
+    allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+    
+    if(is_integrated):
+        if(which_string.lower() == allowed_strings[0] ):
+            ax.set_title("Inductor voltage at Interconnect")
+            ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Inductor),where='post')
+        elif(which_string.lower() == allowed_strings[1] ):
+            ax.set_title("Inductor current at Interconnect")
+            ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Inductor),where='post')
+        elif(which_string.lower() == allowed_strings[2] ):
+            ax.set_title("Capacitor voltage at Interconnect")
+            ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Capacitor),where='post')
+        elif(which_string.lower() == allowed_strings[3] ):
+            ax.set_title("Capacitor current at Interconnect")
+            ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Capacitor),where='post')
+        else:
+            raise ValueError("Incorrect plotting choice")
+    else:
+        if(which_string.lower() == allowed_strings[0] ):
+            ax.set_title("Inductor voltage change at Interconnect")
+            ax.step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Inductor,where='post')
+        elif(which_string.lower() == allowed_strings[1] ):
+            ax.set_title("Inductor current change at Interconnect")
+            ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Inductor,where='post')
+        elif(which_string.lower() == allowed_strings[2] ):
+            ax.set_title("Capacitor voltage change at Interconnect")
+            ax.step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Capacitor,where='post')
+        elif(which_string.lower() == allowed_strings[3] ):
+            ax.set_title("Capacitor current change at Interconnect")
+            ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Capacitor,where='post')
+        else:
+            raise ValueError("Incorrect plotting choice")
+        
+def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_output_ordered : Data_Output_Storage_Ordered, ax, which_string : str):
+    
+    plot_time_interconnect(data_output_ordered,ax['A'],which_string)
+    plot_time_interconnect(data_output_ordered,ax['B'],which_string,True)
+    plot_fanout_interconnect(data_output_merged,ax['C'],which_string)
+
+    for i,index in enumerate(data_output_ordered.Indexes):
+        if(i  == 0):
+            pass
+        else:
+            x1 = data_output_ordered.Indexes[i-1][0]
+            y1 = data_output_ordered.Indexes[i-1][1]
+            
+            x2 = index[0]
+            y2 = index[1]
+            ax['C'].plot([y1,y2],[x1,x2],'black')
