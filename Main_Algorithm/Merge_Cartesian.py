@@ -396,6 +396,47 @@ def About_Network(Data: Data_Input_Storage):
     print(f"{'Buck Converter :':<40}{Data.Is_Buck}")
     print(f"{'Load Resistance :':<40}{Data.Load_Resistance}")
 
+def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Output_Storage):
+    if(Data_Inputs.is_Higher_Merging):
+        Voltage_Interconnect_Inductor_merged = multiplicative_merging(Data_Outputs.Voltage_Interconnect_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        Current_Interconnect_Inductor_merged = multiplicative_merging(Data_Outputs.Current_Interconnect_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        
+        Voltage_Interconnect_Capacitor_merged = multiplicative_merging(Data_Outputs.Voltage_Interconnect_Capacitor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        Current_Interconnect_Capacitor_merged = multiplicative_merging(Data_Outputs.Current_Interconnect_Capacitor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        
+        Wavefronts_Sending_Inductor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Sending_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        Wavefronts_Sending_Capacitor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Sending_Capacitor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+
+        Wavefronts_Returning_Inductor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Returning_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        Wavefronts_Returning_Capacitor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Returning_Capacitor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+    else:
+        Voltage_Interconnect_Inductor_merged = Data_Outputs.Voltage_Interconnect_Inductor
+        Current_Interconnect_Inductor_merged = Data_Outputs.Current_Interconnect_Inductor
+        
+        Voltage_Interconnect_Capacitor_merged = Data_Outputs.Voltage_Interconnect_Capacitor
+        Current_Interconnect_Capacitor_merged = Data_Outputs.Current_Interconnect_Capacitor
+        
+        Wavefronts_Sending_Inductor_merged = Data_Outputs.Wavefronts_Sending_Inductor
+        Wavefronts_Sending_Capacitor_merged = Data_Outputs.Wavefronts_Sending_Capacitor
+
+        Wavefronts_Returning_Inductor_merged = Data_Outputs.Wavefronts_Returning_Inductor
+        Wavefronts_Returning_Capacitor_merged = Data_Outputs.Wavefronts_Returning_Capacitor
+    
+    Time_cut = Data_Outputs.Time[:,0:Data_Inputs.b]
+    
+    return Data_Output_Storage(
+        Time_cut,
+        Voltage_Interconnect_Inductor_merged ,
+        Current_Interconnect_Inductor_merged ,
+        Voltage_Interconnect_Capacitor_merged ,
+        Current_Interconnect_Capacitor_merged ,
+        Wavefronts_Sending_Inductor_merged ,
+        Wavefronts_Sending_Capacitor_merged ,
+        Wavefronts_Returning_Inductor_merged ,
+        Wavefronts_Returning_Capacitor_merged 
+    )
+        
+
 def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
     data_input_storage = Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List)
