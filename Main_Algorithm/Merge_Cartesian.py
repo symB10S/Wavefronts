@@ -517,7 +517,7 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
 
     Marked[0,0] = 1
 
-    while latest_time < Data_Input.Simulation_Stop_Time:
+    while latest_time <= Data_Input.Simulation_Stop_Time:
         
         # store options at location
         store_options(Data_Output_Merged.Time,x_index,y_index,option_time,option_indexes)
@@ -542,19 +542,23 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
         x_index, y_index = best_time_index
     
     if(Data_Input.is_Higher_Merging):
-        Data_Output_Merged.Time = Data_Output_Merged.Time[0:out_indexes[-1][0],:]
+        
+        max_index = np.max([x[0] for x in out_indexes])
+        max_index += 1
+        
+        Data_Output_Merged.Time = Data_Output_Merged.Time[0:max_index,:]
 
-        Data_Output_Merged.Voltage_Interconnect_Inductor =  Data_Output_Merged.Voltage_Interconnect_Inductor[0:out_indexes[-1][0],:]
-        Data_Output_Merged.Current_Interconnect_Inductor = Data_Output_Merged.Current_Interconnect_Inductor[0:out_indexes[-1][0],:]
+        Data_Output_Merged.Voltage_Interconnect_Inductor =  Data_Output_Merged.Voltage_Interconnect_Inductor[0:max_index,:]
+        Data_Output_Merged.Current_Interconnect_Inductor = Data_Output_Merged.Current_Interconnect_Inductor[0:max_index,:]
 
-        Data_Output_Merged.Voltage_Interconnect_Capacitor = Data_Output_Merged.Voltage_Interconnect_Capacitor[0:out_indexes[-1][0],:]
-        Data_Output_Merged.Current_Interconnect_Capacitor = Data_Output_Merged.Current_Interconnect_Capacitor[0:out_indexes[-1][0],:]
+        Data_Output_Merged.Voltage_Interconnect_Capacitor = Data_Output_Merged.Voltage_Interconnect_Capacitor[0:max_index,:]
+        Data_Output_Merged.Current_Interconnect_Capacitor = Data_Output_Merged.Current_Interconnect_Capacitor[0:max_index,:]
 
-        Data_Output_Merged.Wavefronts_Sending_Inductor = Data_Output_Merged.Wavefronts_Sending_Inductor[0:out_indexes[-1][0],:]
-        Data_Output_Merged.Wavefronts_Sending_Capacitor = Data_Output_Merged.Wavefronts_Sending_Capacitor[0:out_indexes[-1][0],:]
+        Data_Output_Merged.Wavefronts_Sending_Inductor = Data_Output_Merged.Wavefronts_Sending_Inductor[0:max_index,:]
+        Data_Output_Merged.Wavefronts_Sending_Capacitor = Data_Output_Merged.Wavefronts_Sending_Capacitor[0:max_index,:]
 
-        Data_Output_Merged.Wavefronts_Returning_Inductor = Data_Output_Merged.Wavefronts_Returning_Inductor[0:out_indexes[-1][0],:]
-        Data_Output_Merged.Wavefronts_Returning_Capacitor = Data_Output_Merged.Wavefronts_Returning_Capacitor[0:out_indexes[-1][0],:]
+        Data_Output_Merged.Wavefronts_Returning_Inductor = Data_Output_Merged.Wavefronts_Returning_Inductor[0:max_index,:]
+        Data_Output_Merged.Wavefronts_Returning_Capacitor = Data_Output_Merged.Wavefronts_Returning_Capacitor[0:max_index,:]
             
         
     return Data_Output_Storage_Ordered(
