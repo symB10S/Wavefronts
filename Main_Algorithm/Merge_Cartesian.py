@@ -97,6 +97,11 @@ class Data_Output_Storage:
     Wavefronts_Returning_Inductor : np.ndarray
     Wavefronts_Returning_Capacitor : np.ndarray
     
+@dataclass
+class Data_Output_Storage_Ordered(Data_Output_Storage):
+    Indexes : np.ndarray
+    
+    
 def lcm_gcd(x:Decimal, y:Decimal):
 
     x_num,x_den = x.as_integer_ratio()
@@ -435,7 +440,120 @@ def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Ou
         Wavefronts_Returning_Inductor_merged ,
         Wavefronts_Returning_Capacitor_merged 
     )
+
+def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merged : Data_Output_Storage):
+    
+    def store_options(input_arr,x,y,magnitude,indexes):
+        x_size,y_size = input_arr.shape
         
+        
+        if(x+1 < x_size and Marked[x+1,y] == 0):
+            
+            option_a = input_arr[x+1,y]
+            magnitude.append(option_a)
+            indexes.append([x+1,y])
+            Marked[x+1,y] = 1
+        
+        if(y+1 < y_size and Marked[x,y+1] == 0):
+            
+            option_b = input_arr[x,y+1]
+            magnitude.append(option_b)
+            indexes.append([x,y+1])
+            Marked[x,y+1] = 1
+        
+    def get_best_option_value_index(opt_arr,opt_indexes):
+        opt_index_min = np.argmin(opt_arr)
+        
+        value = opt_arr[opt_index_min]
+        del opt_arr[opt_index_min]
+        
+        index = opt_indexes[opt_index_min]
+        del opt_indexes[opt_index_min]
+        
+        return value, index
+    
+    # Orderded Data Structure
+    out_time = []
+
+    out_voltage_inductor = []
+    out_current_inductor = []
+    out_voltage_capacitor = []
+    out_current_capacitor = []
+
+    out_wavefront_sending_inductor = []
+    out_wavefront_sending_capacitor = []
+    
+    out_wavefront_returning_inductor = []
+    out_wavefront_returning_capacitor = []
+
+    out_indexes = []
+
+    # Ordering Utilities
+    latest_time = 0
+
+    x_index = 0
+    y_index = 0
+
+    option_time = []
+    option_indexes =[]
+    Marked = np.zeros(Data_Output_Merged.Time.shape, dtype=Data_Output_Merged.Time.dtype)
+
+    # Store Initial Point
+    out_time.append(Data_Output_Merged.Time[0,0])
+    out_indexes.append([0,0])
+
+    out_voltage_inductor.append(Data_Output_Merged.Voltage_Interconnect_Inductor[0,0])
+    out_current_inductor.append(Data_Output_Merged.Current_Interconnect_Inductor[0,0])
+
+    out_voltage_capacitor.append(Data_Output_Merged.Voltage_Interconnect_Capacitor[0,0])
+    out_current_capacitor.append(Data_Output_Merged.Current_Interconnect_Capacitor[0,0])
+    
+    out_wavefront_sending_inductor.append(Data_Output_Merged.Wavefronts_Sending_Inductor[0,0])
+    out_wavefront_sending_capacitor.append(Data_Output_Merged.Wavefronts_Sending_Capacitor[0,0])
+    
+    out_wavefront_returning_inductor.append(Data_Output_Merged.Wavefronts_Returning_Inductor[0,0])
+    out_wavefront_returning_capacitor.append(Data_Output_Merged.Wavefronts_Returning_Capacitor[0,0])
+
+    Marked[0,0] = 1
+
+    while latest_time < Data_Input.Simulation_Stop_Time:
+        
+        # store options at location
+        store_options(Data_Output_Merged.Time,x_index,y_index,option_time,option_indexes)
+        
+        
+        if(len(option_time) > 0):
+            # get best option
+            best_time, best_time_index = get_best_option_value_index(option_time,option_indexes)
+            
+            out_time.append(best_time)
+            out_indexes.append(best_time_index)
+            
+            out_voltage_inductor.append(Data_Output_Merged.Voltage_Interconnect_Inductor[best_time_index[0],best_time_index[1]])
+            out_current_inductor.append(Data_Output_Merged.Current_Interconnect_Inductor[best_time_index[0],best_time_index[1]])
+            
+            out_voltage_capacitor.append(Data_Output_Merged.Voltage_Interconnect_Capacitor[best_time_index[0],best_time_index[1]] )
+            out_current_capacitor.append(Data_Output_Merged.Current_Interconnect_Capacitor[best_time_index[0],best_time_index[1]] )
+            
+            Marked[best_time_index[0],best_time_index[1]]  = 2
+        
+        latest_time = best_time
+        x_index, y_index = best_time_index
+        
+    
+        
+    return Data_Output_Storage_Ordered(
+        out_time ,
+        out_voltage_inductor ,
+        out_current_inductor ,
+        out_voltage_capacitor ,
+        out_current_capacitor ,
+        out_wavefront_sending_inductor ,
+        out_wavefront_sending_capacitor ,
+        out_wavefront_returning_inductor ,
+        out_wavefront_returning_capacitor ,
+        out_indexes
+    )        
 
 def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
 
