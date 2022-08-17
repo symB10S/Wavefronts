@@ -2,10 +2,15 @@ from decimal import *
 from collections import deque
 import numpy as np
 import math
+import copy
 from dataclasses import dataclass, fields
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
-import copy
+from matplotlib.animation import FFMpegWriter
+plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Jonathan\\Documents\\Academic\\Masters\\Simulator\\Git\\Main_Algorithm\\ffmpeg\\bin\\ffmpeg.exe'
+import ipywidgets as widgets
+from IPython.display import display
+
 
 getcontext().traps[FloatOperation] = True
 
@@ -1167,3 +1172,412 @@ def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_outp
             x2 = index[0]
             y2 = index[1]
             ax['C'].plot([y1,y2],[x1,x2],'black')
+            
+def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data_Output_Ordered : Data_Output_Storage_Ordered, is_Inductor : bool):
+    
+    termination_length = 1
+    
+    dc_voltage = Decimal('0')
+    dc_current = Decimal('0')
+
+    send_position = []
+    send_value_voltage = []
+    send_value_current = []
+
+    return_position = []
+    return_value_voltage = []
+    return_value_current = []
+
+    sending_wavefront = []
+    returning_wavefront = []
+    
+    for index in Data_Output_Ordered.Indexes:
+        x = index[0]
+        y = index[1]
+        
+        if(is_Inductor):
+            sending_wavefront = Data_Output_Merged.Wavefronts_Sending_Inductor[x,y]
+            returning_wavefront = Data_Output_Merged.Wavefronts_Returning_Inductor[x,y]
+        else:
+            sending_wavefront = Data_Output_Merged.Wavefronts_Sending_Capacitor[x,y]
+            returning_wavefront = Data_Output_Merged.Wavefronts_Returning_Capacitor[x,y]
+            
+        if(sending_wavefront.time_start > Time_Enquriey): # Finished
+            break
+            
+        elif(returning_wavefront.time_end <= Time_Enquriey): # Both DC
+            dc_voltage += sending_wavefront.magnitude_voltage
+            dc_current += sending_wavefront.magnitude_current
+                
+            dc_voltage += returning_wavefront.magnitude_voltage
+            dc_current += returning_wavefront.magnitude_current
+                
+        elif(returning_wavefront.time_end >= Time_Enquriey and returning_wavefront.time_start < Time_Enquriey): # Returning Intercept, Sending DC
+            return_position.append(returning_wavefront.Position_at_time(Time_Enquriey))
+            return_value_voltage.append(returning_wavefront.magnitude_voltage)
+            return_value_current.append(returning_wavefront.magnitude_current)
+                
+            dc_voltage += sending_wavefront.magnitude_voltage
+            dc_current += sending_wavefront.magnitude_current
+                
+        elif(sending_wavefront.time_end >= Time_Enquriey and sending_wavefront.time_start <= Time_Enquriey): # Sending Intercept
+            send_position.append(sending_wavefront.Position_at_time(Time_Enquriey))
+            send_value_voltage.append(sending_wavefront.magnitude_voltage)
+            send_value_current.append(sending_wavefront.magnitude_current)
+                
+        else:
+            raise Exception("Somethings wrong, wavefront has to be intecepted/ stored or done")
+            
+    termination_value_voltage = dc_voltage
+    interconnect_value_voltage =  dc_voltage
+        
+    termination_value_current = dc_current
+    interconnect_value_current =  dc_current
+
+    position_all = []
+    value_left_voltage = []
+    value_right_voltage = []
+        
+    value_left_current = []
+    value_right_current = []
+
+    # input sending values in output form, make all DC value
+    for i, pos in enumerate(send_position):
+        position_all.append(pos)
+            
+        value_left_voltage.append(dc_voltage)
+        value_right_voltage.append(dc_voltage)
+        interconnect_value_voltage += send_value_voltage[i]
+            
+        value_left_current.append(dc_current)
+        value_right_current.append(dc_current)
+        interconnect_value_current += send_value_current[i]
+            
+
+    # input returning values in output form, make all DC value
+    for i, pos in enumerate(return_position):
+        position_all.append(pos)
+            
+        value_left_voltage.append(dc_voltage)
+        value_right_voltage.append(dc_voltage)
+        termination_value_voltage += return_value_voltage[i]
+            
+        value_left_current.append(dc_current)
+        value_right_current.append(dc_current)
+            
+        termination_value_current += return_value_current[i]
+            
+        if (pos ==0):
+            pass
+            raise Exception("Returning wavefront at interconnect, problematic")
+
+    # add values left and right
+    for i,position in enumerate(position_all):
+        for j, send_pos in enumerate(send_position):
+            if(send_pos> position):
+                value_left_voltage[i] += send_value_voltage[j]
+                value_right_voltage[i] += send_value_voltage[j]
+                    
+                value_left_current[i] += send_value_current[j]
+                value_right_current[i] += send_value_current[j]
+                    
+            if (send_pos == position ):
+                value_left_voltage[i] += send_value_voltage[j]
+                    
+                value_left_current[i] += send_value_current[j]
+                
+        for j, return_pos in enumerate(return_position):
+            if(return_pos< position):
+                value_left_voltage[i] += return_value_voltage[j]
+                value_right_voltage[i] += return_value_voltage[j]
+                    
+                value_left_current[i] += return_value_current[j]
+                value_right_current[i] += return_value_current[j]
+                    
+            if (return_pos == position ):
+                value_right_voltage[i] += return_value_voltage[j]
+                    
+                value_right_current[i] += return_value_current[j]
+                    
+    # append interconnect
+    position_all.append(0)
+        
+    value_left_voltage.append(interconnect_value_voltage)
+    value_right_voltage.append(interconnect_value_voltage)
+        
+    value_left_current.append(interconnect_value_current)
+    value_right_current.append(interconnect_value_current)
+
+    # append termination
+    position_all.append(termination_length)
+            
+    value_left_voltage.append(termination_value_voltage)
+    value_right_voltage.append(termination_value_voltage)
+        
+    value_left_current.append(termination_value_current)
+    value_right_current.append(termination_value_current)
+
+    # sort values
+    zip_positions_voltage_current = sorted(zip(position_all,value_left_voltage,value_right_voltage,value_left_current,value_right_current))
+    position_all, value_left_voltage, value_right_voltage, value_left_current, value_right_current = zip(*zip_positions_voltage_current)
+        
+    # convert to lists
+    position_all = list(position_all)
+        
+    value_left_voltage = list(value_left_voltage)
+    value_right_voltage = list(value_right_voltage)
+        
+    value_left_current = list(value_left_current)
+    value_right_current = list(value_right_current)
+        
+    # Merge neighbours
+    found_duplicate = True
+    while found_duplicate:
+        found_duplicate = False
+        for index,position in enumerate(position_all):
+            if(index < len(position_all)-1):
+                if(position == position_all[index+1]):
+                    value_left_voltage[index] += value_left_voltage[index +1]
+                    value_right_voltage[index] += value_right_voltage[index +1]
+                        
+                    value_left_current[index] += value_left_current[index +1]
+                    value_right_current[index] += value_right_current[index +1]
+                        
+                    del position_all[index +1]
+                    del value_left_voltage[index +1]
+                    del value_right_voltage[index +1]
+                    del value_left_current[index +1]
+                    del value_right_current[index +1]
+
+                    found_duplicate = True
+                        
+    
+    return position_all,value_left_voltage,value_right_voltage,value_left_current,value_right_current
+
+def plot_spatial_at_time_4(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data_Output_Ordered : Data_Output_Storage_Ordered ,fig ,ax ):
+    
+    ax['A'].cla()
+    ax['B'].cla()
+    ax['C'].cla()
+    ax['D'].cla()
+
+    termination_length = 1
+    
+    # Create Plot
+    fig.suptitle("Spatial Waveforms at " + str(Time_Enquriey.quantize(Decimal('.0001'), rounding=ROUND_HALF_DOWN)) + "s")
+
+    # Get inductor zip
+    pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey, Data_Output_Merged,Data_Output_Ordered,True)
+    zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
+    
+    x = 0
+    x_old = 0
+    
+    
+    y1_voltage = 0
+    y2_voltage = 0
+    y_voltage_old = value_lv[0]
+    
+    y1_current = 0
+    y2_current = 0
+    y_current_old = value_lc[0]
+    
+    ax["A"].set_title(str(value_rv[-1].quantize(Decimal('0.0001')))+"   ←   Voltage Inductor   →   "+str(y_voltage_old.quantize(Decimal('.0001'))))
+    ax["C"].set_title(str(value_rc[-1].quantize(Decimal('0.0001')))+"   ←   Current Inductor   →   "+str(y_current_old.quantize(Decimal('.0001'))))
+    
+    ax["A"].plot([0,0],[0,y_voltage_old],'k--')
+    ax["C"].plot([0,0],[0,y_current_old],'k--')
+
+    for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
+        x = position
+        
+        y1_voltage = left_voltage
+        y2_voltage = right_voltage
+        
+        y1_current = left_current
+        y2_current = right_current
+        
+        ax["A"].plot([x_old,x], [y_voltage_old,y1_voltage],'k-')
+        ax["A"].plot([x,x] ,   [y1_voltage,y2_voltage])
+        
+        ax["C"].plot([x_old,x], [y_current_old,y1_current],'k-')
+        ax["C"].plot([x,x],    [y1_current,y2_current])
+        
+        x_old = x
+        
+        y_voltage_old = y2_voltage
+        y_current_old = y2_current
+        
+    
+    ax["A"].plot([termination_length,termination_length],[0,y_voltage_old],'k--')
+    ax["C"].plot([termination_length,termination_length],[0,y_current_old],'k--')
+    
+    ax["A"].invert_xaxis()
+    ax["C"].invert_xaxis()
+    
+    
+    # Get Capacitor Zip
+    pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey,Data_Output_Merged, Data_Output_Ordered, False)
+    zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
+
+    x = 0
+    x_old = 0
+    
+    
+    y1_voltage = 0
+    y2_voltage = 0
+    y_voltage_old = value_lv[0]
+    
+    y1_current = 0
+    y2_current = 0
+    y_current_old = value_lc[0]
+    
+    ax["B"].set_title(str(y_voltage_old.quantize(Decimal('.0001')))+"   ←   Voltage Capacitor   →   "+str(value_rv[-1].quantize(Decimal('.0001'))))
+    ax["D"].set_title(str(y_current_old.quantize(Decimal('.0001')))+"   ←   Current Capacitor   →   "+str(value_rc[-1].quantize(Decimal('.0001'))))
+    
+    ax["B"].plot([0,0],[0,y_voltage_old],'k--')
+    ax["D"].plot([0,0],[0,y_current_old],'k--')
+
+    for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
+        x = position
+        
+        y1_voltage = left_voltage
+        y2_voltage = right_voltage
+        
+        y1_current = left_current
+        y2_current = right_current
+        
+        ax["B"].plot([x_old,x], [y_voltage_old,y1_voltage],'k-')
+        ax["B"].plot([x,x] ,   [y1_voltage,y2_voltage])
+        
+        ax["D"].plot([x_old,x], [y_current_old,y1_current],'k-')
+        ax["D"].plot([x,x],    [y1_current,y2_current])
+        
+        x_old = x
+        
+        y_voltage_old = y2_voltage
+        y_current_old = y2_current
+        
+    
+    ax["B"].plot([termination_length,termination_length],[0,y_voltage_old],'k--')
+    ax["D"].plot([termination_length,termination_length],[0,y_current_old],'k--')
+    
+    
+# UI
+def spatial_investigator_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):
+    fig_s,ax_s = plt.subplot_mosaic(
+        """
+        AB
+        CD
+        """
+    )
+
+    increment_button = widgets.Button(description = "step forward", layout=widgets.Layout(width='auto'))
+    decrement_button = widgets.Button(description = "step backward", layout=widgets.Layout(width='auto'))
+    increment_text = widgets.FloatText(description = 'val', value=0.1)
+
+
+    time_slider = widgets.FloatSlider(value=0, min =0, max = data_input.Simulation_Stop_Time-1, layout=widgets.Layout(width='auto'))
+    output = widgets.Output()
+
+    def on_increment_click(b):
+        time_slider.value += increment_text.value
+        plot_spatial_at_time_4(Decimal(str(time_slider.value)),data_output_merged,data_output_ordered,fig_s,ax_s)
+        
+    def on_decrement_click(b):
+        time_slider.value -= increment_text.value
+        plot_spatial_at_time_4(Decimal(str(time_slider.value)),data_output_merged,data_output_ordered,fig_s,ax_s)
+        
+    def handle_slider_change(change):
+        if(isinstance(change.new,dict)):
+            if(len(change.new) > 0):
+                change_str = str(change.new['value'])
+                plot_spatial_at_time_4(Decimal(change_str),data_output_merged,data_output_ordered,fig_s,ax_s)
+
+    increment_button.on_click(on_increment_click)
+    decrement_button.on_click(on_decrement_click)
+    time_slider.observe(handle_slider_change)
+
+    increment_grid = widgets.GridspecLayout(1,3)
+    increment_grid[0,0] = decrement_button
+    increment_grid[0,1] = increment_button
+    increment_grid[0,2] = increment_text
+
+    display(increment_grid,time_slider)
+
+
+def video_save_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):
+    
+    fig_save,ax_save = plt.subplot_mosaic(
+        """
+        AB
+        CD
+        """
+    )
+    
+    save_title = widgets.Label('Video Saving Widget!!')
+    save_sub_title = widgets.Label('Max Simulation time = ' + str(data_input.Simulation_Stop_Time.quantize(Decimal('0.01'))))
+
+    fps_toggle = widgets.ToggleButtons(
+        options=['15', '30', '60'],
+        description='fps:',
+    )
+
+    start_input = widgets.FloatText(value=0)
+    end_input = widgets.FloatText(value=data_input.Simulation_Stop_Time)
+    video_length_input = widgets.FloatText(value=5)
+    dpi_input = widgets.FloatText(value=100)
+
+    duration_bar = widgets.HBox([
+        widgets.Label("Start time : "),
+        start_input,
+        widgets.Label("End time : "),
+        end_input,
+        widgets.Label("Video Length : "),
+        video_length_input,
+        widgets.Label("DPI : "),
+        dpi_input
+    ])
+
+    save_ext = widgets.Output(layout={})
+    save_ext.append_stdout('.mp4')
+
+
+    ProgressBar = widgets.IntProgress(min=0, max=int(100)) # instantiate the bar
+    ProgressBar_Label = widgets.Label("Ready when you are !  ")
+
+    save_name = widgets.Text(placeholder='Type Filename')
+    save_button = widgets.Button(description = "save video")
+
+    save_name_grid = widgets.HBox([save_name,save_ext,save_button])
+    
+    def on_save_click (b):
+        if(save_name.value==''):
+            raise Exception("Enter Valid File name")
+        else:
+            number_frames =  video_length_input.value*float(fps_toggle.value)
+            time_increment = (end_input.value - start_input.value)/number_frames
+            
+            ProgressBar.max = number_frames
+            metadata = dict(title='Distributed Modelling', artist='Jonathan Meerholz')
+            writer = FFMpegWriter(fps=float(fps_toggle.value), metadata=metadata)
+            
+            time = start_input.value
+            frame_counter = 0
+            ProgressBar.value = 0
+            with writer.saving(fig_save, (save_name.value+".mp4"), float(dpi_input.value)):
+                
+                for _ in range(0,int(number_frames)):
+                    
+                    plot_spatial_at_time_4(Decimal(str(time)),data_output_merged,data_output_ordered,fig_save,ax_save)
+                    writer.grab_frame()
+                    time += time_increment
+                    frame_counter +=1
+                    ProgressBar.value =frame_counter
+                    ProgressBar_Label.value = "frame " + str(frame_counter) + " of " + str(number_frames) 
+                    
+            ProgressBar_Label.value += " Completed !"
+
+    save_button.on_click(on_save_click)
+
+    display(save_title,save_sub_title,fps_toggle,duration_bar,save_name_grid,widgets.HBox([ProgressBar_Label,ProgressBar]))
