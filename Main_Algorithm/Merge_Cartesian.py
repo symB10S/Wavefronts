@@ -115,6 +115,8 @@ def lcm_gcd(x:Decimal, y:Decimal):
     
     return LCM, GCD
 
+get_lcm_gcd = np.vectorize(lcm_gcd)
+
 def delete_alternating(arr):
     
     x_len,ylen = arr.shape
@@ -908,7 +910,7 @@ def plot_fanout_colour(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_
     c = ax.imshow(arr.astype(np.float),cmap=cm.jet,vmax =max_boundary, vmin =0)
     
     if(show_colour_bar):
-        plt.gcf().colorbar(c,ax=ax)
+        return plt.gcf().colorbar(c,ax=ax)
         
 def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str, show_colour_bar = True ,contrast : bool = False):
     
