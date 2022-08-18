@@ -1120,15 +1120,18 @@ def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str,
     ax[2].plot([0,arr.shape[0]],[row_number,row_number],'c--')
 
 def plot_fanout_interconnect(data_output_merged: Data_Output_Storage,ax, which_string :str):
+    
+    padwidth = 15
+    
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
     if(which_string.lower() == allowed_strings[0] ):
-        plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Inductor,ax)
+        plot_fanout_seismic(np.pad( data_output_merged.Voltage_Interconnect_Inductor,(padwidth,padwidth)),ax)
     elif(which_string.lower() == allowed_strings[1] ):
-        plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax)
+        plot_fanout_seismic(np.pad(data_output_merged.Current_Interconnect_Inductor,(padwidth,padwidth)),ax)
     elif(which_string.lower() == allowed_strings[2] ):
-        plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Capacitor,ax)
+        plot_fanout_seismic(np.pad(data_output_merged.Voltage_Interconnect_Capacitor,(padwidth,padwidth)),ax)
     elif(which_string.lower() == allowed_strings[3] ):
-        plot_fanout_seismic(data_output_merged.Current_Interconnect_Capacitor,ax)
+        plot_fanout_seismic(np.pad(data_output_merged.Current_Interconnect_Capacitor,(padwidth,padwidth)),ax)
     else:
             raise ValueError("Incorrect plotting choice")
 
@@ -1177,7 +1180,11 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
         else:
             raise ValueError("Incorrect plotting choice")
         
-def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_output_ordered : Data_Output_Storage_Ordered, ax, which_string : str):
+def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_output_ordered : Data_Output_Storage_Ordered, which_string : str):
+    
+    padwidth = 15
+    
+    fig, ax = plt.subplot_mosaic([['A','C'],['B','C']])
     
     plot_time_interconnect(data_output_ordered,ax['A'],which_string)
     plot_time_interconnect(data_output_ordered,ax['B'],which_string,True)
@@ -1187,12 +1194,14 @@ def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_outp
         if(i  == 0):
             pass
         else:
-            x1 = data_output_ordered.Indexes[i-1][0]
-            y1 = data_output_ordered.Indexes[i-1][1]
+            x1 = data_output_ordered.Indexes[i-1][0]+ padwidth
+            y1 = data_output_ordered.Indexes[i-1][1]+ padwidth
             
-            x2 = index[0]
-            y2 = index[1]
-            ax['C'].plot([y1,y2],[x1,x2],'black')
+            x2 = index[0]+ padwidth
+            y2 = index[1]+ padwidth
+            ax['C'].plot([y1,y2],[x1,x2],'black',marker='o')
+            
+    return fig, ax 
 
 def plot_time_interconnect_4(data_output_ordered: Data_Output_Storage_Ordered):
     
