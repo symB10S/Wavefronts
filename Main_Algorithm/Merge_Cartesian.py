@@ -107,7 +107,6 @@ class Data_Output_Storage:
 class Data_Output_Storage_Ordered(Data_Output_Storage):
     Indexes : np.ndarray
     
-    
 def lcm_gcd(x:Decimal, y:Decimal):
 
     x_num,x_den = x.as_integer_ratio()
@@ -420,6 +419,8 @@ def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Ou
 
         Wavefronts_Returning_Inductor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Returning_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
         Wavefronts_Returning_Capacitor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Returning_Capacitor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        
+        Time_cut = Data_Outputs.Time[:,0:Data_Inputs.b]
     else:
         Voltage_Interconnect_Inductor_merged = Data_Outputs.Voltage_Interconnect_Inductor
         Current_Interconnect_Inductor_merged = Data_Outputs.Current_Interconnect_Inductor
@@ -432,8 +433,9 @@ def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Ou
 
         Wavefronts_Returning_Inductor_merged = Data_Outputs.Wavefronts_Returning_Inductor
         Wavefronts_Returning_Capacitor_merged = Data_Outputs.Wavefronts_Returning_Capacitor
+        
+        Time_cut = Data_Outputs.Time
     
-    Time_cut = Data_Outputs.Time[:,0:Data_Inputs.b]
     
     return Data_Output_Storage(
         Time_cut,
@@ -1052,6 +1054,13 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
         data_output_storage
     ) 
 
+def Full_Cycle(Inductor_List, Capacitor_List, Circuit_List):
+    data_input, data_output = Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List)
+    data_output_merged = Higher_Order_Merging(data_input,data_output)
+    data_output_ordered = Order_Data_Output_Merged(data_input,data_output_merged)
+    
+    return data_input,data_output,data_output_merged,data_output_ordered
+
 ## Plotting
 def get_voltage(wavefront):
     return wavefront.magnitude_voltage
@@ -1086,12 +1095,13 @@ def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour
 def plot_fanout_colour(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False):
     
     max_boundary = np.max(arr.astype(np.float))  
+    min_boundary = np.min(arr.astype(np.float))  
     
     ax.set_title(title)
-    c = ax.imshow(arr.astype(np.float),cmap=cm.jet,vmax =max_boundary, vmin =0)
+    cb = ax.imshow(arr.astype(np.float),cmap=cm.jet,vmax =max_boundary, vmin =min_boundary)
     
     if(show_colour_bar):
-        return plt.gcf().colorbar(c,ax=ax)
+        ax.get_figure().colorbar(cb,ax=ax)
         
 def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str, show_colour_bar = True ,contrast : bool = False):
     
@@ -1172,7 +1182,33 @@ def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_outp
             x2 = index[0]
             y2 = index[1]
             ax['C'].plot([y1,y2],[x1,x2],'black')
-            
+
+def plot_fanout_wavefronts(data_output_merged: Data_Output_Storage,ax, which_string :str, is_sending : bool = True):
+    allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+    
+    if(is_sending):
+        if(which_string.lower() == allowed_strings[0] ):
+            plot_fanout_seismic(get_voltage_array(data_output_merged.Wavefronts_Sending_Inductor),ax)
+        elif(which_string.lower() == allowed_strings[1] ):
+            plot_fanout_seismic(get_current_array(data_output_merged.Wavefronts_Sending_Inductor),ax)
+        elif(which_string.lower() == allowed_strings[2] ):
+            plot_fanout_seismic(get_voltage_array(data_output_merged.Wavefronts_Sending_Capacitor),ax)
+        elif(which_string.lower() == allowed_strings[3] ):
+            plot_fanout_seismic(get_current_array(data_output_merged.Wavefronts_Sending_Capacitor),ax)
+        else:
+                raise ValueError("Incorrect plotting choice")
+    else:
+        if(which_string.lower() == allowed_strings[0] ):
+            plot_fanout_seismic(get_voltage_array(data_output_merged.Wavefronts_Returning_Inductor),ax)
+        elif(which_string.lower() == allowed_strings[1] ):
+            plot_fanout_seismic(get_current_array(data_output_merged.Wavefronts_Returning_Inductor),ax)
+        elif(which_string.lower() == allowed_strings[2] ):
+            plot_fanout_seismic(get_voltage_array(data_output_merged.Wavefronts_Returning_Capacitor),ax)
+        elif(which_string.lower() == allowed_strings[3] ):
+            plot_fanout_seismic(get_current_array(data_output_merged.Wavefronts_Returning_Capacitor),ax)
+        else:
+                raise ValueError("Incorrect plotting choice")
+      
 def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data_Output_Ordered : Data_Output_Storage_Ordered, is_Inductor : bool):
     
     termination_length = 1
@@ -1504,7 +1540,6 @@ def spatial_investigator_ui(data_input : Data_Input_Storage, data_output_merged 
     increment_grid[0,2] = increment_text
 
     display(increment_grid,time_slider)
-
 
 def video_save_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):
     
