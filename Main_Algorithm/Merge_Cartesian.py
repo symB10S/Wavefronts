@@ -1126,11 +1126,22 @@ def plot_fanout_interconnect(data_output_merged: Data_Output_Storage,ax, which_s
     elif(which_string.lower() == allowed_strings[1] ):
         plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax)
     elif(which_string.lower() == allowed_strings[2] ):
-        plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Inductor,ax)
+        plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Capacitor,ax)
     elif(which_string.lower() == allowed_strings[3] ):
-        plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax)
+        plot_fanout_seismic(data_output_merged.Current_Interconnect_Capacitor,ax)
     else:
             raise ValueError("Incorrect plotting choice")
+
+def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
+    
+    fig, ax = plt.subplot_mosaic([['A','B'],['C','D']])
+    
+    plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Inductor,ax['A'],"Inductor Voltage")
+    plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax['C'],"Inductor Current")
+    plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Inductor,ax['B'],"Capacitor Voltage")
+    plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax['D'],"Capacitor Current")
+    
+    return fig,ax
 
 def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = False): 
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
@@ -1182,6 +1193,42 @@ def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_outp
             x2 = index[0]
             y2 = index[1]
             ax['C'].plot([y1,y2],[x1,x2],'black')
+
+def plot_time_interconnect_4(data_output_ordered: Data_Output_Storage_Ordered):
+    
+    fig, ax = plt.subplot_mosaic([['A','B'],['C','D']])
+    
+    ax['A'].set_title("Inductor voltage at Interconnect")
+    ax['A'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Inductor),where='post')
+    
+    ax['C'].set_title("Inductor current at Interconnect")
+    ax['C'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Inductor),where='post')
+    
+    ax['B'].set_title("Capacitor voltage at Interconnect")
+    ax['B'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Capacitor),where='post')
+    
+    ax['D'].set_title("Capacitor current at Interconnect")
+    ax['D'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Capacitor),where='post')
+    
+    return fig, ax
+
+def plot_time_interconnect_4_wavefronts(data_output_ordered: Data_Output_Storage_Ordered):
+    
+    fig, ax = plt.subplot_mosaic([['A','B'],['C','D']])
+    
+    ax['A'].set_title("Inductor voltage change at Interconnect")
+    ax['A'].step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Inductor,where='post')
+    
+    ax['C'].set_title("Inductor current change at Interconnect")
+    ax['C'].step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Inductor,where='post')
+    
+    ax['B'].set_title("Capacitor voltage change at Interconnect")
+    ax['B'].step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Capacitor,where='post')
+    
+    ax['D'].set_title("Capacitor current change at Interconnect")
+    ax['D'].step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Capacitor,where='post')
+    
+    return fig, ax
 
 def plot_fanout_wavefronts(data_output_merged: Data_Output_Storage,ax, which_string :str, is_sending : bool = True):
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
