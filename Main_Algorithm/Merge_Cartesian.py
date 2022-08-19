@@ -103,6 +103,41 @@ class Data_Output_Storage:
     Wavefronts_Returning_Inductor : np.ndarray
     Wavefronts_Returning_Capacitor : np.ndarray
     
+    def get_sending(self,which_string):
+        allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+        if(which_string.lower() == allowed_strings[0] ):
+            return  get_voltage_array(self.Wavefronts_Sending_Inductor)
+        
+        elif(which_string.lower() == allowed_strings[1] ):
+            return  get_current_array(self.Wavefronts_Sending_Inductor)
+        
+        elif(which_string.lower() == allowed_strings[2] ):
+            return  get_voltage_array(self.Wavefronts_Sending_Capacitor)
+        
+        elif(which_string.lower() == allowed_strings[3] ):
+            return  get_current_array(self.Wavefronts_Sending_Capacitor)
+        
+        else:
+            raise ValueError("Incorrect plotting choice")
+        
+    def get_returning(self,which_string):
+        allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+        if(which_string.lower() == allowed_strings[0] ):
+            return  get_voltage_array(self.Wavefronts_Returning_Inductor)
+        
+        elif(which_string.lower() == allowed_strings[1] ):
+            return  get_current_array(self.Wavefronts_Returning_Inductor)
+        
+        elif(which_string.lower() == allowed_strings[2] ):
+            return  get_voltage_array(self.Wavefronts_Returning_Capacitor)
+        
+        elif(which_string.lower() == allowed_strings[3] ):
+            return  get_current_array(self.Wavefronts_Returning_Capacitor)
+        
+        else:
+            raise ValueError("Incorrect plotting choice")
+        
+    
 @dataclass
 class Data_Output_Storage_Ordered(Data_Output_Storage):
     Indexes : np.ndarray
@@ -542,6 +577,12 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
             
             out_voltage_capacitor.append(Data_Output_Merged.Voltage_Interconnect_Capacitor[best_time_index[0],best_time_index[1]] )
             out_current_capacitor.append(Data_Output_Merged.Current_Interconnect_Capacitor[best_time_index[0],best_time_index[1]] )
+            
+            out_wavefront_sending_inductor.append(Data_Output_Merged.Wavefronts_Sending_Inductor[best_time_index[0],best_time_index[1]])
+            out_wavefront_sending_capacitor.append(Data_Output_Merged.Wavefronts_Sending_Capacitor[best_time_index[0],best_time_index[1]])
+            
+            out_wavefront_returning_inductor.append(Data_Output_Merged.Wavefronts_Returning_Inductor[best_time_index[0],best_time_index[1]])
+            out_wavefront_returning_capacitor.append(Data_Output_Merged.Wavefronts_Returning_Capacitor[best_time_index[0],best_time_index[1]])
             
             Marked[best_time_index[0],best_time_index[1]]  = 2
         
@@ -1264,7 +1305,28 @@ def plot_fanout_wavefronts(data_output_merged: Data_Output_Storage,ax, which_str
             plot_fanout_seismic(get_current_array(data_output_merged.Wavefronts_Returning_Capacitor),ax)
         else:
                 raise ValueError("Incorrect plotting choice")
-      
+
+def plot_time_wavefronts_all(data_output : Data_Output_Storage, what_to_plot : str):
+    fig_sub, ax_sub = plt.subplots(2,3)
+
+    fig_sub.suptitle("Wavefronts of the "+ what_to_plot)
+     
+    ax_sub[0,0].set_title("sending voltage")
+    ax_sub[0,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,1].set_title("returning voltage")
+    ax_sub[0,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,2].set_title("sending + returning voltage")
+    ax_sub[0,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("voltage "+ what_to_plot)+data_output.get_sending("voltage "+ what_to_plot)),where='post')
+
+    ax_sub[1,0].set_title("sending current")
+    ax_sub[1,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending("current " + what_to_plot)),where='post')
+    ax_sub[1,1].set_title("returning current")
+    ax_sub[1,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("current " + what_to_plot)),where='post')
+    ax_sub[1,2].set_title("sending + returning current")
+    ax_sub[1,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("current " + what_to_plot)+data_output.get_sending("current " + what_to_plot)),where='post')
+    
+    return fig_sub, ax_sub
+   
 def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data_Output_Ordered : Data_Output_Storage_Ordered, is_Inductor : bool):
     
     termination_length = 1
