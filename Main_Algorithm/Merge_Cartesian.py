@@ -6,6 +6,8 @@ import copy
 from dataclasses import dataclass, fields
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
+                               AutoMinorLocator)
 from matplotlib.animation import FFMpegWriter
 plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Jonathan\\Documents\\Academic\\Masters\\Simulator\\Git\\Main_Algorithm\\ffmpeg\\bin\\ffmpeg.exe'
 import ipywidgets as widgets
@@ -442,6 +444,9 @@ def About_Network(Data: Data_Input_Storage):
     print(f"{'Load Resistance :':<40}{Data.Load_Resistance}")
 
 def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Output_Storage):
+    Data_Inputs = copy.deepcopy(Data_Inputs)
+    Data_Outputs = copy.deepcopy(Data_Outputs)
+    
     if(Data_Inputs.is_Higher_Merging):
         Voltage_Interconnect_Inductor_merged = multiplicative_merging(Data_Outputs.Voltage_Interconnect_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
         Current_Interconnect_Inductor_merged = multiplicative_merging(Data_Outputs.Current_Interconnect_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
@@ -485,6 +490,9 @@ def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Ou
     )
 
 def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merged : Data_Output_Storage):
+    
+    Data_Input = copy.deepcopy(Data_Input)
+    Data_Output_Merged = copy.deepcopy(Data_Output_Merged)
     
     def store_options(input_arr,x,y,magnitude,indexes):
         x_size,y_size = input_arr.shape
@@ -1100,6 +1108,7 @@ def Full_Cycle(Inductor_List, Capacitor_List, Circuit_List):
     data_output_merged = Higher_Order_Merging(data_input,data_output)
     data_output_ordered = Order_Data_Output_Merged(data_input,data_output_merged)
     
+    
     return data_input,data_output,data_output_merged,data_output_ordered
 
 ## Plotting
@@ -1117,7 +1126,7 @@ def clear_subplot(axs):
     for ax in axs:
         ax.cla()
 
-def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False):
+def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False, padwidth = 15):
     
     max_boundary= 0
     if (contrast):
@@ -1129,7 +1138,7 @@ def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour
         max_boundary = np.max(arr.astype(np.float))  
     
     ax.set_title(title)
-    c = ax.imshow(arr.astype(np.float),cmap=cm.seismic,vmax =max_boundary, vmin = - max_boundary)
+    c = ax.imshow(np.pad(arr.astype(np.float),(padwidth,padwidth)),cmap=cm.seismic,vmax =max_boundary, vmin = - max_boundary)
     
     if(show_colour_bar):
         ax.get_figure().colorbar(c,ax=ax)
@@ -1161,19 +1170,17 @@ def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str,
     ax[2].plot([row_number,row_number],[0,arr.shape[0]],'m--')
     ax[2].plot([0,arr.shape[0]],[row_number,row_number],'c--')
 
-def plot_fanout_interconnect(data_output_merged: Data_Output_Storage,ax, which_string :str):
-    
-    padwidth = 15
+def plot_fanout_interconnect(data_output_merged: Data_Output_Storage,ax, which_string :str, data_str : str = ""):
     
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
     if(which_string.lower() == allowed_strings[0] ):
-        plot_fanout_seismic(np.pad( data_output_merged.Voltage_Interconnect_Inductor,(padwidth,padwidth)),ax,allowed_strings[0],True,True)
+        plot_fanout_seismic( data_output_merged.Voltage_Interconnect_Inductor,ax,allowed_strings[0]+ data_str,True,True)
     elif(which_string.lower() == allowed_strings[1] ):
-        plot_fanout_seismic(np.pad(data_output_merged.Current_Interconnect_Inductor,(padwidth,padwidth)),ax)
+        plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax,allowed_strings[1]+ data_str)
     elif(which_string.lower() == allowed_strings[2] ):
-        plot_fanout_seismic(np.pad(data_output_merged.Voltage_Interconnect_Capacitor,(padwidth,padwidth)),ax,allowed_strings[2],True,True)
+        plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Capacitor,ax,allowed_strings[2]+ data_str,True,True)
     elif(which_string.lower() == allowed_strings[3] ):
-        plot_fanout_seismic(np.pad(data_output_merged.Current_Interconnect_Capacitor,(padwidth,padwidth)),ax)
+        plot_fanout_seismic(data_output_merged.Current_Interconnect_Capacitor,ax,allowed_strings[3]+ data_str)
     else:
             raise ValueError("Incorrect plotting choice")
 
@@ -1187,6 +1194,30 @@ def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
     plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax['D'],"Capacitor Current")
     
     return fig,ax
+
+def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :str, is_sending : bool = True):
+    if(is_sending):
+        plot_fanout_seismic(data_output.get_sending(which_string),ax)
+    else:
+        plot_fanout_seismic(data_output.get_returning(which_string),ax)
+
+def plot_fanout_wavefronts_all(data_output: Data_Output_Storage, is_sending : bool = True, data_str :str = ""):
+    fig, ax = plt.subplot_mosaic([['A','B','C','D'],['E','F','G','H']])
+    
+    fig.suptitle("Wavefront Fanouts " + data_str)
+    
+    plot_fanout_seismic(data_output.get_sending("voltage inductor"),ax['A'],"sending voltage inductor")
+    plot_fanout_seismic(data_output.get_sending("current inductor"),ax['B'],"sending current inductor")
+    plot_fanout_seismic(data_output.get_sending("voltage capacitor"),ax['C'],"sending voltage capacitor")
+    plot_fanout_seismic(data_output.get_sending("current capacitor"),ax['D'],"sending current capacitor")
+
+    plot_fanout_seismic(data_output.get_returning("voltage inductor"),ax['E'],"returning voltage inductor")
+    plot_fanout_seismic(data_output.get_returning("current inductor"),ax['F'],"returning current inductor")
+    plot_fanout_seismic(data_output.get_returning("voltage capacitor"),ax['G'],"returning voltage capacitor")
+    plot_fanout_seismic(data_output.get_returning("current capacitor"),ax['H'],"returning current capacitor")
+        
+    return fig, ax
+    
 
 def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = False): 
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
@@ -1261,8 +1292,8 @@ def plot_time_interconnect_3_both(data_output_merged : Data_Output_Storage
     plot_time_interconnect(data_output_ordered,ax['B'],which_string,True)
     plot_time_interconnect(data_output_ordered_2,ax['B'],which_string,True)
     
-    plot_fanout_interconnect(data_output_merged,ax['C'],which_string)
-    plot_fanout_interconnect(data_output_merged_2,ax['D'],which_string)
+    plot_fanout_interconnect(data_output_merged,ax['C'],which_string," Data 1")
+    plot_fanout_interconnect(data_output_merged_2,ax['D'],which_string," Data 2")
 
     for i,index in enumerate(data_output_ordered.Indexes):
         if(i  == 0):
@@ -1273,7 +1304,7 @@ def plot_time_interconnect_3_both(data_output_merged : Data_Output_Storage
             
             x2 = index[0]+ padwidth
             y2 = index[1]+ padwidth
-            ax['C'].plot([y1,y2],[x1,x2],'black',marker='o')
+            ax['C'].plot([y1,y2],[x1,x2],'black',marker='.')
             
     for i,index in enumerate(data_output_ordered_2.Indexes):
         if(i  == 0):
@@ -1284,7 +1315,7 @@ def plot_time_interconnect_3_both(data_output_merged : Data_Output_Storage
             
             x2 = index[0]+ padwidth
             y2 = index[1]+ padwidth
-            ax['D'].plot([y1,y2],[x1,x2],'black',marker='o')
+            ax['D'].plot([y1,y2],[x1,x2],'black',marker='.')
             
     return fig, ax 
 
@@ -1368,32 +1399,6 @@ def plot_time_interconnect_4_wavefronts_both(data_output_ordered: Data_Output_St
     
     return fig, ax
 
-def plot_fanout_wavefronts(data_output_merged: Data_Output_Storage,ax, which_string :str, is_sending : bool = True):
-    allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
-    
-    if(is_sending):
-        if(which_string.lower() == allowed_strings[0] ):
-            plot_fanout_seismic(get_voltage_array(data_output_merged.Wavefronts_Sending_Inductor),ax)
-        elif(which_string.lower() == allowed_strings[1] ):
-            plot_fanout_seismic(get_current_array(data_output_merged.Wavefronts_Sending_Inductor),ax)
-        elif(which_string.lower() == allowed_strings[2] ):
-            plot_fanout_seismic(get_voltage_array(data_output_merged.Wavefronts_Sending_Capacitor),ax)
-        elif(which_string.lower() == allowed_strings[3] ):
-            plot_fanout_seismic(get_current_array(data_output_merged.Wavefronts_Sending_Capacitor),ax)
-        else:
-                raise ValueError("Incorrect plotting choice")
-    else:
-        if(which_string.lower() == allowed_strings[0] ):
-            plot_fanout_seismic(get_voltage_array(data_output_merged.Wavefronts_Returning_Inductor),ax)
-        elif(which_string.lower() == allowed_strings[1] ):
-            plot_fanout_seismic(get_current_array(data_output_merged.Wavefronts_Returning_Inductor),ax)
-        elif(which_string.lower() == allowed_strings[2] ):
-            plot_fanout_seismic(get_voltage_array(data_output_merged.Wavefronts_Returning_Capacitor),ax)
-        elif(which_string.lower() == allowed_strings[3] ):
-            plot_fanout_seismic(get_current_array(data_output_merged.Wavefronts_Returning_Capacitor),ax)
-        else:
-                raise ValueError("Incorrect plotting choice")
-
 def plot_time_wavefronts_all(data_output : Data_Output_Storage, what_to_plot : str):
     fig_sub, ax_sub = plt.subplots(2,3)
 
@@ -1412,6 +1417,33 @@ def plot_time_wavefronts_all(data_output : Data_Output_Storage, what_to_plot : s
     ax_sub[1,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("current " + what_to_plot)),where='post')
     ax_sub[1,2].set_title("sending + returning current")
     ax_sub[1,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("current " + what_to_plot)+data_output.get_sending("current " + what_to_plot)),where='post')
+    
+    return fig_sub, ax_sub
+
+def plot_time_wavefronts_all_both(data_output : Data_Output_Storage, data_output_2: Data_Output_Storage, what_to_plot : str):
+    fig_sub, ax_sub = plt.subplots(2,3)
+
+    fig_sub.suptitle("Wavefronts of the "+ what_to_plot)
+     
+    ax_sub[0,0].set_title("sending voltage")
+    ax_sub[0,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,0].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_sending("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,1].set_title("returning voltage")
+    ax_sub[0,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,1].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,2].set_title("sending + returning voltage")
+    ax_sub[0,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("voltage "+ what_to_plot)+data_output.get_sending("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,2].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning("voltage "+ what_to_plot)+data_output_2.get_sending("voltage "+ what_to_plot)),where='post')
+
+    ax_sub[1,0].set_title("sending current")
+    ax_sub[1,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending("current " + what_to_plot)),where='post')
+    ax_sub[1,0].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_sending("current " + what_to_plot)),where='post')
+    ax_sub[1,1].set_title("returning current")
+    ax_sub[1,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("current " + what_to_plot)),where='post')
+    ax_sub[1,1].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning("current " + what_to_plot)),where='post')
+    ax_sub[1,2].set_title("sending + returning current")
+    ax_sub[1,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("current " + what_to_plot)+data_output.get_sending("current " + what_to_plot)),where='post')
+    ax_sub[1,2].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning("current " + what_to_plot)+data_output_2.get_sending("current " + what_to_plot)),where='post')
     
     return fig_sub, ax_sub
    
@@ -1703,7 +1735,103 @@ def plot_spatial_at_time_4(Time_Enquriey, Data_Output_Merged : Data_Output_Stora
     
     ax["B"].plot([termination_length,termination_length],[0,y_voltage_old],'k--')
     ax["D"].plot([termination_length,termination_length],[0,y_current_old],'k--')
+
+def plot_diff(Y,X,ax,title_str :str = "Derivative"):
+    dy = np.ediff1d(Y[1:])
+    dx = np.ediff1d(X[1:])
     
+    dydx = dy/dx
+    
+    ax.set_title(title_str)
+    ax.step(X[1:-1],dydx,where="post") 
+    
+def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, stop_time, ax, mutiple_ticks : bool = True):
+    
+    C_Time = str(2*Data_Input.Capacitor_Time)
+    C_impedance = str(2*Data_Input.Capacitor_Impedance)
+    
+    L_Time = str(2*Data_Input.Inductor_Time)
+    L_impedance = str(2*Data_Input.Inductor_Impedance)
+
+    ax.axhline(linewidth=1, color='k')
+    ax.axvline(linewidth=1, color='k')
+    
+    ax.plot([-1,-1],[0,stop_time],'k')
+    ax.plot([1,1],[0,stop_time],'k')
+    #ax.plot([-1,1],[stop_time,stop_time],'k')
+    
+    #ax.get_xaxis().set_visible(False)
+    ax2 = ax.secondary_yaxis('right')
+    ax.set_xticks = ([])
+    ax2.set_xticks = ([])
+    ax.set_xticklabels = ('')
+    ax2.set_xticklabels = ('')
+    
+    ax.set_ylabel('Capacitor Time Delay = '+ C_Time, fontsize = 'large')
+    ax2.set_ylabel('Inductor Time Delay = '+ L_Time, fontsize = 'large')
+    #ax.yaxis.set_ticks(np.arange(0, stop_time, 1))
+    #ax2.yaxis.set_ticks(np.arange(0, stop_time, 1))
+    
+    ax.set_title('Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
+    ax.set_xlabel('Relative distance down Transmission Line')
+    
+    if(mutiple_ticks):
+        ax.yaxis.set_major_locator(MultipleLocator(float(C_Time)))
+        ax2.yaxis.set_major_locator(MultipleLocator(float(L_Time)))
+        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
+
+        # For the minor ticks, use no labels; default NullFormatter.
+        ax.yaxis.set_minor_locator(MultipleLocator(float(C_Time)/2))
+        ax2.yaxis.set_minor_locator(MultipleLocator(float(L_Time)/2))
+    
+    ax.set_ylim(0,stop_time)
+
+
+    for wave in Data_Output_Ordered.Wavefronts_Sending_Capacitor:
+
+        x1 = -wave.position_start
+        x2 = -wave.position_end
+
+        y1 = wave.time_start
+        y2 = wave.time_end
+
+        if(wave.time_start <=stop_time):
+            ax.plot([x1,x2],[y1,y2],'b-')
+            
+    for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
+
+        x1 = -wave.position_start
+        x2 = -wave.position_end
+
+        y1 = wave.time_start
+        y2 = wave.time_end
+
+        if(wave.time_start <=stop_time):
+            ax.plot([x1,x2],[y1,y2],'b-')
+
+
+    for wave in Data_Output_Ordered.Wavefronts_Sending_Inductor:
+
+        x1 = wave.position_start
+        x2 = wave.position_end
+
+        y1 = wave.time_start
+        y2 = wave.time_end
+
+        if(wave.time_start <=stop_time):
+            ax.plot([x1,x2],[y1,y2],'k-')
+            
+    for wave in Data_Output_Ordered.Wavefronts_Returning_Inductor:
+
+        x1 = wave.position_start
+        x2 = wave.position_end
+
+        y1 = wave.time_start
+        y2 = wave.time_end
+
+        if(wave.time_start <=stop_time):
+            ax.plot([x1,x2],[y1,y2],'k-')
+            
     
 # UI
 def spatial_investigator_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):
