@@ -426,6 +426,24 @@ def calculate_wavefronts(za,zb,vs,number_of_layers):
         fan_out_rows.append(self_reflect_wavefronts)
     return v_s,v_r,i_s,i_r,p_s,p_r
 
+def adjust_receiving(receiving,is_Capacitor):
+    new_r = [Decimal('0')]
+    if(is_Capacitor):
+            new_r.append(Decimal('0'))
+    
+    to_wait = 1
+    countdown = 1
+    
+    for r in receiving:
+        if(countdown == 0):
+            new_r.append(Decimal('0'))
+            to_wait += 1
+            countdown = 0 + to_wait
+        new_r.append(r)
+        countdown -= 1
+
+    return new_r[:len(receiving)]
+
 def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : int ,
                              is_power:bool, 
                              is_current:bool, 
@@ -715,20 +733,21 @@ def plot_single_transmission(ZL : str, ZC : str ,layers : int, x_scalling : int 
     ind_i_s = i_s[::2]
     ind_v_s = v_s[::2]
     ind_p_s = p_s[::2]
-    ind_i_r = i_r[::2]
-    ind_v_r = v_r[::2]
-    ind_p_r = p_r[::2]
+    ind_i_r = adjust_receiving(i_r[::2],False)
+    ind_v_r = adjust_receiving(v_r[::2],False)
+    ind_p_r = adjust_receiving(p_r[::2],False)
     ind_m_x = m_x[::2]
     ind_m_y = m_y[::2]
 
     cap_i_s =i_s[1::2]
     cap_v_s =v_s[1::2]
     cap_p_s =p_s[1::2]
-    cap_i_r =i_r[1::2]
-    cap_v_r =v_r[1::2]
-    cap_p_r =p_r[1::2]
+    cap_i_r =adjust_receiving(i_r[1::2],True)
+    cap_v_r =adjust_receiving(v_r[1::2],True)
+    cap_p_r =adjust_receiving(p_r[1::2],True)
     cap_m_x =m_x[1::2]
     cap_m_y =m_y[1::2]
+    
 
 
 # Plot Grid points
@@ -820,6 +839,187 @@ def plot_single_transmission(ZL : str, ZC : str ,layers : int, x_scalling : int 
 
     title_str += ('Fanout\n$\mathregular{Z_L}$ = '+ZL+'Ω,' + ' $\mathregular{Z_C}$ = ' + ZC+'Ω, '+str(layers)+' layers')
     file_name += (ZL + '_' + ZC + '_' +str(layers)+'_layers'+'.png')
+
+    ax_current.set_title(title_str)
+
+
+    if is_major:
+        x = M_x[:-layers-1]
+        y = M_y[:-layers-1]
+
+
+
+    bar_val_max = abs(np.max(to_plot))
+    bar_val_min = abs(np.min(to_plot))
+    bar_val = max(bar_val_max,bar_val_min)
+
+
+    if(is_power):
+        cax = ax_current.scatter(x,y,c=to_plot,cmap=cm.seismic,vmax=bar_val,vmin=-bar_val,zorder=2,marker='o')
+        cbar = fig_current.colorbar(cax, ticks=[-2*ps_val,-ps_val, 0, ps_val,2*ps_val])
+        cbar.ax.set_yticklabels(['$\mathregular{-2p_o}$','$\mathregular{-p_o}$', '0 VA', '$\mathregular{p_o}$','$\mathregular{2p_o}$'])
+    elif(is_current):
+        cax = ax_current.scatter(x,y,c=to_plot,cmap=cm.seismic,vmax=bar_val,vmin=-bar_val,zorder=2,marker='o')
+        cbar = fig_current.colorbar(cax, ticks=[-2*is_val,-is_val, 0, is_val,2*is_val])
+        cbar.ax.set_yticklabels(['$\mathregular{-2i_o}$','$\mathregular{-i_o}$', '0 A', '$\mathregular{i_o}$','$\mathregular{2i_o}$'])
+    else:
+        if is_capacitor:
+            vs_val = vs_b
+            value_str = "C"
+        else:
+            vs_val = vs_a
+            value_str = "L"
+
+        cax = ax_current.scatter(x,y,c=to_plot,cmap=cm.seismic, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
+        cbar = fig_current.colorbar(cax, ticks=[-2*vs_val,-vs_val, 0, vs_val,2*vs_val])
+        cbar.ax.set_yticklabels(['$\mathregular{-2v_'+value_str+'}$','$\mathregular{-v_'+value_str+'}$', '0 V', '$\mathregular{v_'+value_str+'}$','$\mathregular{2v_'+value_str+'}$'])
+
+
+    cbar.ax.tick_params(labelsize=15)
+
+    if(plot_grid):
+        for x, y in zip(l_x,l_y):
+            ax_current.plot(x,y,'k-',linewidth =.2,zorder=1)
+
+
+    ax_current.set_yticks([])
+    plt.xticks(np.arange(0, (layers+1)*4, 4*x_scalling),np.arange(0, layers+1, 1*x_scalling))
+    plt.xlabel("Layer Number")
+# plt.grid(axis = 'x')
+
+# plot text
+    shift = 0.5
+
+    if plot_time_delays:
+        for i, txt in enumerate(N):
+            ax_current.text(M_x[i]-shift, M_y[i]-shift,txt)
+
+    if plot_labels:
+        for i, txt in enumerate(L):
+            ax_current.text(M_x[i]+0.4, M_y[i]-0.25,txt,fontsize=12)
+
+    plt.tight_layout()
+    fig_current.patch.set_facecolor('white')
+
+    if is_saving:
+        plt.savefig(file_name)
+        
+def plot_interconnect(ZL : str, ZC : str ,layers : int, x_scalling : int ,
+                             is_power, 
+                             is_capacitor:bool,is_current:bool, 
+                             is_saving :bool, file_name :str,
+                             plot_labels = False,is_major = False, mark_Nodes = False, plot_grid = True, plot_time_delays = False,
+                             TL = '1', TC = '1'):
+    
+    fig_current, ax_current = plt.subplots( subplot_kw = {'aspect':1})
+
+    layers = layers
+    x_scalling = x_scalling
+
+    ZL = ZL
+    ZC = ZC
+
+    layer_distance = 1
+    TL = TL
+    TC = TC
+    vs_str = '1'
+    za_decimal = Decimal(ZL)
+    zb_decimal = Decimal(ZC)
+    vs_val = float(vs_str)
+    vs_decimal = Decimal(vs_str)
+    is_val = float(vs_decimal/(za_decimal + zb_decimal))
+    ps_val = float(vs_decimal*vs_decimal/(za_decimal + zb_decimal))
+    i_scale = float((za_decimal + zb_decimal))
+
+    vs_a = vs_decimal/(za_decimal + zb_decimal)*za_decimal
+    vs_b = vs_decimal/(za_decimal + zb_decimal)*zb_decimal
+
+
+    (N, 
+    M_x, M_y, 
+    m_x, m_y, 
+    s_x, s_y,
+    r_x, r_y,
+    l_x,l_y,L) =calcualte_numbers_and_grids_and_lines(TL,TC,layers,4,1/3,2/3)
+
+# invert to make capacitor at top
+    s_y = [-1*i for i in s_y]
+    r_y = [-1*i for i in r_y]
+    m_y = [-1*i for i in m_y]
+    M_y = [-1*i for i in M_y]
+
+    v_s,v_r,i_s,i_r,p_s,p_r = calculate_wavefronts(ZL,ZC,vs_str,layers)
+
+    ind_i_s = i_s[::2]
+    ind_v_s = v_s[::2]
+    ind_p_s = p_s[::2]
+    ind_i_r = adjust_receiving(i_r[::2],False)
+    ind_v_r = adjust_receiving(v_r[::2],False)
+    ind_p_r = adjust_receiving(p_r[::2],False)
+    ind_m_x = m_x[::2]
+    ind_m_y = m_y[::2]
+
+    cap_i_s =i_s[1::2]
+    cap_v_s =v_s[1::2]
+    cap_p_s =p_s[1::2]
+    cap_i_r =adjust_receiving(i_r[1::2],True)
+    cap_v_r =adjust_receiving(v_r[1::2],True)
+    cap_p_r =adjust_receiving(p_r[1::2],True)
+    cap_m_x =m_x[1::2]
+    cap_m_y =m_y[1::2]
+    
+
+
+# Plot Grid points
+    if(mark_Nodes):
+        ax_current.scatter(M_x,M_y, s=50, c= 'black', marker = 'x')
+
+    title_str = ""
+    to_plot = []
+    x =[]
+    y =[]
+
+
+    if(is_capacitor):
+        title_str += "Capacitor "
+        file_name += "Capacitor_"
+        x = cap_m_x
+        y = cap_m_y
+
+        if(is_power):
+            title_str += "Power "
+            file_name += "Power_"
+            to_plot = [sum(x) for x in zip(cap_p_s ,cap_p_r)]
+        elif(is_current):
+            title_str += "Current "
+            file_name += "Current_"
+            to_plot = [sum(x) for x in zip(cap_i_s, cap_i_r)]
+        else:
+            title_str += "Voltage "
+            file_name += "Voltage_"
+            to_plot = [sum(x) for x in zip(cap_v_s, cap_v_r)]
+
+    else:
+        title_str += "Inductor "
+        file_name += "Inductor_"
+        x = ind_m_x
+        y = ind_m_y
+        
+        if(is_power):
+            title_str += "Power "
+            file_name += "Power_"
+            to_plot = [sum(x) for x in zip(ind_p_s, ind_p_r)]
+        elif(is_current):
+            title_str += "Current "
+            file_name += "Current_"
+            to_plot = [sum(x) for x in zip(ind_i_s, ind_i_r)]
+        else:
+            title_str += "Voltage "
+            file_name += "Voltage_"
+            to_plot = [sum(x) for x in zip(ind_v_s, ind_v_r)]
+
+    title_str += ('Interconnect Fanout\n$\mathregular{Z_L}$ = '+ZL+'Ω,' + ' $\mathregular{Z_C}$ = ' + ZC+'Ω, '+str(layers)+' layers')
+    file_name += ('Interconnect_' + ZL + '_' + ZC + '_' +str(layers)+'_layers'+'.png')
 
     ax_current.set_title(title_str)
 
