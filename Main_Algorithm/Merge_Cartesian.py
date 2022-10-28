@@ -1849,7 +1849,7 @@ def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output
     
     L_Time = str(2*Data_Input.Inductor_Time)
     L_impedance = str(Data_Input.Inductor_Impedance)
-
+    
     ax.axhline(linewidth=1, color='k')
     ax.axvline(linewidth=1, color='k')
     
@@ -1869,8 +1869,12 @@ def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output
     #ax.yaxis.set_ticks(np.arange(0, stop_time, 1))
     #ax2.yaxis.set_ticks(np.arange(0, stop_time, 1))
     
-    ax.set_title('Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
-    ax.set_xlabel('Relative distance down Transmission Line')
+    if(is_current):
+        ax.set_title('Current Reflection Diagarm \n Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
+    else:
+        ax.set_title('Votlage Reflection Diagarm \n Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
+        
+    # ax.set_xlabel('Relative distance down Transmission Line')
     
     if(mutiple_ticks):
         ax.yaxis.set_major_locator(MultipleLocator(float(C_Time)))
@@ -1939,6 +1943,7 @@ def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output
 
         if(wave.time_start <=stop_time):
             ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)))
+            # ax.plot([(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
             
     for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
 
@@ -1957,6 +1962,7 @@ def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output
 
         if(wave.time_start <=stop_time):
             ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)))
+            # ax.plot([-(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
 
     # Inductor Wavefronts
     for wave in Data_Output_Ordered.Wavefronts_Sending_Inductor:
@@ -1976,6 +1982,7 @@ def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output
 
         if(wave.time_start <=stop_time):
             ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)))
+            # ax.plot([(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
             
     for wave in Data_Output_Ordered.Wavefronts_Returning_Inductor:
 
@@ -1993,7 +2000,8 @@ def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output
             mag = float(wave.magnitude_voltage)
 
         if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)))      
+            ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)))
+            # ax.plot([-(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)      
     
 # UI
 def spatial_investigator_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):

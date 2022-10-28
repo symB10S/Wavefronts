@@ -3,6 +3,7 @@ from collections import deque
 import matplotlib.pyplot as plt
 import matplotlib 
 import matplotlib.cm as cm
+import matplotlib as mpl
 
 from decimal import *
 import numpy as np
@@ -450,8 +451,8 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
                              is_saving :bool, file_name :str,
                              plot_labels = False,is_major = False, mark_Nodes = False, plot_grid = True, plot_time_delays = False,
                              TL = '1', TC = '1'):
-
-    layer_distance = 1
+    
+    scatter_size = 100
     vs_str = '1'
     za_decimal = Decimal(ZL)
     zb_decimal = Decimal(ZC)
@@ -467,7 +468,7 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
     m_x, m_y, 
     s_x, s_y,
     r_x, r_y,
-    l_x,l_y,L) =calcualte_numbers_and_grids_and_lines(TL,TC,layers,4,1/3,2/3)
+    l_x,l_y,L) =calcualte_numbers_and_grids_and_lines(TL,TC,layers,4,1/4,3/4)
 
     # invert to make capacitor at top
     s_y = [-1*i for i in s_y]
@@ -478,9 +479,7 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
 
     fig_current, ax_current = plt.subplots( subplot_kw = {'aspect':1})
 
-    # Plot Grid points
-    if(mark_Nodes):
-        ax_current.scatter(M_x,M_y, s=50, c= 'black', marker = 'x')
+    ax_current.set_facecolor('xkcd:grey')
 
 
     if(is_power):
@@ -490,8 +489,8 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
         returning_min = abs(np.min(p_r))
         bar_val = max(sending_max,returning_max,sending_min,returning_min)
         
-        cax = ax_current.scatter(s_x,s_y,c=p_s,cmap=cm.seismic, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
-        ax_current.scatter(r_x,r_y,c=p_r,cmap=cm.seismic, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
+        cax = ax_current.scatter(s_x,s_y,c=p_s,cmap=cm.seismic,s = scatter_size, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
+        ax_current.scatter(r_x,r_y,c=p_r,cmap=cm.seismic,s = scatter_size, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
         cbar = fig_current.colorbar(cax, ticks=[-ps_val, 0, ps_val])
         cbar.ax.set_yticklabels(['$\mathregular{-VA_o}$', '0 VA', '$\mathregular{VA_o}$'])
         ax_current.set_title('Sending and Returning\n Power Fanout\n$\mathregular{Z_L}$ = '
@@ -506,14 +505,39 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
         returning_min = abs(np.min(i_r))
         bar_val = max(sending_max,returning_max,sending_min,returning_min)
         
-        cax = ax_current.scatter(s_x,s_y,c=i_s,cmap=cm.seismic, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
-        ax_current.scatter(r_x,r_y,c=i_r,cmap=cm.seismic, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
+        cax = ax_current.scatter(s_x,s_y,c=i_s,cmap=cm.seismic,s = scatter_size, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
+        ax_current.scatter(r_x,r_y,c=i_r,cmap=cm.seismic,s = scatter_size, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
         cbar = fig_current.colorbar(cax, ticks=[-is_val, 0, is_val])
         cbar.ax.set_yticklabels(['$\mathregular{-i_o}$', '0 A', '$\mathregular{i_o}$'])
         ax_current.set_title('Sending and Returning\n Current Fanout\n$\mathregular{Z_L}$ = '
                             +ZL+'Ω,' + ' $\mathregular{Z_C}$ = ' + ZC+'Ω, '+str(layers)
                             +' layers')
         file_name += 'Sending_Returning_Current_'+ZL+'_'+ZC+'_'+str(layers)+'_layers'+'.png'
+        
+        # plot lines
+        colour_map = cm.seismic
+        norm = mpl.colors.Normalize(vmin=-bar_val, vmax=bar_val)
+        
+        # alternate = False
+        
+        # for x,y,s in zip(s_x,s_y,i_s):
+            
+        #     if(alternate):
+        #         ax_current.plot([x-1,x+1],[y-1,y+1],zorder=2, c=colour_map(norm(float(s))))
+        #     else:
+        #         ax_current.plot([x-1,x+1],[y+1,y-1],zorder=2, c=colour_map(norm(float(s))))
+                
+        #     alternate = not alternate
+            
+        # for x,y,s in zip(r_x,r_y,i_r):
+            
+        #     if(alternate):
+        #         ax_current.plot([x-1,x+1],[y-1,y+1],zorder=2, c=colour_map(norm(float(s))))
+        #     else:
+        #         ax_current.plot([x-1,x+1],[y+1,y-1],zorder=2, c=colour_map(norm(float(s))))
+                
+        #     alternate = not alternate
+        
     else:
         sending_max = abs(np.max(v_s))
         returning_max = abs(np.max(v_r))
@@ -521,8 +545,8 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
         returning_min = abs(np.min(v_r))
         bar_val = max(sending_max,returning_max,sending_min,returning_min)
         
-        cax = ax_current.scatter(s_x,s_y,c=v_s,cmap=cm.seismic, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
-        ax_current.scatter(r_x,r_y,c=v_r,cmap=cm.seismic, vmax=vs_val, vmin=-vs_val,zorder=2,marker='o')
+        cax = ax_current.scatter(s_x,s_y,c=v_s,cmap=cm.seismic,s = scatter_size, vmax=bar_val, vmin=-bar_val,zorder=2,marker='o')
+        ax_current.scatter(r_x,r_y,c=v_r,cmap=cm.seismic,s = scatter_size, vmax=vs_val, vmin=-vs_val,zorder=2,marker='o')
         cbar = fig_current.colorbar(cax, ticks=[-vs_val/2,-vs_val, 0, vs_val,vs_val/2])
         cbar.ax.set_yticklabels(['$\mathregular{-1/2v_0}$','$\mathregular{-v_0}$', '0 V', '$\mathregular{v_0}$','$\mathregular{1/2v_0}$'])
         ax_current.set_title('Sending and Returning\n Voltage Fanout\n$\mathregular{Z_L}$ = '
@@ -536,6 +560,9 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
         for x, y in zip(l_x,l_y):
             ax_current.plot(x,y,'k-',linewidth =.2,zorder=1)
 
+    # Plot Grid points
+    if(mark_Nodes):
+        ax_current.scatter(M_x,M_y, s=scatter_size, c= 'black', marker = 'x',zorder=3)
 
     ax_current.set_yticks([])
     plt.xticks(np.arange(0, (layers+1)*4, 4*x_scalling),np.arange(0, layers+1, 1*x_scalling))
@@ -558,6 +585,8 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
 
     if is_saving:
         plt.savefig(file_name)
+        
+    return ax_current,fig_current
         
 def plot_sending_or_receiving(ZL : str, ZC : str ,layers : int, x_scalling : int ,
                              is_power:bool, 
