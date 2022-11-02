@@ -1755,7 +1755,22 @@ def plot_diff(Y,X,ax,title_str :str = "Derivative"):
     ax.set_title(title_str)
     ax.step(X[1:-1],dydx,where="post") 
     
-def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, stop_time, ax, mutiple_ticks : bool = True):
+def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, stop_time, ax, mutiple_ticks : bool = True,**input_kwargs):
+    
+    kwargs = dict([('saving_folder','plots/'),('is_saving',False),('face_colour','xkcd:grey'),
+                   ('cap_sending_style','r'),('cap_returning_style','r'),
+                   ('ind_sending_style','b'),('ind_returning_style','b')])
+    
+    for key, item in input_kwargs.items():
+        if(kwargs.get(key) is None):
+            raise Exception(f"No setting found for {key}, here are the possible options: \n{kwargs}")
+        else:
+            kwargs[key] = item
+    
+    ax.set_facecolor(kwargs['face_colour'])
+    ax.set_xlim([-1,1])
+    ax.set_xticks([-1,-0.5,0,0.5,1])
+    ax.set_xticklabels(["$\mathregular{\ell_C}$","Capacitor","Interface","Inductor","$\mathregular{\ell_L}$"],fontsize='large')
     
     C_Time = str(2*Data_Input.Capacitor_Time)
     C_impedance = str(Data_Input.Capacitor_Impedance)
@@ -1782,7 +1797,7 @@ def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered 
     #ax.yaxis.set_ticks(np.arange(0, stop_time, 1))
     #ax2.yaxis.set_ticks(np.arange(0, stop_time, 1))
     
-    ax.set_title('Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
+    ax.set_title(f'Reflection Diagram for \n Capacitor Transit Time = {C_Time}s, Inductor Transit Time = {L_Time}s  ', fontsize = 'large')
     ax.set_xlabel('Relative distance down Transmission Line')
     
     if(mutiple_ticks):
@@ -1806,7 +1821,7 @@ def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered 
         y2 = wave.time_end
 
         if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],'b-')
+            ax.plot([x1,x2],[y1,y2],kwargs['cap_sending_style'])
             
     for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
 
@@ -1817,7 +1832,7 @@ def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered 
         y2 = wave.time_end
 
         if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],'b-')
+            ax.plot([x1,x2],[y1,y2],kwargs['cap_returning_style'])
 
 
     for wave in Data_Output_Ordered.Wavefronts_Sending_Inductor:
@@ -1829,7 +1844,7 @@ def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered 
         y2 = wave.time_end
 
         if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],'k-')
+            ax.plot([x1,x2],[y1,y2],kwargs['ind_sending_style'])
             
     for wave in Data_Output_Ordered.Wavefronts_Returning_Inductor:
 
@@ -1840,7 +1855,14 @@ def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered 
         y2 = wave.time_end
 
         if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],'k-')
+            ax.plot([x1,x2],[y1,y2],kwargs['ind_returning_style'])
+            
+    plt.tight_layout()
+    file_name = kwargs['saving_folder']+f'Refelction_TL_{2*Data_Input.Inductor_Time}_TC_{2*Data_Input.Capacitor_Time}_stop_time_{stop_time}.png'
+    if kwargs['is_saving']:
+        plt.savefig(file_name)
+            
+    
 
 def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, is_current, stop_time, ax, mutiple_ticks : bool = True):
     

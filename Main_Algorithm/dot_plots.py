@@ -1122,7 +1122,11 @@ def plot_time(TL:str , TC:str ,layers : int, **kwargs):
     kwarg_plot_options = dict([
         ('plot_labels',False), ('mark_nodes',False), ('plot_grid',True), 
         ('plot_time_delays',False), ('face_colour','xkcd:grey'), ('x_scalling',1), 
-        ('is_saving',True), ('file_name','plots/'), ('scatter_size',100)
+        ('is_saving',False), ('file_name','plots/'), ('scatter_size',100), 
+        ('plot_colours',True), ('show_colour_bar',True), 
+        ('grid_marker','x'), 
+        ('label_offset',[1,-0.4] ), ('label_size',12),
+        ('time_delay_offset',[1,-0.4] ), ('time_delay_size',12)
         ])
     
     #Set Kwargs
@@ -1139,8 +1143,6 @@ def plot_time(TL:str , TC:str ,layers : int, **kwargs):
     fig_current, ax_current = plt.subplots( subplot_kw = {'aspect':1})
     ax_current.set_facecolor(kwarg_plot_options['face_colour'])
     
-
-
     (N, 
     M_x, M_y, 
     m_x, m_y, 
@@ -1151,16 +1153,25 @@ def plot_time(TL:str , TC:str ,layers : int, **kwargs):
     # invert to make capacitor at top
     M_y = [-1*i for i in M_y]
 
-    bar_val_min = 0
-    bar_val_max = max(N)
 
-    cax = ax_current.scatter(M_x[:len(N)],M_y[:len(N)],c=N,cmap=cm.gist_rainbow,s = scatter_size, vmax=bar_val_max, vmin=bar_val_min,zorder=2,marker='o')
+    ax_current.set_title(f'Time Fanout Diagram for {layers} Layers\n TL = {TL}s and TC = {TC}s')
     
-    cbar = fig_current.colorbar(cax)
+    if(kwarg_plot_options['plot_colours'] is True):
+        bar_val_min = 0
+        bar_val_max = max(N)
+        cax = ax_current.scatter(M_x[:len(N)],M_y[:len(N)],c=N,cmap=cm.gist_rainbow,s = scatter_size, vmax=bar_val_max, vmin=bar_val_min,zorder=2,marker='o')
+        
+        if(kwarg_plot_options['show_colour_bar'] is True):
+            cbar = fig_current.colorbar(cax)
+            cbar.ax.tick_params(labelsize=15)
+            cbar.ax.yaxis.set_major_formatter(matplotlib.ticker.EngFormatter('s'))
     
-    ax_current.set_title(f'Time Fanout Diagram \n TL = {TL} and TC = {TC}')
-    file_name += f'TIme_Fanout_TL_{TL}_TC_{TC}.png'
-    cbar.ax.tick_params(labelsize=15)
+
+    ax_current.set_yticks([])
+    plt.xticks(np.arange(0, (layers+1)*4, 4*x_scalling),np.arange(0, layers+1, 1*x_scalling))
+    plt.xlabel("Layer Number")
+    # plt.grid(axis = 'x')
+    fig_current.patch.set_facecolor('white')
 
     if(kwarg_plot_options['plot_grid']):
         for x, y in zip(l_x,l_y):
@@ -1168,27 +1179,23 @@ def plot_time(TL:str , TC:str ,layers : int, **kwargs):
 
     # Plot Grid points
     if(kwarg_plot_options['mark_nodes']):
-        ax_current.scatter(M_x,M_y, s=scatter_size, c= 'black', marker = 'x',zorder=3)
+        ax_current.scatter(M_x,M_y, s=scatter_size, c= 'black', marker = kwarg_plot_options['grid_marker'],zorder=3)
 
-    ax_current.set_yticks([])
-    plt.xticks(np.arange(0, (layers+1)*4, 4*x_scalling),np.arange(0, layers+1, 1*x_scalling))
-    plt.xlabel("Layer Number")
-    # plt.grid(axis = 'x')
-
-    # plot text
-    shift = 0.5
-
+    # Plot Time Delays
     if kwarg_plot_options['plot_time_delays']:
         for i, txt in enumerate(N):
-            ax_current.text(M_x[i]-shift, M_y[i]-shift,txt)
+            ax_current.text(M_x[i]+kwarg_plot_options['time_delay_offset'][0], M_y[i]+kwarg_plot_options['time_delay_offset'][1],
+                            txt,fontsize= kwarg_plot_options['time_delay_size'])
 
+    # Plot Labels
     if kwarg_plot_options['plot_labels']:
         for i, txt in enumerate(L):
-            ax_current.text(M_x[i]+0.4, M_y[i]-0.25,txt,fontsize=12)
+            ax_current.text(M_x[i]+kwarg_plot_options['label_offset'][0], M_y[i]+kwarg_plot_options['label_offset'][1],txt,fontsize=12)
             
-    plt.tight_layout()
-    fig_current.patch.set_facecolor('white')
 
+    plt.tight_layout()
+    
+    file_name += f'Time_Fanout_TL_{TL}_TC_{TC}_Layers_{layers}.png'
     if kwarg_plot_options['is_saving']:
         plt.savefig(file_name)
         
