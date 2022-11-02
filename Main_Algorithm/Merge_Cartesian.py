@@ -123,7 +123,7 @@ class Data_Output_Storage:
             return  get_current_array(self.Wavefronts_Sending_Capacitor)
         
         else:
-            raise ValueError("Incorrect plotting choice")
+            raise ValueError("Incorrect plotting choice,\'"+which_string+"\' is not an option. Options are : "+ str(allowed_strings))
         
     def get_returning(self,which_string):
         allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
@@ -140,7 +140,7 @@ class Data_Output_Storage:
             return  get_current_array(self.Wavefronts_Returning_Capacitor)
         
         else:
-            raise ValueError("Incorrect plotting choice")
+            raise ValueError("Incorrect plotting choice,\'"+which_string+"\' is not an option. Options are : "+ str(allowed_strings))
         
     
 @dataclass
@@ -1151,7 +1151,7 @@ def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour
     c = ax.imshow(np.pad(arr.astype(np.float),(padwidth,padwidth)),cmap=cm.seismic,vmax =max_boundary, vmin = - max_boundary)
     
     if(show_colour_bar):
-        ax.get_figure().colorbar(c,ax=ax)
+        cb = ax.get_figure().colorbar(c,ax=ax)
         
 def plot_fanout_colour(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False):
     

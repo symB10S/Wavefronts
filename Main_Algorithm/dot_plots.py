@@ -449,8 +449,11 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
                              is_power:bool, 
                              is_current:bool, 
                              is_saving :bool, file_name :str,
-                             plot_labels = False,is_major = False, mark_Nodes = False, plot_grid = True, plot_time_delays = False,
+                             plot_labels = False,is_major = False, mark_nodes = False, plot_grid = True, plot_time_delays = False,
                              TL = '1', TC = '1'):
+    
+    fig_current, ax_current = plt.subplots( subplot_kw = {'aspect':1})
+    ax_current.set_facecolor('xkcd:grey')
     
     scatter_size = 100
     vs_str = '1'
@@ -477,9 +480,6 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
 
     v_s,v_r,i_s,i_r,p_s,p_r = calculate_wavefronts(ZL,ZC,vs_str,layers)
 
-    fig_current, ax_current = plt.subplots( subplot_kw = {'aspect':1})
-
-    ax_current.set_facecolor('xkcd:grey')
 
 
     if(is_power):
@@ -561,7 +561,7 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
             ax_current.plot(x,y,'k-',linewidth =.2,zorder=1)
 
     # Plot Grid points
-    if(mark_Nodes):
+    if(mark_nodes):
         ax_current.scatter(M_x,M_y, s=scatter_size, c= 'black', marker = 'x',zorder=3)
 
     ax_current.set_yticks([])
@@ -592,7 +592,7 @@ def plot_sending_or_receiving(ZL : str, ZC : str ,layers : int, x_scalling : int
                              is_power:bool, 
                              is_sending:bool,is_current:bool, 
                              is_saving :bool, file_name :str,
-                             plot_labels = False,is_major = False, mark_Nodes = False, plot_grid = True, plot_time_delays = False,
+                             plot_labels = False,is_major = False, mark_nodes = False, plot_grid = True, plot_time_delays = False,
                              TL = '1', TC = '1'):  # sourcery skip: move-assign
 
     layer_distance = 1
@@ -624,7 +624,7 @@ def plot_sending_or_receiving(ZL : str, ZC : str ,layers : int, x_scalling : int
     fig_current, ax_current = plt.subplots( subplot_kw = {'aspect':1})
 
     # Plot Grid points
-    if(mark_Nodes):
+    if(mark_nodes):
         ax_current.scatter(M_x,M_y, s=50, c= 'black', marker = 'x')
 
     title_str = ""
@@ -717,7 +717,7 @@ def plot_single_transmission(ZL : str, ZC : str ,layers : int, x_scalling : int 
                              is_power, 
                              is_capacitor:bool,is_sending:bool,is_current:bool, 
                              is_saving :bool, file_name :str,
-                             plot_labels = False,is_major = False, mark_Nodes = False, plot_grid = True, plot_time_delays = False,
+                             plot_labels = False,is_major = False, mark_nodes = False, plot_grid = True, plot_time_delays = False,
                              TL = '1', TC = '1'):
     
     fig_current, ax_current = plt.subplots( subplot_kw = {'aspect':1})
@@ -780,7 +780,7 @@ def plot_single_transmission(ZL : str, ZC : str ,layers : int, x_scalling : int 
 
 
 # Plot Grid points
-    if(mark_Nodes):
+    if(mark_nodes):
         ax_current.scatter(M_x,M_y, s=50, c= 'black', marker = 'x')
 
     title_str = ""
@@ -937,10 +937,11 @@ def plot_interconnect(ZL : str, ZC : str ,layers : int, x_scalling : int ,
                              is_power, 
                              is_capacitor:bool,is_current:bool, 
                              is_saving :bool, file_name :str,
-                             plot_labels = False,is_major = False, mark_Nodes = False, plot_grid = True, plot_time_delays = False,
+                             plot_labels = False,is_major = False, mark_nodes = False, plot_grid = True, plot_time_delays = False,
                              TL = '1', TC = '1'):
     
     fig_current, ax_current = plt.subplots( subplot_kw = {'aspect':1})
+    ax_current.set_facecolor('xkcd:grey')
 
     layers = layers
     x_scalling = x_scalling
@@ -1000,7 +1001,7 @@ def plot_interconnect(ZL : str, ZC : str ,layers : int, x_scalling : int ,
 
 
 # Plot Grid points
-    if(mark_Nodes):
+    if(mark_nodes):
         ax_current.scatter(M_x,M_y, s=50, c= 'black', marker = 'x')
 
     title_str = ""
@@ -1102,7 +1103,7 @@ def plot_interconnect(ZL : str, ZC : str ,layers : int, x_scalling : int ,
 
     if plot_time_delays:
         for i, txt in enumerate(N):
-            ax_current.text(M_x[i]-shift, M_y[i]-shift,txt)
+            ax_current.text(M_x[i]+0.4, M_y[i]-0.25,txt,fontsize=12)
 
     if plot_labels:
         for i, txt in enumerate(L):
@@ -1113,3 +1114,82 @@ def plot_interconnect(ZL : str, ZC : str ,layers : int, x_scalling : int ,
 
     if is_saving:
         plt.savefig(file_name)
+        
+def plot_time(TL:str , TC:str ,layers : int, **kwargs):
+    
+    
+    #Default Values
+    kwarg_plot_options = dict([
+        ('plot_labels',False), ('mark_nodes',False), ('plot_grid',True), 
+        ('plot_time_delays',False), ('face_colour','xkcd:grey'), ('x_scalling',1), 
+        ('is_saving',True), ('file_name','plots/'), ('scatter_size',100)
+        ])
+    
+    #Set Kwargs
+    for key, item in kwargs.items():
+        if(kwarg_plot_options.get(key) is None):
+            raise Exception(f"No setting found for {key}, here are the possible options: \n{kwarg_plot_options}")
+        else:
+            kwarg_plot_options[key] = item
+
+    x_scalling = kwarg_plot_options['x_scalling']
+    file_name = kwarg_plot_options['file_name']
+    scatter_size = kwarg_plot_options['scatter_size']
+    
+    fig_current, ax_current = plt.subplots( subplot_kw = {'aspect':1})
+    ax_current.set_facecolor(kwarg_plot_options['face_colour'])
+    
+
+
+    (N, 
+    M_x, M_y, 
+    m_x, m_y, 
+    s_x, s_y,
+    r_x, r_y,
+    l_x,l_y,L) =calcualte_numbers_and_grids_and_lines(TL,TC,layers,4,1/4,3/4)
+
+    # invert to make capacitor at top
+    M_y = [-1*i for i in M_y]
+
+    bar_val_min = 0
+    bar_val_max = max(N)
+
+    cax = ax_current.scatter(M_x[:len(N)],M_y[:len(N)],c=N,cmap=cm.gist_rainbow,s = scatter_size, vmax=bar_val_max, vmin=bar_val_min,zorder=2,marker='o')
+    
+    cbar = fig_current.colorbar(cax)
+    
+    ax_current.set_title(f'Time Fanout Diagram \n TL = {TL} and TC = {TC}')
+    file_name += f'TIme_Fanout_TL_{TL}_TC_{TC}.png'
+    cbar.ax.tick_params(labelsize=15)
+
+    if(kwarg_plot_options['plot_grid']):
+        for x, y in zip(l_x,l_y):
+            ax_current.plot(x,y,'k-',linewidth =.2,zorder=1)
+
+    # Plot Grid points
+    if(kwarg_plot_options['mark_nodes']):
+        ax_current.scatter(M_x,M_y, s=scatter_size, c= 'black', marker = 'x',zorder=3)
+
+    ax_current.set_yticks([])
+    plt.xticks(np.arange(0, (layers+1)*4, 4*x_scalling),np.arange(0, layers+1, 1*x_scalling))
+    plt.xlabel("Layer Number")
+    # plt.grid(axis = 'x')
+
+    # plot text
+    shift = 0.5
+
+    if kwarg_plot_options['plot_time_delays']:
+        for i, txt in enumerate(N):
+            ax_current.text(M_x[i]-shift, M_y[i]-shift,txt)
+
+    if kwarg_plot_options['plot_labels']:
+        for i, txt in enumerate(L):
+            ax_current.text(M_x[i]+0.4, M_y[i]-0.25,txt,fontsize=12)
+            
+    plt.tight_layout()
+    fig_current.patch.set_facecolor('white')
+
+    if kwarg_plot_options['is_saving']:
+        plt.savefig(file_name)
+        
+    return ax_current,fig_current
