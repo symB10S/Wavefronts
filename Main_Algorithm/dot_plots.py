@@ -8,104 +8,6 @@ import matplotlib as mpl
 from decimal import *
 import numpy as np
 
-def calcualte_numbers_and_grids(A_val,B_val, layer_max_number, layer_distance = 4):
-    A = Decimal(A_val)
-    B = Decimal(B_val)
-    Delta = A - B
-
-    Numbers = []
-
-    Major_Grid_x = []
-    Major_Grid_y = []
-
-    Minor_Grid_x = []
-    Minor_Grid_y = []
-
-    Sending_Grid_x = []
-    Sending_Grid_y = []
-
-    Recieivng_Grid_x = []
-    Recieivng_Grid_y = []
-
-    for layer_number in range(layer_max_number):
-
-
-        nodes_in_layer = layer_number + 1
-        wavefronts_in_layer = 2*nodes_in_layer
-
-        current_number = layer_number*A
-
-        layer_x = layer_number * layer_distance
-        layer_max_y = layer_x
-
-        Numbers.append(current_number)
-
-        # Major Grid
-        Major_Grid_x.append(layer_x)
-        Major_Grid_y.append(layer_max_y)
-
-        # Minor Grid
-        Minor_Grid_x.append(layer_x + layer_distance/2)
-        Minor_Grid_y.append(layer_max_y + layer_distance/2)
-
-        Minor_Grid_x.append(layer_x + layer_distance/2)
-        Minor_Grid_y.append(layer_max_y - layer_distance/2)
-
-        # Sending Grid
-        Sending_Grid_x.append(layer_x + layer_distance/4)
-        Sending_Grid_y.append(layer_max_y + layer_distance/4)
-
-        Sending_Grid_x.append(layer_x + layer_distance/4)
-        Sending_Grid_y.append(layer_max_y - layer_distance/4)
-
-        # Recieving Grid
-        Recieivng_Grid_x.append(layer_x + 3*layer_distance/4)
-        Recieivng_Grid_y.append(layer_max_y + 3*layer_distance/4)
-
-        Recieivng_Grid_x.append(layer_x + 3*layer_distance/4)
-        Recieivng_Grid_y.append(layer_max_y - 3*layer_distance/4)
-
-        current_y = layer_max_y
-
-        for _ in range(1,layer_number+1):
-
-            current_number = current_number - Delta
-            current_y = current_y - 2*layer_distance
-
-            Numbers.append(current_number)
-
-            # Major Grid
-            Major_Grid_x.append(layer_x)
-            Major_Grid_y.append(current_y)
-
-            # Minor Grid
-            Minor_Grid_x.append(layer_x + layer_distance/2)
-            Minor_Grid_y.append(current_y + layer_distance/2)
-
-            Minor_Grid_x.append(layer_x + layer_distance/2)
-            Minor_Grid_y.append(current_y - layer_distance/2)
-
-            # Sending Grid
-            Sending_Grid_x.append(layer_x + layer_distance/4)
-            Sending_Grid_y.append(current_y + layer_distance/4)
-
-            Sending_Grid_x.append(layer_x + layer_distance/4)
-            Sending_Grid_y.append(current_y - layer_distance/4)
-
-            # Recieving Grid
-            Recieivng_Grid_x.append(layer_x + 3*layer_distance/4)
-            Recieivng_Grid_y.append(current_y + 3*layer_distance/4)
-
-            Recieivng_Grid_x.append(layer_x + 3*layer_distance/4)
-            Recieivng_Grid_y.append(current_y - 3*layer_distance/4)
-    return(  
-        Numbers, 
-        Major_Grid_x, Major_Grid_y,
-        Minor_Grid_x, Minor_Grid_y,
-        Sending_Grid_x, Sending_Grid_y,
-        Recieivng_Grid_x, Recieivng_Grid_y
-    )
-    
 def calcualte_numbers_and_grids_and_lines(A_val,B_val, layer_max_number, layer_distance = 4,sending_scaling_ratio = 1/4,recieiving_scaling_ratio = 3/4,is_letters = True):
     A = Decimal(A_val)
     B = Decimal(B_val)
@@ -225,7 +127,12 @@ def calcualte_numbers_and_grids_and_lines(A_val,B_val, layer_max_number, layer_d
         Major_Grid_x.append(layer_x)
         Major_Grid_y.append(current_y)
 
-
+    Major_Grid_y = [-1*i for i in Major_Grid_y]
+    Minor_Grid_y = [-1*i for i in Minor_Grid_y]
+    Sending_Grid_y = [-1*i for i in Sending_Grid_y]
+    Recieivng_Grid_y = [-1*i for i in Recieivng_Grid_y]
+    
+    
     return(  
         Numbers, 
         Major_Grid_x, Major_Grid_y,
@@ -473,10 +380,6 @@ def plot_sending_and_receiving(ZL : str, ZC : str ,layers : int, x_scalling : in
     r_x, r_y,
     l_x,l_y,L) =calcualte_numbers_and_grids_and_lines(TL,TC,layers,4,1/4,3/4)
 
-    # invert to make capacitor at top
-    s_y = [-1*i for i in s_y]
-    r_y = [-1*i for i in r_y]
-    M_y = [-1*i for i in M_y]
 
     v_s,v_r,i_s,i_r,p_s,p_r = calculate_wavefronts(ZL,ZC,vs_str,layers)
 
@@ -613,12 +516,6 @@ def plot_sending_or_receiving(ZL : str, ZC : str ,layers : int, x_scalling : int
     r_x, r_y,
     l_x,l_y,L) =calcualte_numbers_and_grids_and_lines(TL,TC,layers,4,1/3,2/3)
 
-    # invert to make capacitor at top
-    s_y = [-1*i for i in s_y]
-    r_y = [-1*i for i in r_y]
-    m_y = [-1*i for i in m_y]
-    M_y = [-1*i for i in M_y]
-
     v_s,v_r,i_s,i_r,p_s,p_r = calculate_wavefronts(ZL,ZC,vs_str,layers)
 
     fig_current, ax_current = plt.subplots( subplot_kw = {'aspect':1})
@@ -750,12 +647,6 @@ def plot_single_transmission(ZL : str, ZC : str ,layers : int, x_scalling : int 
     s_x, s_y,
     r_x, r_y,
     l_x,l_y,L) =calcualte_numbers_and_grids_and_lines(TL,TC,layers,4,1/3,2/3)
-
-# invert to make capacitor at top
-    s_y = [-1*i for i in s_y]
-    r_y = [-1*i for i in r_y]
-    m_y = [-1*i for i in m_y]
-    M_y = [-1*i for i in M_y]
 
     v_s,v_r,i_s,i_r,p_s,p_r = calculate_wavefronts(ZL,ZC,vs_str,layers)
 
@@ -972,12 +863,6 @@ def plot_interconnect(ZL : str, ZC : str ,layers : int, x_scalling : int ,
     r_x, r_y,
     l_x,l_y,L) =calcualte_numbers_and_grids_and_lines(TL,TC,layers,4,1/3,2/3)
 
-# invert to make capacitor at top
-    s_y = [-1*i for i in s_y]
-    r_y = [-1*i for i in r_y]
-    m_y = [-1*i for i in m_y]
-    M_y = [-1*i for i in M_y]
-
     v_s,v_r,i_s,i_r,p_s,p_r = calculate_wavefronts(ZL,ZC,vs_str,layers)
 
     ind_i_s = i_s[::2]
@@ -1149,10 +1034,6 @@ def plot_time(TL:str , TC:str ,layers : int, **kwargs):
     s_x, s_y,
     r_x, r_y,
     l_x,l_y,L) =calcualte_numbers_and_grids_and_lines(TL,TC,layers,4,1/4,3/4)
-
-    # invert to make capacitor at top
-    M_y = [-1*i for i in M_y]
-
 
     ax_current.set_title(f'Time Fanout Diagram for {layers} Layers\n TL = {TL}s and TC = {TC}s')
     

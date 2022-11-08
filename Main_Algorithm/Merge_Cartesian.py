@@ -1798,7 +1798,7 @@ def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered 
     #ax2.yaxis.set_ticks(np.arange(0, stop_time, 1))
     
     ax.set_title(f'Reflection Diagram for \n Capacitor Transit Time = {C_Time}s, Inductor Transit Time = {L_Time}s  ', fontsize = 'large')
-    ax.set_xlabel('Relative distance down Transmission Line')
+    # ax.set_xlabel('Relative distance down Transmission Line')
     
     if(mutiple_ticks):
         ax.yaxis.set_major_locator(MultipleLocator(float(C_Time)))
