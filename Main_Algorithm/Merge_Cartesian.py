@@ -152,7 +152,7 @@ def lcm_gcd(x:Decimal, y:Decimal):
     x_num,x_den = x.as_integer_ratio()
     y_num,y_den = y.as_integer_ratio()
 
-    common_den = Decimal(str(x_den * y_den))
+    common_den = Decimal(str(x_den ))* Decimal(str(y_den))
 
     x_big = x_num * y_den   
     y_big = y_num * x_den   
@@ -633,10 +633,11 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
         out_indexes
     )        
 
-def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
+def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List, show_about = True):
 
     data_input_storage = Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List)
-    About_Network(data_input_storage)
+    if show_about:
+        About_Network(data_input_storage)
     
     def Circuit_Solver_Inductor_Voltage(VL,IL,VC,IC):
         return -VL * data_input_storage.Inductor_Solver_Term_VL - VC * data_input_storage.Inductor_Solver_Term_VC - IL * data_input_storage.Inductor_Solver_Term_IL + IC * data_input_storage.Inductor_Solver_Term_IC 
@@ -1106,8 +1107,8 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List):
         data_output_storage
     ) 
 
-def Full_Cycle(Inductor_List, Capacitor_List, Circuit_List):
-    data_input, data_output = Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List)
+def Full_Cycle(Inductor_List, Capacitor_List, Circuit_List, show_about = True):
+    data_input, data_output = Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List,show_about)
     data_output_merged = Higher_Order_Merging(data_input,data_output)
     data_output_ordered = Order_Data_Output_Merged(data_input,data_output_merged)
     
