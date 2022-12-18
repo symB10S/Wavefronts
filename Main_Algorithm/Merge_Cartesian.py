@@ -90,8 +90,6 @@ class Data_Input_Storage :
     Number_of_Wavefronts : int
     Number_of_Layers : int
     
-    
-    
 @dataclass
 class Data_Output_Storage:
     Time : np.ndarray
@@ -142,11 +140,38 @@ class Data_Output_Storage:
         else:
             raise ValueError("Incorrect plotting choice,\'"+which_string+"\' is not an option. Options are : "+ str(allowed_strings))
         
-    
 @dataclass
 class Data_Output_Storage_Ordered(Data_Output_Storage):
     Indexes : np.ndarray
+
+def get_image_array(arr):
+    image_arr = np.full((len(arr),1),Decimal('0'))
     
+    for i,val in enumerate(arr):
+        image_arr[i][0] = val
+        
+    return image_arr
+
+def extract_merging_region(data_input : Data_Input_Storage,merged_array, KL_index):
+    KL = data_input.Inductor_LCM_Factor
+    KC = data_input.Capacitor_LCM_Factor
+    
+    number_of_KL = (data_input.Number_of_Layers+1)/KL
+    
+    return merged_array[KL_index*KL:KL_index*KL+KL,0:KC]
+
+def transform_merged_array_to_C_axsis(data_input : Data_Input_Storage,merged_array):
+
+    new_array = extract_merging_region(data_input,merged_array,0)
+    
+    number_of_KLs = int((data_input.Number_of_Layers+1)/data_input.Inductor_LCM_Factor)
+
+    for i in range(1,number_of_KLs):
+        new_merging_region = extract_merging_region(data_input,merged_array,i)
+        new_array = np.concatenate((new_array,new_merging_region),axis =1)
+        
+    return new_array
+
 def lcm_gcd(x:Decimal, y:Decimal):
 
     x_num,x_den = x.as_integer_ratio()
@@ -1116,6 +1141,7 @@ def Full_Cycle(Inductor_List, Capacitor_List, Circuit_List, show_about = True):
     return data_input,data_output,data_output_merged,data_output_ordered
 
 ## Plotting
+
 def get_voltage(wavefront):
     return wavefront.magnitude_voltage
 
