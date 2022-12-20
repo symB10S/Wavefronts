@@ -1502,27 +1502,40 @@ def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data
     sending_wavefront = []
     returning_wavefront = []
     
+    # Exctract wavefront interceptions at a specific time
+    # 1. Get sending + returning wavefronts
+    # 2. Add DC value to line
+    # 3. If intercepting, store position
+    
     for index in Data_Output_Ordered.Indexes:
         x = index[0]
         y = index[1]
         
+        # Sending and returning wavefronts
         if(is_Inductor):
             sending_wavefront = Data_Output_Merged.Wavefronts_Sending_Inductor[x,y]
             returning_wavefront = Data_Output_Merged.Wavefronts_Returning_Inductor[x,y]
         else:
             sending_wavefront = Data_Output_Merged.Wavefronts_Sending_Capacitor[x,y]
             returning_wavefront = Data_Output_Merged.Wavefronts_Returning_Capacitor[x,y]
-            
+        
+        # x = time enquirey
+        # -s-> = sending wavefront
+        # -r-> = returning wavefront
+        
+        # x-s->-r->
         if(sending_wavefront.time_start > Time_Enquriey): # Finished
             break
-            
+        
+        # -s->-r->x
         elif(returning_wavefront.time_end <= Time_Enquriey): # Both DC
             dc_voltage += sending_wavefront.magnitude_voltage
             dc_current += sending_wavefront.magnitude_current
                 
             dc_voltage += returning_wavefront.magnitude_voltage
             dc_current += returning_wavefront.magnitude_current
-                
+        
+        # -s->-x-r->      
         elif(returning_wavefront.time_end >= Time_Enquriey and returning_wavefront.time_start < Time_Enquriey): # Returning Intercept, Sending DC
             return_position.append(returning_wavefront.Position_at_time(Time_Enquriey))
             return_value_voltage.append(returning_wavefront.magnitude_voltage)
@@ -1530,7 +1543,8 @@ def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data
                 
             dc_voltage += sending_wavefront.magnitude_voltage
             dc_current += sending_wavefront.magnitude_current
-                
+        
+        # -x-s->-r->        
         elif(sending_wavefront.time_end >= Time_Enquriey and sending_wavefront.time_start <= Time_Enquriey): # Sending Intercept
             send_position.append(sending_wavefront.Position_at_time(Time_Enquriey))
             send_value_voltage.append(sending_wavefront.magnitude_voltage)
@@ -1552,7 +1566,7 @@ def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data
     value_left_current = []
     value_right_current = []
 
-    # input sending values in output form, make all DC value
+    # input sending values in output form, make all DC value, add to inerconnect value
     for i, pos in enumerate(send_position):
         position_all.append(pos)
             
@@ -1575,11 +1589,9 @@ def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data
             
         value_left_current.append(dc_current)
         value_right_current.append(dc_current)
-            
         termination_value_current += return_value_current[i]
             
         if (pos ==0):
-            pass
             raise Exception("Returning wavefront at interconnect, problematic")
 
     # add values left and right
@@ -1594,7 +1606,7 @@ def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data
                     
             if (send_pos == position ):
                 value_left_voltage[i] += send_value_voltage[j]
-                    
+                
                 value_left_current[i] += send_value_current[j]
                 
         for j, return_pos in enumerate(return_position):
@@ -1648,17 +1660,19 @@ def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data
         for index,position in enumerate(position_all):
             if(index < len(position_all)-1):
                 if(position == position_all[index+1]):
-                    value_left_voltage[index] += value_left_voltage[index +1]
-                    value_right_voltage[index] += value_right_voltage[index +1]
+                    # value_left_voltage[index] += value_left_voltage[index +1]
+                    # value_right_voltage[index] += value_right_voltage[index +1]
                         
-                    value_left_current[index] += value_left_current[index +1]
-                    value_right_current[index] += value_right_current[index +1]
+                    # value_left_current[index] += value_left_current[index +1]
+                    # value_right_current[index] += value_right_current[index +1]
                         
                     del position_all[index +1]
                     del value_left_voltage[index +1]
                     del value_right_voltage[index +1]
                     del value_left_current[index +1]
                     del value_right_current[index +1]
+                    
+                    print('found duplicate')
 
                     found_duplicate = True
                         
