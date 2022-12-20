@@ -160,7 +160,7 @@ def extract_merging_region(data_input : Data_Input_Storage,merged_array, KL_inde
     
     return merged_array[KL_index*KL:KL_index*KL+KL,0:KC]
 
-def transform_merged_array_to_C_axsis(data_input : Data_Input_Storage,merged_array):
+def transform_merged_array_to_L_axis(data_input : Data_Input_Storage,merged_array):
 
     new_array = extract_merging_region(data_input,merged_array,0)
     
