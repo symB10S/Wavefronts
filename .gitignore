@@ -50,17 +50,12 @@ coverage.xml
 *.log
 *.pot
 
-.mp4
+*.mp4
 
 # Sphinx documentation
 docs/_build/
-Main_Algorithm/my_animation.mp4
 Main_Algorithm/Videos/
 Main_Algorithm/plots/
-Main_Algorithm/Videos/Current_In_Capacitor.mp4
-Main_Algorithm/Videos/Voltage_Inductor_50.mp4
-Main_Algorithm/Videos/Pulse_Response_Capacitor_Current_10s-900f.mp4
-Main_Algorithm/exponential_slooshing_100_s.mp4
 Main_Algorithm/Inductor_Sending_Voltage_10_1_20_layers.png
 Main_Algorithm/plots/Capacitor_Returning_10_1_20_layers.png
 Main_Algorithm/plots/Capacitor_Returning_10_1_100_layers.png
@@ -92,23 +87,3 @@ Main_Algorithm/plots/Sending_Voltage_10_1_20_layers.png
 Main_Algorithm/plots/Sending_Voltage_10_1_100_layers.png
 Main_Algorithm/plots/Sending_Returning_Voltage_10_1_10_layers.png
 Main_Algorithm/Chapter_8_plots/figure.png
-Main_Algorithm/Chapter_8_plots/3d_spatial_1.mp4
-Main_Algorithm/Chapter_8_plots/3d_spatial_2.mp4
-Main_Algorithm/Chapter_8_plots/3d_spatial.mp4
-Main_Algorithm/Chapter_8_plots/spatial_and_time_10_1ohm_2_3s.mp4
-Main_Algorithm/Chapter_8_plots/spatial_and_time_718_1,2ohm_104_74s.mp4
-Main_Algorithm/Chapter_8_plots/spatial_and_time_718_1,2ohm_104_148s.mp4
-Main_Algorithm/Chapter_8_plots/spatial_and_time_1000_1ohm_1_7s.mp4
-Main_Algorithm/Chapter_8_plots/spatial_and_time_1000_1ohm_4_4s.mp4
-Main_Algorithm/Chapter_8_plots/spatial_and_time_1000_1ohm_7_1s.mp4
-Main_Algorithm/Chapter_8_plots/spatial_and_time_full.mp4
-Main_Algorithm/Chapter_8_plots/TLxTC=12/spatial_and_time_10_1ohm_1_12s.mp4
-Main_Algorithm/Chapter_8_plots/TLxTC=12/spatial_and_time_10_1ohm_12_1s.mp4
-Main_Algorithm/Chapter_8_plots/TLxTC=12/spatial_and_time_100_1ohm_0,1_120s.mp4
-Main_Algorithm/Chapter_8_plots/TLxTC=12/spatial_and_time_100_1ohm_0,4_30s.mp4
-Main_Algorithm/Chapter_8_plots/TLxTC=12/spatial_and_time_100_1ohm_1_12s.mp4
-Main_Algorithm/Chapter_8_plots/TLxTC=12/spatial_and_time_100_1ohm_12_1s.mp4
-Main_Algorithm/Chapter_8_plots/TLxTC=12/spatial_and_time_100_1ohm_30_0,4s.mp4
-Main_Algorithm/Chapter_8_plots/TLxTC=12/spatial_and_time_100_1ohm_120_0,1s.mp4
-Main_Algorithm/Chapter_8_plots/TLxTC=12/spatial_and_time_1000_1ohm_1_12s.mp4
-Main_Algorithm/Chapter_8_plots/TLxTC=12/spatial_and_time_1000_1ohm_12_1s.mp4

@@ -1901,7 +1901,6 @@ def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered 
     if kwargs['is_saving']:
         plt.savefig(file_name)
             
-    
 
 def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, is_current, stop_time, ax, mutiple_ticks : bool = True):
     
@@ -3048,6 +3047,62 @@ def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_
     ax_current.set_xlabel('time')
     ax_current.set_ylabel('current')
 
+# SAVE VIDEO
+
+def save_spatial_interconnect(data_input,data_output_merged,data_output_ordered,**kwargs):
+
+    #Default Values
+    kwarg_options = dict([
+        ('start_time',Decimal('0')), ('end_time',data_input.Simulation_Stop_Time), 
+        ('fps',Decimal('30')),('video_runtime',Decimal('60')),('dpi',300),
+        ('fig_size',(14, 8)),
+        ('meta_data',dict(title='Distributed Modelling', artist='Jonathan Meerholz')),
+        ('save_name',f'spatial_and_time_{data_input.Inductor_Impedance}_{data_input.Capacitor_Impedance}ohm_{data_input.Inductor_Time}_{data_input.Capacitor_Time}s')
+        ])
+    
+    #Set Kwargs
+    for key, item in kwargs.items():
+        if(kwarg_options.get(key) is None):
+            raise Exception(f"No setting found for {key}, here are the possible options: \n{kwarg_options}")
+        else:
+            kwarg_options[key] = item
+
+    
+    fig_save_2d, ax_save_2d = plt.subplots(2,2,figsize=kwarg_options['fig_size'],constrained_layout = True)
+
+    save_name = kwarg_options['save_name']
+    save_name = save_name.replace('.',',')
+
+    start_time = kwarg_options['start_time']
+    end_time = kwarg_options['end_time']
+
+    fps = kwarg_options['fps']
+    video_runtime = kwarg_options['video_runtime']
+    dpi = kwarg_options['dpi']
+
+    number_frames =  video_runtime*fps
+    time_increment = (end_time - start_time)/number_frames
+
+    metadata = kwarg_options['meta_data']
+    writer = FFMpegWriter(fps=float(fps), metadata=metadata)
+
+    time = start_time
+    frame_counter = 0
+    with writer.saving(fig_save_2d, (save_name+".mp4"), float(dpi)):
+
+        for i in range(0,int(number_frames)):
+            first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,data_output_merged,data_output_ordered,ax_save_2d[0,0],ax_save_2d[1,0])
+            plot_time_interconnect_and_intercept(time,data_output_ordered,ax_save_2d[0,1],ax_save_2d[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+            
+            writer.grab_frame()
+            
+            time += time_increment
+            frame_counter +=1
+            
+            ax_save_2d[0,0].clear()
+            ax_save_2d[0,1].clear()
+            ax_save_2d[1,0].clear()
+            ax_save_2d[1,1].clear()
 
 # UI
 def spatial_investigator_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):
