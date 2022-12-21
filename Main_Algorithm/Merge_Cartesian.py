@@ -8,7 +8,7 @@ import matplotlib.cm as cm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
-                               AutoMinorLocator)
+                               EngFormatter)
 from matplotlib.animation import FFMpegWriter
 plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Jonathan\\Documents\\Academic\\Masters\\Simulator\\Git\\Main_Algorithm\\ffmpeg\\bin\\ffmpeg.exe'
 import ipywidgets as widgets
@@ -1671,8 +1671,6 @@ def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data
                     del value_right_voltage[index +1]
                     del value_left_current[index +1]
                     del value_right_current[index +1]
-                    
-                    print('found duplicate')
 
                     found_duplicate = True
                         
@@ -2765,6 +2763,292 @@ def plot_refelction_diagram_one_tx_s_or_r(Data_Input: Data_Input_Storage, Data_O
             else:
                 ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
 
+# SPATIAL PLOTS NEW
+def plot_3d_spatial(Time_Enquriey,data_output_merged,data_output_ordered,ax):
+        
+        ax.xaxis.set_major_formatter(EngFormatter('m'))
+        ax.yaxis.set_major_formatter(EngFormatter('A'))
+        ax.zaxis.set_major_formatter(EngFormatter('V'))
+                
+        ax.set_xlabel('position')
+        ax.set_ylabel('current')
+        ax.set_zlabel('voltage')
+        
+        is_Inductive =True
+
+        # INDUCTOR
+        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey, data_output_merged,data_output_ordered,is_Inductive)
+        zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
+
+        #arrays
+        x_position =[]
+        y_current =[]
+        z_voltage =[]
+
+        dx_position =[]
+        dy_current =[]
+        dz_voltage =[]
+
+        #initiate variables
+        x_old = 0
+        y_voltage_old = 0
+        y_current_old = 0
+
+        is_first = True
+
+        for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
+                
+                x = position
+                
+                y1_voltage = left_voltage
+                y2_voltage = right_voltage
+                
+                y1_current = left_current
+                y2_current = right_current
+                
+                x_position.append(x)
+                y_current.append(0)
+                z_voltage.append(0)
+                
+                if(is_first):
+                        x_old = position
+                        y_voltage_old = left_voltage
+                        y_current_old = left_current
+                        is_first = False
+                else:
+                        dx_position.append(x - x_old)
+                        dy_current.append(y_current_old)
+                        dz_voltage.append(y_voltage_old)
+                        
+                x_old = x
+                
+                y_voltage_old = y2_voltage
+                y_current_old = y2_current
+                
+
+        x_position.pop()
+        y_current.pop()
+        z_voltage.pop()
+        
+        ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
+        
+        x_position =[]
+        y_current =[]
+        z_voltage =[]
+
+        dx_position =[]
+        dy_current =[]
+        dz_voltage =[]
+
+        is_first = True
+
+        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey, data_output_merged,data_output_ordered,not is_Inductive)
+        zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
+
+        for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
+                
+                x = -position
+                
+                y1_voltage = left_voltage
+                y2_voltage = right_voltage
+                
+                y1_current = left_current
+                y2_current = right_current
+                
+                x_position.append(x)
+                y_current.append(0)
+                z_voltage.append(0)
+                
+                if(is_first):
+                        x_old = position
+                        y_voltage_old = left_voltage
+                        y_current_old = left_current
+                        is_first = False
+                else:
+                        dx_position.append(x - x_old)
+                        dy_current.append(y_current_old)
+                        dz_voltage.append(y_voltage_old)
+                
+                x_old = x
+                
+                y_voltage_old = y2_voltage
+                y_current_old = y2_current
+
+        x_position.pop()
+        y_current.pop()
+        z_voltage.pop()
+
+        ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
+
+def plot_spatial_same_axis(Time_Enquriey,data_output_merged,data_output_ordered,ax_voltage,ax_current):
+        
+        ax_voltage.set_title('Spatial Voltage')
+        # ax_voltage.xaxis.set_major_formatter(matplotlib.ticker.EngFormatter('m'))
+        ax_voltage.yaxis.set_major_formatter(EngFormatter('V'))
+        ax_voltage.set_xlabel('Capacitor <---- interconncect ----> Inductor ')
+        ax_voltage.set_ylabel('voltage')
+        
+        
+        ax_current.set_title('Spatial Current')
+        # ax_current.xaxis.set_major_formatter(matplotlib.ticker.EngFormatter('m'))
+        ax_current.yaxis.set_major_formatter(EngFormatter('A'))
+        ax_current.set_xlabel('Capacitor <---- interconncect ----> Inductor ')
+        ax_current.set_ylabel('current')
+
+        
+        is_Inductive =True
+
+        # INDUCTOR
+        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey, data_output_merged,data_output_ordered,is_Inductive)
+        zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
+
+        first_y_voltage_inductor = 0
+        first_y_voltage_capacitor = 0
+        first_y_current = 0
+        
+        #arrays
+        x_position =[]
+        y_current =[]
+        z_voltage =[]
+        
+        dx_position =[]
+        dy_current =[]
+        dz_voltage =[]
+
+        #initiate variables
+        x_old = 0
+        y_voltage_old = 0
+        y_current_old = 0
+
+        is_first = True
+
+        for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
+                
+                x = float(position)
+                
+                y1_voltage = left_voltage
+                y2_voltage = right_voltage
+                
+                y1_current = left_current
+                y2_current = right_current
+                
+                x_position.append(x)
+                y_current.append(0)
+                z_voltage.append(0)
+                
+                if(is_first):
+                        x_old = position
+                        y_voltage_old = left_voltage
+                        y_current_old = left_current
+                        
+                        first_y_voltage_inductor = left_voltage
+                        first_y_current = left_current
+                        
+                        is_first = False
+                else:
+                        dx_position.append(x - x_old)
+                        dy_current.append(y_current_old)
+                        dz_voltage.append(y_voltage_old)
+                        
+                x_old = x
+                
+                y_voltage_old = y2_voltage
+                y_current_old = y2_current
+                
+
+        x_position.pop()
+        y_current.pop()
+        z_voltage.pop()
+        
+        # ( x , width , height)
+        ax_voltage.bar(x_position, dz_voltage, dx_position, align = 'edge',edgecolor = 'k')
+        ax_current.bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
+        
+        x_position =[]
+        y_current =[]
+        z_voltage =[]
+
+        dx_position =[]
+        dy_current =[]
+        dz_voltage =[]
+
+        is_first = True
+
+        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey, data_output_merged,data_output_ordered,not is_Inductive)
+        zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
+
+        for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
+                
+                x = -float(position)
+                
+                y1_voltage = left_voltage
+                y2_voltage = right_voltage
+                
+                y1_current = left_current
+                y2_current = right_current
+                
+                x_position.append(x)
+                y_current.append(0)
+                z_voltage.append(0)
+                
+                if(is_first):
+                        x_old = position
+                        y_voltage_old = left_voltage
+                        y_current_old = left_current
+                        
+                        first_y_voltage_capacitor = left_voltage
+                        
+                        is_first = False
+                else:
+                        dx_position.append(x - x_old)
+                        dy_current.append(y_current_old)
+                        dz_voltage.append(y_voltage_old)
+                
+                x_old = x
+                
+                y_voltage_old = y2_voltage
+                y_current_old = y2_current
+
+        x_position.pop()
+        y_current.pop()
+        z_voltage.pop()
+        
+        ax_voltage.bar(x_position, dz_voltage, dx_position, align = 'edge',edgecolor = 'k')
+        ax_current.bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
+        
+        return first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current
+
+def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_current,first_y_voltage_capacitor=0, first_y_voltage_inductor=0, first_y_current=0):
+    ax_voltage.axvline(time,linestyle='--',c='gray')
+
+    plot_time_interconnect(data_output_ordered,ax_voltage,'voltage inductor',True)
+    ax_voltage.axhline(first_y_voltage_inductor,linestyle='--',c='C0')
+    plot_time_interconnect(data_output_ordered,ax_voltage,'voltage capacitor',True)
+    ax_voltage.axhline(first_y_voltage_capacitor,linestyle='--',c='C1')
+
+    plot_time_interconnect(data_output_ordered,ax_current,'current inductor',True)
+    ax_current.get_lines()[0].set_color("black")
+
+    y_limits = ax_current.get_ylim()
+
+    ax_current.axhline(first_y_current,linestyle='--',c='gray')
+    ax_current.axvline(time,linestyle='--',c='gray')
+    ax_current.set_ylim(y_limits)
+    
+    ax_voltage.set_title('Voltage at Interconnect')
+    ax_voltage.xaxis.set_major_formatter(EngFormatter('s'))
+    ax_voltage.yaxis.set_major_formatter(EngFormatter('V'))
+    ax_voltage.set_xlabel('time')
+    ax_voltage.set_ylabel('voltage')
+    
+    
+    ax_current.set_title('Current at Interconnect')
+    ax_current.xaxis.set_major_formatter(EngFormatter('s'))
+    ax_current.yaxis.set_major_formatter(EngFormatter('A'))
+    ax_current.set_xlabel('time')
+    ax_current.set_ylabel('current')
+
+
 # UI
 def spatial_investigator_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):
     fig_s,ax_s = plt.subplot_mosaic(
@@ -2882,3 +3166,54 @@ def video_save_ui(data_input : Data_Input_Storage, data_output_merged : Data_Out
     save_button.on_click(on_save_click)
 
     display(save_title,save_sub_title,fps_toggle,duration_bar,save_name_grid,widgets.HBox([ProgressBar_Label,ProgressBar]))
+    
+
+def spatial_interconnect_investigator_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):
+    fig_s,ax_s = plt.subplots(2,2,figsize=(14, 8))
+    def clear_axes():
+        ax_s[0,0].clear()
+        ax_s[0,1].clear()
+        ax_s[1,0].clear()
+        ax_s[1,1].clear()
+
+    increment_button = widgets.Button(description = "step forward", layout=widgets.Layout(width='auto'))
+    decrement_button = widgets.Button(description = "step backward", layout=widgets.Layout(width='auto'))
+    increment_text = widgets.FloatText(description = 'val', value=0.1)
+
+
+    time_slider = widgets.FloatSlider(value=0, min =0, max = data_input.Simulation_Stop_Time-1, layout=widgets.Layout(width='auto'))
+    output = widgets.Output()
+
+    def on_increment_click(b):
+        time_slider.value += increment_text.value
+        time = Decimal(str(time_slider.value))
+        clear_axes()
+        first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,data_output_merged,data_output_ordered,ax_s[0,0],ax_s[1,0])
+        plot_time_interconnect_and_intercept(time,data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+        
+        
+    def on_decrement_click(b):
+        time_slider.value -= increment_text.value
+        time = Decimal(str(time_slider.value))
+        clear_axes()
+        first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,data_output_merged,data_output_ordered,ax_s[0,0],ax_s[1,0])
+        plot_time_interconnect_and_intercept(time,data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+        
+    def handle_slider_change(change):
+        if(isinstance(change.new,dict)):
+            if(len(change.new) > 0):
+                time = Decimal(str(change.new['value']))
+                clear_axes()
+                first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,data_output_merged,data_output_ordered,ax_s[0,0],ax_s[1,0])
+                plot_time_interconnect_and_intercept(time,data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+                
+    increment_button.on_click(on_increment_click)
+    decrement_button.on_click(on_decrement_click)
+    time_slider.observe(handle_slider_change)
+
+    increment_grid = widgets.GridspecLayout(1,3)
+    increment_grid[0,0] = decrement_button
+    increment_grid[0,1] = increment_button
+    increment_grid[0,2] = increment_text
+
+    display(increment_grid,time_slider)
