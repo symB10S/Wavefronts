@@ -192,6 +192,60 @@ def lcm_gcd(x:Decimal, y:Decimal):
 
 get_lcm_gcd = np.vectorize(lcm_gcd)
 
+def lcm_gcd_euclid(TL:Decimal,TC:Decimal):
+    
+    num_big = max(TL,TC)
+    num_small = min(TL,TC)
+    
+    num_big_original = num_big
+    num_small_original = num_small
+    
+    num_big_numerator,num_big_denomenator = num_big.as_integer_ratio()
+    num_small_numerator, num_small_denomenator = num_small.as_integer_ratio()
+    
+    common_den = Decimal(str(num_big_denomenator ))* Decimal(str(num_small_denomenator))
+    
+    num_big = num_big_numerator * num_small_denomenator
+    num_small = num_small_numerator * num_big_denomenator
+    
+    equations = []
+    
+    # initialize 
+    multiplier, remainder = divmod(num_big,num_small)
+    equations.append(dict([('num_big',num_big),('mul_small',multiplier),('num_small',num_small),('remainder',remainder)]))
+    
+    while remainder != 0:
+        num_big = num_small
+        num_small = remainder
+        
+        multiplier, remainder = divmod(num_big,num_small)
+        equations.append(dict([('num_big',num_big),('mul_small',multiplier),('num_small',num_small),('remainder',remainder)]))
+        
+    GCD_big = num_small
+    GCD = GCD_big/common_den
+    LCM = num_big_original * num_small_original/(GCD)
+    
+    K_big = num_small_original/GCD
+    K_small = num_big_original/GCD
+    
+    KL = 0
+    KC = 0
+    
+    if(TL > TC):
+        KL = K_big
+        KC = K_small
+    else:
+        KL = K_small
+        KC = K_big
+    
+    Factor_dict = dict([('TL',TL),('TC',TC),
+                        ('KL',KL),('KC',KC),
+                        ('GCD',GCD),('LCM',LCM)])
+
+    return Factor_dict
+
+get_lcm_gcd_euclid = np.vectorize(lcm_gcd_euclid)
+
 def delete_alternating(arr):
     
     x_len,ylen = arr.shape
@@ -245,15 +299,15 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     for i in range(0,Number_of_Layers+1):
         Number_of_Wavefronts = Number_of_Wavefronts + 4*i
     
-    LCM, GCD = lcm_gcd(Inductor_Time*2,Capacitor_Time*2)
+    Factor_Dict = lcm_gcd_euclid(Inductor_Time*2,Capacitor_Time*2)
     
-    Inductor_LCM_Factor = int((Capacitor_Time*2)/(GCD))
-    Capacitor_LCM_Factor = int((Inductor_Time*2)/(GCD))
+    Inductor_LCM_Factor = int(Factor_Dict['KL'])
+    Capacitor_LCM_Factor = int(Factor_Dict['KC'])
     
-    a = Inductor_LCM_Factor
-    b = Capacitor_LCM_Factor
+    a = int(Inductor_LCM_Factor)
+    b = int(Capacitor_LCM_Factor)
     
-    if(LCM > Simulation_Stop_Time):
+    if(Factor_Dict['LCM'] > Simulation_Stop_Time):
         is_Higher_Merging = False
     else:
         is_Higher_Merging = True
@@ -374,8 +428,8 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
                                 ,Initial_Inductor_Current
                                 ,Initial_Capacitor_Voltage
                                 ,Initial_Capacitor_Current
-                                ,GCD
-                                ,LCM
+                                ,Factor_Dict['GCD']
+                                ,Factor_Dict['LCM']
                                 ,Capacitor_LCM_Factor
                                 ,Inductor_LCM_Factor
                                 ,is_Higher_Merging
