@@ -1,7 +1,0 @@
-I_35.0_C_25 
-===========
-R =12, 
-ZL = 10, TL = 7/2
-ZC = 0.1, TC = 5/2
-
-Notice that R causes repetitve waveform to be seen.

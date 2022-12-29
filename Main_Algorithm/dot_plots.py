@@ -145,7 +145,6 @@ def calcualte_numbers_and_grids_and_lines(A_val,B_val, layer_max_number, layer_d
     
 def calculate_wavefronts(za,zb,vs,number_of_layers):
     
-    
     za_decimal = Decimal(za)
     zb_decimal = Decimal(zb)
     vs_decimal = Decimal(vs)
@@ -1001,8 +1000,6 @@ def plot_interconnect(ZL : str, ZC : str ,layers : int, x_scalling : int ,
         plt.savefig(file_name)
         
 def plot_time(TL:str , TC:str ,layers : int, **kwargs):
-    
-    
     #Default Values
     kwarg_plot_options = dict([
         ('plot_labels',False), ('mark_nodes',False), ('plot_grid',True), 

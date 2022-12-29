@@ -1214,7 +1214,7 @@ def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour
     
     max_boundary= 0
     if (contrast):
-        Contrast = copy.copy(arr.astype(np.float))
+        Contrast = copy.copy(arr.astype(float))
         max_index = np.unravel_index(np.argmax(Contrast, axis=None), Contrast.shape)
         Contrast[max_index] = 0
         
@@ -1223,24 +1223,24 @@ def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour
         
         max_boundary = max(max_boundary, min_boundary)
     else:
-        max_boundary = abs(np.max(arr.astype(np.float)))
-        min_boundary = abs(np.min(arr.astype(np.float)))
+        max_boundary = abs(np.max(arr.astype(float)))
+        min_boundary = abs(np.min(arr.astype(float)))
         
         max_boundary = max(max_boundary, min_boundary)
     
     ax.set_title(title)
-    c = ax.imshow(np.pad(arr.astype(np.float),(padwidth,padwidth)),cmap=cm.seismic,vmax =max_boundary, vmin = - max_boundary)
+    c = ax.imshow(np.pad(arr.astype(float),(padwidth,padwidth)),cmap=cm.seismic,vmax =max_boundary, vmin = - max_boundary)
     
     if(show_colour_bar):
         cb = ax.get_figure().colorbar(c,ax=ax)
         
 def plot_fanout_colour(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False):
     
-    max_boundary = np.max(arr.astype(np.float))  
-    min_boundary = np.min(arr.astype(np.float))  
+    max_boundary = np.max(arr.astype(float))  
+    min_boundary = np.min(arr.astype(float))  
     
     ax.set_title(title)
-    cb = ax.imshow(arr.astype(np.float),cmap=cm.jet,vmax =max_boundary, vmin =min_boundary)
+    cb = ax.imshow(arr.astype(float),cmap=cm.jet,vmax =max_boundary, vmin =min_boundary)
     
     if(show_colour_bar):
         ax.get_figure().colorbar(cb,ax=ax)
