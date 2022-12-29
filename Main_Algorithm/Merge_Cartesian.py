@@ -7,8 +7,7 @@ from dataclasses import dataclass, fields
 import matplotlib.cm as cm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
-                               EngFormatter)
+from matplotlib.ticker import (MultipleLocator, EngFormatter)
 from matplotlib.animation import FFMpegWriter
 plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Jonathan\\Documents\\Academic\\Masters\\Simulator\\Git\\Main_Algorithm\\ffmpeg\\bin\\ffmpeg.exe'
 import ipywidgets as widgets
@@ -370,18 +369,6 @@ def Steady_State_Analysis(TL:Decimal,TC:Decimal):
     print(f"The last event before Steady State operation is at {LCM-num_small_original}s")
     
     return time_before_regular_GCF, time_before_regular_Steady_State
-
-def delete_alternating(arr):
-    
-    x_len,ylen = arr.shape
-    
-    x_delete = np.arange(1,x_len,2)
-    y_delete = np.arange(1,ylen,2)
-
-    arr_deleted = np.delete(arr,x_delete, axis=0)
-    arr_deleted = np.delete(arr_deleted,y_delete, axis=1)
-    
-    return arr_deleted
 
 def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     
@@ -1279,6 +1266,18 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List, show_about =
                 Centre_Index_x -= 2
                 Centre_Index_y += 2
     
+    def delete_alternating(arr):
+    
+        x_len,ylen = arr.shape
+        
+        x_delete = np.arange(1,x_len,2)
+        y_delete = np.arange(1,ylen,2)
+
+        arr_deleted = np.delete(arr,x_delete, axis=0)
+        arr_deleted = np.delete(arr_deleted,y_delete, axis=1)
+        
+        return arr_deleted
+        
     Cartesian_Time = delete_alternating(Cartesian_Time)
     
     Voltage_Interconnect_Inductor = delete_alternating(Voltage_Interconnect_Inductor)
