@@ -172,26 +172,6 @@ def transform_merged_array_to_L_axis(data_input : Data_Input_Storage,merged_arra
         
     return new_array
 
-def lcm_gcd(x:Decimal, y:Decimal):
-
-    x_num,x_den = x.as_integer_ratio()
-    y_num,y_den = y.as_integer_ratio()
-
-    common_den = Decimal(str(x_den ))* Decimal(str(y_den))
-
-    x_big = x_num * y_den   
-    y_big = y_num * x_den   
-    
-    GCD_big = Decimal(str(math.gcd(x_big,y_big)))
-
-    GCD = GCD_big/common_den
-
-    LCM = x*y/(GCD)
-    
-    return LCM, GCD
-
-get_lcm_gcd = np.vectorize(lcm_gcd)
-
 def lcm_gcd_euclid(TL:Decimal,TC:Decimal):
     
     num_big = max(TL,TC)
@@ -245,6 +225,151 @@ def lcm_gcd_euclid(TL:Decimal,TC:Decimal):
     return Factor_dict
 
 get_lcm_gcd_euclid = np.vectorize(lcm_gcd_euclid)
+
+def Steady_State_Analysis(TL:Decimal,TC:Decimal):
+    '''
+    A function that takes in two time delays and indicates when Steady-State will occur.
+    
+        The main part of this function is effectively the Extended Euclidean Algorithm that has been extended to the rational numbers.
+    '''
+    print(f'Bezout analysis for TL = {TL}s and TC = {TC}s \n')
+    # Determine the larger of the two numbers
+    num_big = max(TL,TC)
+    num_small = min(TL,TC)
+    
+    # Keep original copy
+    num_big_original = num_big
+    num_small_original = num_small
+    
+    # Make rational numbers integers, denomenator will factored back in later
+    num_big_numerator,num_big_denomenator = num_big.as_integer_ratio()
+    num_small_numerator, num_small_denomenator = num_small.as_integer_ratio()
+    
+    common_den = Decimal(str(num_big_denomenator ))* Decimal(str(num_small_denomenator))
+    
+    # make rational numbers integers 
+    num_big = num_big_numerator * num_small_denomenator
+    num_small = num_small_numerator * num_big_denomenator
+    
+    # container for operations to follow
+    equations = []
+    
+    # initialize 
+    multiplier, remainder = divmod(num_big,num_small)
+    equations.append(dict([('num_big',num_big),('mul_small',multiplier),('num_small',num_small),('remainder',remainder)]))
+    
+    # Extended Euclidean Algorithm
+    while remainder != 0:
+        num_big = num_small
+        num_small = remainder
+        
+        multiplier, remainder = divmod(num_big,num_small)
+        equations.append(dict([('num_big',num_big),('mul_small',multiplier),('num_small',num_small),('remainder',remainder)]))
+    
+    # Factor back denomenator
+    GCD_big = num_small
+    GCD = GCD_big/common_den
+    LCM = num_big_original * num_small_original/(GCD)
+    
+    K_big = num_small_original/GCD
+    K_small = num_big_original/GCD
+    
+    # Find Bezout's coefficients by working back from the Euclidean Algorithm
+    
+    def make_equation_reverse_format (equation):
+        '''Solve for remainder in orginal euclidean equation'''
+        
+        reverse_equation = dict([('mul_big',1),
+                        ('num_big' , equation['num_big']),
+                        ('mul_small' , equation['mul_small']*-1),
+                        ('num_small' , equation['num_small'])
+                        ])
+        
+        return reverse_equation
+        
+    def apply_next_equation (start_eq, next_eq):
+        '''Create next equation when performing the Bezout algorithm on the original set of Euclidean Equations'''
+        next_eq = make_equation_reverse_format(next_eq)
+        next_eq['mul_small'] = start_eq['mul_big'] + start_eq['mul_small']*next_eq['mul_small']
+        next_eq['mul_big'] = start_eq['mul_small']
+        
+        return next_eq
+    
+    # get the index of the second last equation
+    reverse_index = len(equations) -2 
+    
+    start_equation = make_equation_reverse_format(equations[reverse_index])
+    reverse_index -= 1
+    
+    # special case if Bezout's algorithm
+    if num_small_original == GCD: # big num is multiple of small num
+        print('** Special Case **')
+        print('Small number is multiple of big number')
+        start_equation['mul_big'] = Decimal('0')
+        start_equation['mul_small'] = Decimal('1')
+    
+    else: 
+        while reverse_index > -1:
+            start_equation = apply_next_equation(start_equation,equations[reverse_index])
+            reverse_index -= 1
+    
+    print(f'Euclidean algorithm completed :')
+    print(f'LCM = {LCM}s, GCD = {GCD}s')
+    print(f'{K_big} x {num_big_original}s = {K_small} x {num_small_original}s = {LCM}s \n')
+    print(f'Bezout analysis completed: ')
+    print(f'{start_equation["mul_big"]} x {num_big_original} + {start_equation["mul_small"]} x {num_small_original} = {GCD} or {start_equation["mul_big"]*num_big_original}s + {start_equation["mul_small"]*num_small_original}s = {GCD}s')
+    
+    new_big_mul = 0
+    new_small_mul = 0
+    if start_equation["mul_big"] > 0:
+        new_big_mul  = start_equation["mul_big"] - K_big
+        new_small_mul = start_equation["mul_small"] + K_small
+    else:
+        new_big_mul  = start_equation["mul_big"] + K_big
+        new_small_mul = start_equation["mul_small"] - K_small
+    print(f'{new_big_mul} x {num_big_original} + {new_small_mul} x {num_small_original} = {GCD} or {new_big_mul*num_big_original}s + {new_small_mul*num_small_original}s = {GCD}s\n')
+    
+    
+    # Find first time a GCF step occurs
+    significant_time_1a = abs(start_equation["mul_big"]*num_big_original)
+    significant_time_1b = abs(start_equation["mul_small"]*num_small_original)
+    
+    significant_time_2a = abs(new_big_mul*num_big_original)
+    significant_time_2b = abs(new_small_mul*num_small_original)
+    
+    
+    print(f'Case 1 of a GCF time-step happens from {min(significant_time_1a,significant_time_1b)}s to {max(significant_time_1a,significant_time_1b)}s')
+    print(f'Case 2 of a GCF time-step happens from {min(significant_time_2a,significant_time_2b)}s to {max(significant_time_2a,significant_time_2b)}s')
+        
+    # Find last event before regular GCF time-steps
+    negative_multiple_1 = 0
+    number_1 = 0
+    
+    negative_multiple_2 = 0
+    number_2 = 0 
+    
+    if start_equation["mul_big"] < 0 :
+        negative_multiple_1 = abs(start_equation["mul_big"])-1
+        number_1 = num_big_original
+        
+        negative_multiple_2 = abs(new_small_mul)-1
+        number_2 = num_small_original
+    else:
+        negative_multiple_1 = abs(start_equation["mul_small"])-1
+        number_1 = num_small_original
+        
+        negative_multiple_2 = abs(new_big_mul)-1
+        number_2 = num_big_original
+    
+    time_before_regular_GCF = negative_multiple_1*number_1 + negative_multiple_2*number_2
+    
+    # Find last event before consistent multiplicative merging/ when steady state commences.
+    time_before_regular_Steady_State = LCM-num_small_original
+    
+    print(f'\nThe last event before regular GCF time-steps is at {time_before_regular_GCF}s')
+    print(f"The last event before Steady State operation is at {LCM-num_small_original}s")
+    
+    return time_before_regular_GCF, time_before_regular_Steady_State
 
 def delete_alternating(arr):
     
