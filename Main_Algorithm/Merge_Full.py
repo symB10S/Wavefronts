@@ -1,8 +1,7 @@
 from decimal import *
 from collections import deque
 
-ctx = getcontext()
-ctx.traps[FloatOperation] = True
+getcontext().traps[FloatOperation] = True
 
 ## CALCULATED VARIABLES ##
 def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
