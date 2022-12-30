@@ -642,7 +642,6 @@ def multiplicative_merging(arr,Inductor_LCM_Factor ,Capacitor_LCM_Factor ,number
 def About_Network(Data: Data_Input_Storage):
     print(f"\nInformation about this network : \n")
 
-
     print(f"\n- The Inductor -")
     print(f"{'Inductor Inductance Per Length :':<40}{Data.Inductor_Inductance_Per_Length}")
     print(f"{'Inductor Capacitance Per Length :':<40}{Data.Inductor_Capacitance_Per_Length}")
@@ -912,10 +911,6 @@ def Process_Wavefronts(show_about = True, **input_values):
 
         magnitude_voltage = Decimal()
         magnitude_current = Decimal()
-
-        excitation_event_type = Decimal()
-        excitation_event_number = Decimal()
-        
         def __add__(self, Wavefront_add ):
             
             if(Wavefront_add == 0):
@@ -944,8 +939,6 @@ def Process_Wavefronts(show_about = True, **input_values):
             print(f"{'Time End :':<35}{self.time_end}")
             print(f"{'Voltage Magnitude :':<35}{self.magnitude_voltage}")
             print(f"{'Current Magnitude :':<35}{self.magnitude_current}")
-            print(f"{'Excitation Type :':<35}{'HIGH' if self.excitation_event_type else 'LOW' }")
-            print(f"{'Excitation Number :':<35}{self.excitation_event_number}")
         
         def Time_at_position(self,position):
             x = Decimal(position)
@@ -968,7 +961,7 @@ def Process_Wavefronts(show_about = True, **input_values):
 
     class Wavefront_Source( Wavefront ):
 
-        def __init__(self,magnitude,time_start,time_end,excitation_number):
+        def __init__(self,magnitude,time_start,time_end):
             
             self.length = Decimal(0)
 
@@ -980,13 +973,6 @@ def Process_Wavefronts(show_about = True, **input_values):
 
             self.magnitude_voltage = Decimal(magnitude)
             self.magnitude_current = Decimal(0)
-
-            if magnitude > 0:
-                self.excitation_event_type = True
-            else :
-                self.excitation_event_type = False
-
-            self.excitation_event_number = excitation_number
 
         def Generate(self, Wavefront_Storage : list):
             Wavefront_Storage.append(Wavefront_Inductive(self,False))
@@ -1032,9 +1018,6 @@ def Process_Wavefronts(show_about = True, **input_values):
 
                 self.magnitude_voltage = Wavefront_Parent.magnitude_voltage
                 self.magnitude_current = - Wavefront_Parent.magnitude_current
-
-            self.excitation_event_type = Wavefront_Parent.excitation_event_type
-            self.excitation_event_number = Wavefront_Parent.excitation_event_number
 
         def Generate(self, Wavefront_Storage):
             if self.position_end == 0:
@@ -1094,9 +1077,6 @@ def Process_Wavefronts(show_about = True, **input_values):
                 self.magnitude_voltage = - Wavefront_Parent.magnitude_voltage
                 self.magnitude_current = Wavefront_Parent.magnitude_current
 
-            self.excitation_event_type = Wavefront_Parent.excitation_event_type
-            self.excitation_event_number = Wavefront_Parent.excitation_event_number
-
         def Generate(self, Wavefront_Storage):
             if self.position_end == 0:
                 Wavefront_Storage.append(Wavefront_Inductive(self,True))
@@ -1123,8 +1103,8 @@ def Process_Wavefronts(show_about = True, **input_values):
     Storage_Away : Wavefront = deque()
     Storage_Return : Wavefront = deque()
     
-    Wavefronts_Away = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Wavefront_Source(0,0,0,0))
-    Wavefronts_Return = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Wavefront_Source(0,0,0,0))
+    Wavefronts_Away = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Wavefront_Source(0,0,0))
+    Wavefronts_Return = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Wavefront_Source(0,0,0))
     
     Cartesian_Time = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Decimal('0'))
     
@@ -1134,15 +1114,15 @@ def Process_Wavefronts(show_about = True, **input_values):
     Voltage_Interconnect_Capacitor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Decimal('0'))
     Current_Interconnect_Capacitor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Decimal('0'))
     
-    Wavefronts_Sending_Inductor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
-    Wavefronts_Sending_Capacitor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
+    Wavefronts_Sending_Inductor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Sending_Capacitor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     
-    Wavefronts_Returning_Inductor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
-    Wavefronts_Returning_Capacitor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0,0))
+    Wavefronts_Returning_Inductor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Returning_Capacitor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     
     ## LAYER 0
     # Generate Intial Away Waves
-    Storage_Voltage_Active.append(Wavefront_Source(data_input_storage.Voltage_Souce_Magnitude,0,0,0))
+    Storage_Voltage_Active.append(Wavefront_Source(data_input_storage.Voltage_Souce_Magnitude,0,0))
     temp_wavefront = Storage_Voltage_Active.popleft()
     
     temp_wavefront.Generate(Storage_Away)
