@@ -1,4 +1,6 @@
 import subprocess
+import ltspy3
+import matplotlib.pyplot as plt
 
 LTSpice_exe_Path = 'C:\Program Files\LTC\LTspiceXVII\XVIIx64.exe'
 Spice_File_Template = 'LC_Spice_Input.txt'
@@ -21,7 +23,7 @@ default_Spice_parameters ={
 # Alterations to Default Values
 new_Spice_values = {
     'L_impedance':'50',
-    'Simulation_stop_time':'100'}
+    'Simulation_stop_time':'10 00'}
 
 altered_Spice_parameters = default_Spice_parameters.copy()
 
@@ -46,3 +48,37 @@ with open(Spice_File_Altered,'wb') as file:
     
     
 subprocess.call(LTSpice_exe_Path + ' -b '+Spice_File_Altered)
+
+data_out = ltspy3.SimData('LC_Spice_Altered.raw')
+
+names = data_out.variables
+values = data_out.values
+
+# "time"
+time = values[names.index(b"time")]
+
+# "V(l_node_circuit)" - "V(c_node_circuit)"
+Inductor_Voltage_Circuit = values[names.index(b"V(l_node_circuit)")] - values[names.index(b"V(c_node_circuit)")] 
+# "I(Inductor_circuit)"
+Inductor_Current_Circuit = values[names.index(b"I(Inductor_circuit)")]
+
+# "V(c_node_circuit)"
+Capacitor_Voltage_Circuit = values[names.index(b"V(c_node_circuit)")]
+# "I(Capacitor_circuit)"
+Capacitor_Current_Circuit = values[names.index(b"I(Capacitor_circuit)")]
+
+# "V(l_node_tx)" - "V(c_node_tx)"
+Inductor_Voltage_Tx = values[names.index(b"V(l_node_tx)")] - values[names.index(b"V(c_node_tx)")] 
+# "Ia(Inductor_tx)"
+Inductor_Current_Tx = values[names.index(b"Ia(Inductor_tx)")]
+
+# "V(c_node_tx)"
+Capacitor_Voltage_Tx = values[names.index(b"V(c_node_tx)")]
+# "Ia(Capacitor_tx)"
+Capacitor_Current_Tx = values[names.index(b"Ia(Capacitor_tx)")]
+
+
+plt.figure(1)
+plt.plot(time,Capacitor_Current_Tx)
+plt.plot(time,Inductor_Current_Circuit)
+plt.show()
