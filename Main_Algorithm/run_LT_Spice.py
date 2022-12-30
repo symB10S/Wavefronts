@@ -1,45 +1,48 @@
 import subprocess
-from copy import copy
-from Merge_Cartesian import handle_default_kwargs
 
 LTSpice_exe_Path = 'C:\Program Files\LTC\LTspiceXVII\XVIIx64.exe'
-Original_File = 'LC_Spice_Input.txt'
-
+Spice_File_Template = 'LC_Spice_Input.txt'
+Spice_File_Altered = 'LC_Spice_Altered.txt'
 
 # Default Values found in provided .txt file
-default_Spice_strings ={
-    'L_impedance': 'ZL=100',
-    'L_time': 'TL=1',
-    'C_impedance': 'ZC=1',
-    'C_time': 'TC=1',
-    'number_periods': 'periods=1',
-    'L_tot': 'Ltot=ZL*TL/2',
-    'C_tot': 'Ctot=TC/(2*ZC)',
-    'Stop_time': 'Stop_Time=2*periods*pi*sqrt(Ltot*Ctot)',
-    'Step_size': 'Step_Size=0.01',
-    'input_voltage': 'Vin=1'
+default_Spice_parameters ={
+    'L_impedance': '100',
+    'L_time': '1',
+    'C_impedance': '1',
+    'C_time': '1',
+    'number_periods': '1',
+    'L_tot': 'L_impedance*L_time/2 ',
+    'C_tot': 'C_time/(2*C_impedance)',
+    'Simulation_stop_time': '2*number_periods*pi*sqrt(L_tot*C_tot)',
+    'Step_size': '0.01',
+    'V_source': '1'
 }
 
 # Alterations to Default Values
 new_Spice_values = {
     'L_impedance':'50',
-    'Stop_time':'100'}
+    'Simulation_stop_time':'100'}
 
-altered_Spice_strings = copy(default_Spice_strings)
+altered_Spice_parameters = default_Spice_parameters.copy()
 
-for new_key,new_value in new_Spice_values.items():
-    if(default_Spice_strings.get(new_key) is None):
-        # new value cannot be assinged
-        raise ValueError(f"No setting found for {new_key}, here are the possible options: \n{default_Spice_strings}")
-    else:
-        # get default values and split to keep original name
-        default_string = default_Spice_strings[new_key]
-        parameter_name, parameter_default_value = default_string.split('=')
-        
-        new_string = parameter_name + '=' + new_value
-        altered_Spice_strings[new_key] = new_string
+with open(Spice_File_Template, 'rb') as file:
+    Data_Template = file.read()
+    
+    for new_key,new_value in new_Spice_values.items():
+        if(default_Spice_parameters.get(new_key) is None):
+            # new value cannot be found
+            raise ValueError(f"No setting found for {new_key}, here are the possible options: \n{default_Spice_parameters}")
+        else:
+            # assign new value
+            altered_Spice_parameters[new_key] = new_value
+            # search string -> 'key=value' to match whole case
+            Spice_search_string = new_key+'='+default_Spice_parameters[new_key]
+            Spice_new_string = new_key+'='+new_value
+            
+            Data_Template = Data_Template.replace(Spice_search_string.encode('ascii'),Spice_new_string.encode('ascii'))
 
-print(default_Spice_strings)
-print('\n')
-print(altered_Spice_strings)
-# subprocess.call(LTSpice_exe_Path + ' -b LC_Spice_Input.txt')
+with open(Spice_File_Altered,'wb') as file:
+    file.write(Data_Template)
+    
+    
+subprocess.call(LTSpice_exe_Path + ' -b '+Spice_File_Altered)
