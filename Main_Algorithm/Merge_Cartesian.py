@@ -1418,7 +1418,7 @@ def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str,
     ax[0].plot(row_a)
     ax[1].plot(row_b)
     
-    plot_fanout_seismic(arr,ax[2],"Fanout",show_colour_bar,contrast)
+    plot_fanout_seismic(arr,ax[2],"Fanout",show_colour_bar,contrast,0)
     ax[2].plot([row_number,row_number],[0,arr.shape[0]],'m--')
     ax[2].plot([0,arr.shape[0]],[row_number,row_number],'c--')
 
