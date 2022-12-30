@@ -1467,7 +1467,7 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
             ax.set_title("Capacitor current at Interconnect")
             ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Capacitor),where='post')
         else:
-            raise ValueError("Incorrect plotting choice")
+            raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
     else:
         if(which_string.lower() == allowed_strings[0] ):
             ax.set_title("Inductor voltage change at Interconnect")
@@ -1482,7 +1482,7 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
             ax.set_title("Capacitor current change at Interconnect")
             ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Capacitor,where='post')
         else:
-            raise ValueError("Incorrect plotting choice")
+            raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
         
 def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_output_ordered : Data_Output_Storage_Ordered, which_string : str):
     
