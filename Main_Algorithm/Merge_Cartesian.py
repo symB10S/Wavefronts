@@ -3,18 +3,43 @@ from collections import deque
 import numpy as np
 import math
 import copy
-from dataclasses import dataclass, fields
-import matplotlib.cm as cm
+from dataclasses import dataclass
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, EngFormatter)
 from matplotlib.animation import FFMpegWriter
 plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Jonathan\\Documents\\Academic\\Masters\\Simulator\\Git\\Main_Algorithm\\ffmpeg\\bin\\ffmpeg.exe'
+
 import ipywidgets as widgets
 from IPython.display import display
 
 
 getcontext().traps[FloatOperation] = True
+
+def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
+    """handles default values for key-word arguments, changes defaults to given value.
+
+    :param input_kwargs: kwargs given by user.
+    :type input_kwargs: dict
+    :param default_kwargs: default values that kwargs must be one of.
+    :type default_kwargs: dict
+    :raises Exception: ValueError if a kwarg is provided that is not one of the default values.
+    :return: returns a modfied version of the default_kwargs that includes input changes
+    :rtype: dict
+    """
+    #Set Kwargs
+    for key, item in input_kwargs.items():
+        if(default_kwargs.get(key) is None):
+            raise ValueError(f"No setting found for {key}, here are the possible options: \n{default_kwargs}")
+        else:
+            default_kwargs[key] = item
+            
+    return default_kwargs
+
+default_input_values : dict = dict ([
+    ('L_impedance','100'),('L_time' ,'1'),('L_length','1')
+])
 
 # Data Storage Classes
 @dataclass
@@ -83,8 +108,6 @@ class Data_Input_Storage :
     Capacitor_LCM_Factor : int
     Inductor_LCM_Factor : int
     is_Higher_Merging : bool
-    a : int
-    b : int
 
     Number_of_Wavefronts : int
     Number_of_Layers : int
@@ -142,6 +165,16 @@ class Data_Output_Storage:
 @dataclass
 class Data_Output_Storage_Ordered(Data_Output_Storage):
     Indexes : np.ndarray
+    
+def get_voltage(wavefront):
+    return wavefront.magnitude_voltage
+
+get_voltage_array = np.vectorize(get_voltage)
+
+def get_current(wavefront):
+    return wavefront.magnitude_current
+
+get_current_array = np.vectorize(get_current)
 
 def get_image_array(arr):
     image_arr = np.full((len(arr),1),Decimal('0'))
@@ -416,8 +449,6 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     Inductor_LCM_Factor = int(Factor_Dict['KL'])
     Capacitor_LCM_Factor = int(Factor_Dict['KC'])
     
-    a = int(Inductor_LCM_Factor)
-    b = int(Capacitor_LCM_Factor)
     
     if(Factor_Dict['LCM'] > Simulation_Stop_Time):
         is_Higher_Merging = False
@@ -545,16 +576,14 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
                                 ,Capacitor_LCM_Factor
                                 ,Inductor_LCM_Factor
                                 ,is_Higher_Merging
-                                ,a 
-                                ,b
                                 ,Number_of_Wavefronts
                                 ,Number_of_Layers)
         
-def multiplicative_merge_cycle(arr,a_factor,b_factor):
+def multiplicative_merge_cycle(arr,Inductor_LCM_Factor,Capacitor_LCM_Factor):
     
-    def make_upper_and_lower(arr,b_factor):
-        upper = arr[:,0:b_factor]
-        lower = arr[:,b_factor:]
+    def make_upper_and_lower(arr,Capacitor_LCM_Factor):
+        upper = arr[:,0:Capacitor_LCM_Factor]
+        lower = arr[:,Capacitor_LCM_Factor:]
         
         padding_for_upper = np.full(lower.shape,0,dtype=lower.dtype)
         padding_for_lower = np.full(upper.shape,0,dtype=upper.dtype)
@@ -577,21 +606,21 @@ def multiplicative_merge_cycle(arr,a_factor,b_factor):
         
         return rolled_arr
     
-    upper_arr,lower_arr = make_upper_and_lower(arr,b_factor)
-    arr_merge_ready = shif_and_pad_array_x(lower_arr,a_factor)
+    upper_arr,lower_arr = make_upper_and_lower(arr,Capacitor_LCM_Factor)
+    arr_merge_ready = shif_and_pad_array_x(lower_arr,Inductor_LCM_Factor)
     
     arr_merged = upper_arr + arr_merge_ready
     
     return arr_merged
 
-def multiplicative_merging(arr,a ,b ,number_of_layers):
+def multiplicative_merging(arr,Inductor_LCM_Factor ,Capacitor_LCM_Factor ,number_of_layers):
     
-    number_merge_cycles = math.ceil(number_of_layers/b) + 1
+    number_merge_cycles = math.ceil(number_of_layers/Capacitor_LCM_Factor) + 1
     
     for _ in range (0,number_merge_cycles):
-        arr = multiplicative_merge_cycle(arr,a,b)
+        arr = multiplicative_merge_cycle(arr,Inductor_LCM_Factor,Capacitor_LCM_Factor)
 
-    return arr[:,0:b]
+    return arr[:,0:Capacitor_LCM_Factor]
 
 def About_Network(Data: Data_Input_Storage):
     print(f"\nInformation about this network : \n")
@@ -604,7 +633,7 @@ def About_Network(Data: Data_Input_Storage):
     print(f"{'Inductor Total Inductance :':<40}{Data.Inductor_Total_Inductance}")
     print(f"{'Inductor Total Capacitance :':<40}{Data.Inductor_Total_Capacitance}")
     print(f"{'Inductor Velocity :':<40}{Data.Inductor_Velocity}")
-    print(f"{'Inductor Time Delay :':<40}{Data.Inductor_Time}")
+    print(f"{'Inductor One Way Time Delay :':<40}{Data.Inductor_Time}")
     print(f"{'Inductor Impedance :':<40}{Data.Inductor_Impedance}")
     
 
@@ -615,7 +644,7 @@ def About_Network(Data: Data_Input_Storage):
     print(f"{'Capacitor Total Inductance :':<40}{Data.Capacitor_Total_Inductance}")
     print(f"{'Capacitor Total Capacitance :':<40}{Data.Capacitor_Total_Capacitance}")
     print(f"{'Capacitor Velocity :':<40}{Data.Capacitor_Velocity}")
-    print(f"{'Capacitor Time Delay :':<40}{Data.Capacitor_Time}")
+    print(f"{'Capacitor One Way Time Delay :':<40}{Data.Capacitor_Time}")
     print(f"{'Capacitor Impedance :':<40}{Data.Capacitor_Impedance}")
     
     print(f"\n- The Time -")
@@ -623,10 +652,10 @@ def About_Network(Data: Data_Input_Storage):
     print(f"{'Simulation Stop Time :':<40}{Data.Simulation_Stop_Time}")
     print(f"{'Number of Wavefronts :':<40}{Data.Number_of_Wavefronts}")
     print(f"{'Number of Layers :':<40}{Data.Number_of_Layers}")
-    print(f"{'A :':<40}{Data.Inductor_Time}")
-    print(f"{'B :':<40}{Data.Capacitor_Time}")
-    print(f"{'a :':<40}{Data.Inductor_LCM_Factor}")
-    print(f"{'b :':<40}{Data.Capacitor_LCM_Factor}")
+    print(f"{'Inductor Return Time Delay :':<40}{2*Data.Inductor_Time}")
+    print(f"{'Inductor LCM Factor :':<40}{Data.Inductor_LCM_Factor}")
+    print(f"{'Capacitor Return Time Delay :':<40}{2*Data.Capacitor_Time}")
+    print(f"{'Capacitor LCM Factor :':<40}{Data.Capacitor_LCM_Factor}")
     print(f"{'LCM :':<40}{Data.LCM}")
     print(f"{'GCD :':<40}{Data.GCD}")
     print(f"{'Higher Merging? :':<40}{Data.is_Higher_Merging}")
@@ -642,19 +671,19 @@ def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Ou
     Data_Outputs = copy.deepcopy(Data_Outputs)
     
     if(Data_Inputs.is_Higher_Merging):
-        Voltage_Interconnect_Inductor_merged = multiplicative_merging(Data_Outputs.Voltage_Interconnect_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
-        Current_Interconnect_Inductor_merged = multiplicative_merging(Data_Outputs.Current_Interconnect_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        Voltage_Interconnect_Inductor_merged = multiplicative_merging(Data_Outputs.Voltage_Interconnect_Inductor,Data_Inputs.Inductor_LCM_Factor,Data_Inputs.Capacitor_LCM_Factor,Data_Inputs.Number_of_Layers)
+        Current_Interconnect_Inductor_merged = multiplicative_merging(Data_Outputs.Current_Interconnect_Inductor,Data_Inputs.Inductor_LCM_Factor,Data_Inputs.Capacitor_LCM_Factor,Data_Inputs.Number_of_Layers)
         
-        Voltage_Interconnect_Capacitor_merged = multiplicative_merging(Data_Outputs.Voltage_Interconnect_Capacitor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
-        Current_Interconnect_Capacitor_merged = multiplicative_merging(Data_Outputs.Current_Interconnect_Capacitor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        Voltage_Interconnect_Capacitor_merged = multiplicative_merging(Data_Outputs.Voltage_Interconnect_Capacitor,Data_Inputs.Inductor_LCM_Factor,Data_Inputs.Capacitor_LCM_Factor,Data_Inputs.Number_of_Layers)
+        Current_Interconnect_Capacitor_merged = multiplicative_merging(Data_Outputs.Current_Interconnect_Capacitor,Data_Inputs.Inductor_LCM_Factor,Data_Inputs.Capacitor_LCM_Factor,Data_Inputs.Number_of_Layers)
         
-        Wavefronts_Sending_Inductor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Sending_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
-        Wavefronts_Sending_Capacitor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Sending_Capacitor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        Wavefronts_Sending_Inductor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Sending_Inductor,Data_Inputs.Inductor_LCM_Factor,Data_Inputs.Capacitor_LCM_Factor,Data_Inputs.Number_of_Layers)
+        Wavefronts_Sending_Capacitor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Sending_Capacitor,Data_Inputs.Inductor_LCM_Factor,Data_Inputs.Capacitor_LCM_Factor,Data_Inputs.Number_of_Layers)
 
-        Wavefronts_Returning_Inductor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Returning_Inductor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
-        Wavefronts_Returning_Capacitor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Returning_Capacitor,Data_Inputs.a,Data_Inputs.b,Data_Inputs.Number_of_Layers)
+        Wavefronts_Returning_Inductor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Returning_Inductor,Data_Inputs.Inductor_LCM_Factor,Data_Inputs.Capacitor_LCM_Factor,Data_Inputs.Number_of_Layers)
+        Wavefronts_Returning_Capacitor_merged = multiplicative_merging(Data_Outputs.Wavefronts_Returning_Capacitor,Data_Inputs.Inductor_LCM_Factor,Data_Inputs.Capacitor_LCM_Factor,Data_Inputs.Number_of_Layers)
         
-        Time_cut = Data_Outputs.Time[:,0:Data_Inputs.b]
+        Time_cut = Data_Outputs.Time[:,0:Data_Inputs.Capacitor_LCM_Factor]
     else:
         Voltage_Interconnect_Inductor_merged = Data_Outputs.Voltage_Interconnect_Inductor
         Current_Interconnect_Inductor_merged = Data_Outputs.Current_Interconnect_Inductor
@@ -1320,15 +1349,6 @@ def Full_Cycle(Inductor_List, Capacitor_List, Circuit_List, show_about = True):
 
 ## Plotting
 
-def get_voltage(wavefront):
-    return wavefront.magnitude_voltage
-
-get_voltage_array = np.vectorize(get_voltage)
-
-def get_current(wavefront):
-    return wavefront.magnitude_current
-
-get_current_array = np.vectorize(get_current)
 
 def clear_subplot(axs):
     for ax in axs:
@@ -1353,7 +1373,7 @@ def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour
         max_boundary = max(max_boundary, min_boundary)
     
     ax.set_title(title)
-    c = ax.imshow(np.pad(arr.astype(float),(padwidth,padwidth)),cmap=cm.seismic,vmax =max_boundary, vmin = - max_boundary)
+    c = ax.imshow(np.pad(arr.astype(float),(padwidth,padwidth)),cmap= mpl.cm.seismic,vmax =max_boundary, vmin = - max_boundary)
     
     if(show_colour_bar):
         cb = ax.get_figure().colorbar(c,ax=ax)
@@ -1364,7 +1384,7 @@ def plot_fanout_colour(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_
     min_boundary = np.min(arr.astype(float))  
     
     ax.set_title(title)
-    cb = ax.imshow(arr.astype(float),cmap=cm.jet,vmax =max_boundary, vmin =min_boundary)
+    cb = ax.imshow(arr.astype(float),cmap=mpl.cm.jet,vmax =max_boundary, vmin =min_boundary)
     
     if(show_colour_bar):
         ax.get_figure().colorbar(cb,ax=ax)
@@ -1433,7 +1453,6 @@ def plot_fanout_wavefronts_all(data_output: Data_Output_Storage, is_sending : bo
         
     return fig, ax
     
-
 def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = False): 
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
     
@@ -2161,7 +2180,7 @@ def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output
         
     boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
     
-    colour_map = cm.seismic
+    colour_map = mpl.cm.seismic
     norm = mpl.colors.Normalize(vmin=-boundary, vmax=boundary)
     
     for wave in Data_Output_Ordered.Wavefronts_Sending_Capacitor:
@@ -2325,7 +2344,7 @@ def plot_refelction_diagram_sending(Data_Input: Data_Input_Storage, Data_Output_
         
     boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
     
-    colour_map = cm.seismic
+    colour_map = mpl.cm.seismic
     norm = mpl.colors.Normalize(vmin=-boundary, vmax=boundary)
     
     for wave in Data_Output_Ordered.Wavefronts_Sending_Capacitor:
@@ -2489,7 +2508,7 @@ def plot_refelction_diagram_returning(Data_Input: Data_Input_Storage, Data_Outpu
         
     boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
     
-    colour_map = cm.seismic
+    colour_map = mpl.cm.seismic
     norm = mpl.colors.Normalize(vmin=-boundary, vmax=boundary)
     
     for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
@@ -2663,7 +2682,7 @@ def plot_refelction_diagram_one_tx_s_and_r(Data_Input: Data_Input_Storage, Data_
         
     boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
     
-    colour_map = cm.seismic
+    colour_map = mpl.cm.seismic
     norm = mpl.colors.Normalize(vmin=-boundary, vmax=boundary)
     
     for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
@@ -2851,7 +2870,7 @@ def plot_refelction_diagram_one_tx_s_or_r(Data_Input: Data_Input_Storage, Data_O
         
     boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
     
-    colour_map = cm.seismic
+    colour_map = mpl.cm.seismic
     norm = mpl.colors.Normalize(vmin=-boundary, vmax=boundary)
     
     for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
