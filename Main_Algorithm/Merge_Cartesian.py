@@ -14,8 +14,14 @@ plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Jonathan\\Documents\\Academi
 import ipywidgets as widgets
 from IPython.display import display
 
-
 getcontext().traps[FloatOperation] = True
+
+default_input_values : dict = dict ([
+    ('L_impedance','100'),('L_time' ,'1'),('L_length','1'),
+    ('C_impedance','1'),  ('C_time' ,'1'),('C_length','1'),
+    ('V_source','1'),('number_periods','1'),('Load_impedance','inf'),
+    ('Simulation_stop_time','0')
+])
 
 def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
     """handles default values for key-word arguments, changes defaults to given value.
@@ -36,10 +42,6 @@ def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
             default_kwargs[key] = item
             
     return default_kwargs
-
-default_input_values : dict = dict ([
-    ('L_impedance','100'),('L_time' ,'1'),('L_length','1')
-])
 
 # Data Storage Classes
 @dataclass
@@ -403,12 +405,23 @@ def Steady_State_Analysis(TL:Decimal,TC:Decimal):
     
     return time_before_regular_GCF, time_before_regular_Steady_State
 
-def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
+def Calculate_Variables(**input_values):
+    
+    altered_input_values = copy.copy(default_input_values)
+    altered_input_values = handle_default_kwargs(input_values,altered_input_values)
+    
+    Is_Buck = True
+    if altered_input_values['Load_impedance'] == 'inf':
+        Is_Buck = False
+    
+    Custom_stop_time = True
+    if altered_input_values['Simulation_stop_time'] == '0':
+        Custom_stop_time = False
     
     # INDUCTOR
-    Inductor_Impedance = Decimal(Inductor_List[0])
-    Inductor_Time = Decimal(Inductor_List[1])/2
-    Inductor_Length = Decimal(Inductor_List[2])
+    Inductor_Impedance = Decimal(altered_input_values['L_impedance'])
+    Inductor_Time = Decimal(altered_input_values['L_time'])/2
+    Inductor_Length = Decimal(altered_input_values['L_length'])
     
     Inductor_Velocity = Inductor_Length/Inductor_Time
     Inductor_Inductance_Per_Length =  Inductor_Time*Inductor_Impedance
@@ -417,9 +430,9 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     Inductor_Total_Capacitance = Inductor_Capacitance_Per_Length * Inductor_Length
 
     # CAPACITOR
-    Capacitor_Impedance = Decimal(Capacitor_List[0])
-    Capacitor_Time = Decimal(Capacitor_List[1])/2
-    Capacitor_Length = Decimal(Capacitor_List[2])
+    Capacitor_Impedance = Decimal(altered_input_values['C_impedance'])
+    Capacitor_Time = Decimal(altered_input_values['C_time'])/2
+    Capacitor_Length = Decimal(altered_input_values['C_length'])
     
     Capacitor_Velocity = Capacitor_Length/Capacitor_Time
     Capacitor_Inductance_Per_Length =  Capacitor_Time*Capacitor_Impedance
@@ -428,12 +441,16 @@ def Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List):
     Capacitor_Total_Capacitance = Capacitor_Capacitance_Per_Length * Capacitor_Length
 
     # CIRCUIT
-    Voltage_Souce_Magnitude = Decimal(Circuit_List[0])
-    Number_Periods = Decimal(Circuit_List[1])
-    Is_Buck = Circuit_List[2]
-    Load_Resistance = Decimal(Circuit_List[3])
-
-    Simulation_Stop_Time = Number_Periods*Decimal('6.28318530718')*(Decimal.sqrt(Capacitor_Total_Capacitance*Inductor_Total_Inductance))
+    Voltage_Souce_Magnitude = Decimal(altered_input_values['V_source'])
+    Number_Periods = Decimal(altered_input_values['number_periods'])
+    Load_Resistance = Decimal(altered_input_values['Load_impedance'])
+    
+    Simulation_Stop_Time = Decimal()
+    if(Custom_stop_time):
+        Simulation_Stop_Time = Decimal(altered_input_values['Simulation_stop_time'])
+        Number_Periods = Simulation_Stop_Time/(Decimal('6.28318530718')*(Decimal.sqrt(Capacitor_Total_Capacitance*Inductor_Total_Inductance)))
+    else:
+        Simulation_Stop_Time = Number_Periods*Decimal('6.28318530718')*(Decimal.sqrt(Capacitor_Total_Capacitance*Inductor_Total_Inductance))
     
     if (Capacitor_Time < Inductor_Time):
         Number_of_Layers = math.ceil(Simulation_Stop_Time/(Capacitor_Time*2))+1
@@ -790,7 +807,7 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
 
     Marked[0,0] = 1
 
-    while latest_time <= Data_Input.Simulation_Stop_Time:
+    while latest_time < Data_Input.Simulation_Stop_Time:
         
         # store options at location
         store_options(Data_Output_Merged.Time,x_index,y_index,option_time,option_indexes)
@@ -853,9 +870,9 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
         out_indexes
     )        
 
-def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List, show_about = True):
+def Process_Wavefronts(show_about = True, **input_values):
 
-    data_input_storage = Calculate_Variables(Inductor_List, Capacitor_List, Circuit_List)
+    data_input_storage = Calculate_Variables(**input_values)
     if show_about:
         About_Network(data_input_storage)
     
@@ -1339,8 +1356,8 @@ def Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List, show_about =
         data_output_storage
     ) 
 
-def Full_Cycle(Inductor_List, Capacitor_List, Circuit_List, show_about = True):
-    data_input, data_output = Process_Wavefronts(Inductor_List, Capacitor_List, Circuit_List,show_about)
+def Full_Cycle(show_about = True, **input_values):
+    data_input, data_output = Process_Wavefronts(show_about, **input_values)
     data_output_merged = Higher_Order_Merging(data_input,data_output)
     data_output_ordered = Order_Data_Output_Merged(data_input,data_output_merged)
     

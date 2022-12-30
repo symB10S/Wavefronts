@@ -1,0 +1,11 @@
+* C:\Users\Jonathan\Documents\Academic\Masters\Simulations\LTSpice\LC_2_Only.asc
+V1 L_Node_Circuit 0 {Vin}
+L§Inductor_Circuit L_Node_Circuit C_Node_Circuit {Ltot}
+Capacitor_Circuit C_Node_Circuit 0 {Ctot}
+T§Inductor_Tx L_Node_Tx C_Node_Tx N001 N001 Td={TL/2} Z0={ZL}
+T§Capacitor_Tx C_Node_Tx 0 N002 N003 Td={TC/2} Z0={ZC}
+V2 L_Node_Tx 0 {Vin}
+.tran 0 {Stop_Time} 0 {Step_Size} uic
+.param ZL=100 TL=1 ZC=1 TC=1 periods=1 Ltot=ZL*TL/2 Ctot=TC/(2*ZC) Stop_Time=2*periods*pi*sqrt(Ltot*Ctot) Step_Size=0.01 Vin=1
+.backanno
+.end
