@@ -158,7 +158,10 @@ class Data_Input_Storage :
             
             # Make input dictionary compatible with SPICE simulation inputs
             self.new_input_values = provided_input_values.copy()
-            del self.new_input_values['show_about']
+            if(self.new_input_values.get('show_about') is None):
+                pass
+            else:
+                del self.new_input_values['show_about']
             
             self.Is_Buck = True
             if self.input_values['Load_impedance'] == 'inf':
@@ -388,11 +391,18 @@ class Data_Output_Storage:
         
         else:
             raise ValueError("Incorrect plotting choice,\'"+which_string+"\' is not an option. Options are : "+ str(allowed_strings))
+
         
 @dataclass
 class Data_Output_Storage_Ordered(Data_Output_Storage):
     Indexes : np.ndarray
     
+def get_array_absolute_maximum(array):
+    max_boundary = abs(np.max(array.astype(float)))
+    min_boundary = abs(np.min(array.astype(float)))
+    
+    return max(max_boundary, min_boundary)
+
 def get_voltage(wavefront):
     return wavefront.magnitude_voltage
 
@@ -1324,12 +1334,10 @@ def Full_Cycle(**input_values):
     data_output_merged = Higher_Order_Merging(data_input,data_output)
     data_output_ordered = Order_Data_Output_Merged(data_input,data_output_merged)
     
-    
     return data_input,data_output,data_output_merged,data_output_ordered
 
+
 ## Plotting
-
-
 def clear_subplot(axs):
     for ax in axs:
         ax.cla()
