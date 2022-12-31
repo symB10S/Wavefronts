@@ -20,7 +20,7 @@ default_input_values : dict = dict ([
     ('L_impedance','100'),('L_time' ,'1'),('L_length','1'),
     ('C_impedance','1'),  ('C_time' ,'1'),('C_length','1'),
     ('V_source','1'),('number_periods','1'),('Load_impedance','inf'),
-    ('Simulation_stop_time','0')
+    ('Simulation_stop_time','0'),('show_about',True)
 ])
 
 def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
@@ -43,76 +43,196 @@ def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
             
     return default_kwargs
 
-# Data Storage Classes
-@dataclass
 class Data_Input_Storage :
-    Number_Periods  : Decimal
-    Simulation_Stop_Time  : Decimal
-    Is_Buck : bool
+    
+    def __init__(self,**provided_input_values):
 
-    Voltage_Souce_Magnitude  : Decimal
-    Load_Resistance  : Decimal
+            # create a  new dictionary with altered default values were relevant
+            self.input_values = default_input_values.copy()
+            self.input_values = handle_default_kwargs(provided_input_values,self.input_values)
+            
+            # Make input dictionary compatible with SPICE simulation inputs
+            self.new_input_values = provided_input_values.copy()
+            del self.new_input_values['show_about']
+            
+            self.Is_Buck = True
+            if self.input_values['Load_impedance'] == 'inf':
+                self.Is_Buck = False
+            
+            self.Custom_stop_time = True
+            if self.input_values['Simulation_stop_time'] == '0':
+                self.Custom_stop_time = False
+            
+            # INDUCTOR
+            self.Inductor_Impedance = Decimal(self.input_values['L_impedance'])
+            self.Inductor_Time = Decimal(self.input_values['L_time'])/2
+            self.Inductor_Length = Decimal(self.input_values['L_length'])
+            
+            self.Inductor_Velocity = self.Inductor_Length/self.Inductor_Time
+            self.Inductor_Inductance_Per_Length =  self.Inductor_Time*self.Inductor_Impedance
+            self.Inductor_Capacitance_Per_Length =  self.Inductor_Time/self.Inductor_Impedance
+            self.Inductor_Total_Inductance = self.Inductor_Inductance_Per_Length * self.Inductor_Length
+            self.Inductor_Total_Capacitance = self.Inductor_Capacitance_Per_Length * self.Inductor_Length
 
-    Inductor_Inductance_Per_Length  : Decimal
-    Inductor_Capacitance_Per_Length  : Decimal
-    Inductor_Length  : Decimal
+            # CAPACITOR
+            self.Capacitor_Impedance = Decimal(self.input_values['C_impedance'])
+            self.Capacitor_Time = Decimal(self.input_values['C_time'])/2
+            self.Capacitor_Length = Decimal(self.input_values['C_length'])
+            
+            self.Capacitor_Velocity = self.Capacitor_Length/self.Capacitor_Time
+            self.Capacitor_Inductance_Per_Length =  self.Capacitor_Time*self.Capacitor_Impedance
+            self.Capacitor_Capacitance_Per_Length =  self.Capacitor_Time/self.Capacitor_Impedance
+            self.Capacitor_Total_Inductance = self.Capacitor_Inductance_Per_Length * self.Capacitor_Length
+            self.Capacitor_Total_Capacitance = self.Capacitor_Capacitance_Per_Length * self.Capacitor_Length
 
-    Capacitor_Inductance_Per_Length  : Decimal
-    Capacitor_Capacitance_Per_Length  : Decimal
-    Capacitor_Length  : Decimal
+            # CIRCUIT
+            self.Voltage_Souce_Magnitude = Decimal(self.input_values['V_source'])
+            self.Number_Periods = Decimal(self.input_values['number_periods'])
+            self.Load_Impedance = Decimal(self.input_values['Load_impedance'])
+            
+            self.Simulation_Stop_Time = Decimal()
+            if(self.Custom_stop_time):
+                self.Simulation_Stop_Time = Decimal(self.input_values['Simulation_stop_time'])
+                self.Number_Periods = self.Simulation_Stop_Time/(Decimal('6.28318530718')*(Decimal.sqrt(self.Capacitor_Total_Capacitance*self.Inductor_Total_Inductance)))
+            else:
+                self.Simulation_Stop_Time = self.Number_Periods*Decimal('6.28318530718')*(Decimal.sqrt(self.Capacitor_Total_Capacitance*self.Inductor_Total_Inductance))
+            
+            if (self.Capacitor_Time < self.Inductor_Time):
+                self.Number_of_Layers = math.ceil(self.Simulation_Stop_Time/(self.Capacitor_Time*2))+1
+            else:
+                self.Number_of_Layers = math.ceil(self.Simulation_Stop_Time/(self.Inductor_Time*2))+1
+            
+            self.Number_of_Wavefronts = 0
+            for i in range(0,self.Number_of_Layers+1):
+                self.Number_of_Wavefronts = self.Number_of_Wavefronts + 4*i
+            
+            Factor_Dict = lcm_gcd_euclid(self.Inductor_Time*2,self.Capacitor_Time*2)
+            
+            self.Inductor_LCM_Factor = int(Factor_Dict['KL'])
+            self.Capacitor_LCM_Factor = int(Factor_Dict['KC'])
+            
+            self.GCD = Factor_Dict['GCD']
+            self.LCM = Factor_Dict['LCM']
+              
+            if(Factor_Dict['LCM'] > self.Simulation_Stop_Time):
+                self.is_Higher_Merging = False
+            else:
+                self.is_Higher_Merging = True
+            
+            if(self.Is_Buck):
+                self.Load_Parallel_Inductor = 1/(1/self.Load_Impedance + 1/self.Inductor_Impedance)
+                self.Load_Parallel_Capacitor = 1/(1/self.Load_Impedance + 1/self.Capacitor_Impedance)
 
-    Inductor_Total_Inductance  : Decimal
-    Inductor_Total_Capacitance  : Decimal
-    Inductor_Velocity  : Decimal
-    Inductor_Time  : Decimal
-    Inductor_Impedance  : Decimal
+                self.Inductor_Solver_Term_VL  = self.Inductor_Impedance/( self.Inductor_Impedance + self.Load_Parallel_Capacitor )
+                self.Inductor_Solver_Term_VC  = self.Load_Parallel_Inductor/( self.Capacitor_Impedance + self.Load_Parallel_Inductor )
+                self.Inductor_Solver_Term_IL  = self.Capacitor_Impedance * self.Inductor_Impedance * self.Load_Impedance /(self.Load_Impedance*self.Inductor_Impedance + self.Load_Impedance*self.Capacitor_Impedance + self.Inductor_Impedance * self.Capacitor_Impedance)
+                self.Inductor_Solver_Term_IC  = self.Inductor_Solver_Term_IL
+                self.Inductor_Solver_Term_VS  = self.Inductor_Impedance / ( self.Inductor_Impedance + self.Load_Parallel_Capacitor )
 
-    Capacitor_Total_Inductance  : Decimal
-    Capacitor_Total_Capacitance  : Decimal
-    Capacitor_Velocity  : Decimal
-    Capacitor_Time  : Decimal
-    Capacitor_Impedance  : Decimal
+                self.Inductor_Solver_Term_VL_I  = self.Inductor_Solver_Term_VL / self.Inductor_Impedance
+                self.Inductor_Solver_Term_VC_I  = self.Inductor_Solver_Term_VC / self.Inductor_Impedance
+                self.Inductor_Solver_Term_IL_I  = self.Inductor_Solver_Term_IL / self.Inductor_Impedance
+                self.Inductor_Solver_Term_IC_I  = self.Inductor_Solver_Term_IC / self.Inductor_Impedance
+                self.Inductor_Solver_Term_VS_I  = self.Inductor_Solver_Term_VS / self.Inductor_Impedance
 
-    Load_Parallel_Inductor  : Decimal
-    Load_Parallel_Capacitor  : Decimal
+                self.Capacitor_Solver_Term_VC  = self.Capacitor_Impedance/( self.Capacitor_Impedance + self.Load_Parallel_Inductor )
+                self.Capacitor_Solver_Term_VL  = self.Load_Parallel_Capacitor/( self.Inductor_Impedance + self.Load_Parallel_Capacitor )
+                self.Capacitor_Solver_Term_IC  = self.Capacitor_Impedance * self.Inductor_Impedance * self.Load_Impedance /(self.Load_Impedance*self.Inductor_Impedance + self.Load_Impedance*self.Capacitor_Impedance + self.Inductor_Impedance * self.Capacitor_Impedance)
+                self.Capacitor_Solver_Term_IL  = self.Capacitor_Solver_Term_IC
+                self.Capacitor_Solver_Term_VS  = self.Load_Parallel_Capacitor / ( self.Inductor_Impedance + self.Load_Parallel_Capacitor )
 
-    Inductor_Solver_Term_VL   : Decimal
-    Inductor_Solver_Term_VC   : Decimal
-    Inductor_Solver_Term_IL   : Decimal
-    Inductor_Solver_Term_IC   : Decimal
-    Inductor_Solver_Term_VS   : Decimal
+                self.Capacitor_Solver_Term_VC_I  = self.Capacitor_Solver_Term_VC / self.Capacitor_Impedance
+                self.Capacitor_Solver_Term_VL_I  = self.Capacitor_Solver_Term_VL / self.Capacitor_Impedance
+                self.Capacitor_Solver_Term_IC_I  = self.Capacitor_Solver_Term_IC / self.Capacitor_Impedance
+                self.Capacitor_Solver_Term_IL_I  = self.Capacitor_Solver_Term_IL / self.Capacitor_Impedance
+                self.Capacitor_Solver_Term_VS_I  = self.Capacitor_Solver_Term_VS / self.Capacitor_Impedance
+                
+                self.Initial_Inductor_Current = self.Voltage_Souce_Magnitude/(self.Inductor_Impedance + self.Load_Parallel_Capacitor)
+                self.Initial_Inductor_Voltage = self.Initial_Inductor_Current * self.Inductor_Impedance
+                
+                self.Initial_Capacitor_Voltage = self.Initial_Inductor_Current * self.Load_Parallel_Capacitor
+                self.Initial_Capacitor_Current = self.Initial_Capacitor_Voltage/self.Capacitor_Impedance
+                
+            else:
+                self.Load_Parallel_Inductor = self.Inductor_Impedance
+                self.Load_Parallel_Capacitor = self.Capacitor_Impedance
 
-    Inductor_Solver_Term_VL_I   : Decimal
-    Inductor_Solver_Term_VC_I   : Decimal
-    Inductor_Solver_Term_IL_I   : Decimal
-    Inductor_Solver_Term_IC_I   : Decimal
-    Inductor_Solver_Term_VS_I   : Decimal
+                self.Inductor_Solver_Term_VL  = self.Inductor_Impedance/( self.Inductor_Impedance + self.Capacitor_Impedance )
+                self.Inductor_Solver_Term_VC  = self.Inductor_Impedance/( self.Inductor_Impedance + self.Capacitor_Impedance )
+                self.Inductor_Solver_Term_IL  = self.Capacitor_Impedance * self.Inductor_Impedance /(self.Inductor_Impedance + self.Capacitor_Impedance )
+                self.Inductor_Solver_Term_IC  = self.Inductor_Solver_Term_IL
+                self.Inductor_Solver_Term_VS  = self.Inductor_Impedance / ( self.Inductor_Impedance + self.Capacitor_Impedance )
 
-    Capacitor_Solver_Term_VC   : Decimal
-    Capacitor_Solver_Term_VL   : Decimal
-    Capacitor_Solver_Term_IC   : Decimal
-    Capacitor_Solver_Term_IL   : Decimal
-    Capacitor_Solver_Term_VS   : Decimal
+                self.Inductor_Solver_Term_VL_I  = self.Inductor_Solver_Term_VL / self.Inductor_Impedance
+                self.Inductor_Solver_Term_VC_I  = self.Inductor_Solver_Term_VC / self.Inductor_Impedance
+                self.Inductor_Solver_Term_IL_I  = self.Inductor_Solver_Term_IL / self.Inductor_Impedance
+                self.Inductor_Solver_Term_IC_I  = self.Inductor_Solver_Term_IC / self.Inductor_Impedance
+                self.Inductor_Solver_Term_VS_I  = self.Inductor_Solver_Term_VS / self.Inductor_Impedance
 
-    Capacitor_Solver_Term_VC_I   : Decimal
-    Capacitor_Solver_Term_VL_I   : Decimal
-    Capacitor_Solver_Term_IC_I   : Decimal
-    Capacitor_Solver_Term_IL_I   : Decimal
-    Capacitor_Solver_Term_VS_I   : Decimal
+                self.Capacitor_Solver_Term_VC  = self.Capacitor_Impedance/( self.Capacitor_Impedance + self.Inductor_Impedance )
+                self.Capacitor_Solver_Term_VL  = self.Capacitor_Impedance/( self.Inductor_Impedance + self.Capacitor_Impedance )
+                self.Capacitor_Solver_Term_IC  = self.Capacitor_Impedance * self.Inductor_Impedance  /(self.Inductor_Impedance + self.Capacitor_Impedance )
+                self.Capacitor_Solver_Term_IL  = self.Capacitor_Solver_Term_IC
+                self.Capacitor_Solver_Term_VS  = self.Capacitor_Impedance / ( self.Inductor_Impedance + self.Capacitor_Impedance )
 
-    Initial_Inductor_Voltage : Decimal
-    Initial_Inductor_Current : Decimal
-    Initial_Capacitor_Voltage : Decimal
-    Initial_Capacitor_Current : Decimal
+                self.Capacitor_Solver_Term_VC_I  = self.Capacitor_Solver_Term_VC / self.Capacitor_Impedance
+                self.Capacitor_Solver_Term_VL_I  = self.Capacitor_Solver_Term_VL / self.Capacitor_Impedance
+                self.Capacitor_Solver_Term_IC_I  = self.Capacitor_Solver_Term_IC / self.Capacitor_Impedance
+                self.Capacitor_Solver_Term_IL_I  = self.Capacitor_Solver_Term_IL / self.Capacitor_Impedance
+                self.Capacitor_Solver_Term_VS_I  = self.Capacitor_Solver_Term_VS / self.Capacitor_Impedance
 
-    GCD : Decimal
-    LCM : Decimal
-    Capacitor_LCM_Factor : int
-    Inductor_LCM_Factor : int
-    is_Higher_Merging : bool
+                self.Initial_Inductor_Current = self.Voltage_Souce_Magnitude/(self.Inductor_Impedance + self.Capacitor_Impedance)
+                self.Initial_Inductor_Voltage = self.Initial_Inductor_Current * self.Inductor_Impedance
+                
+                self.Initial_Capacitor_Current = self.Initial_Inductor_Current
+                self.Initial_Capacitor_Voltage = self.Initial_Capacitor_Current* self.Capacitor_Impedance
+                
+            if(self.input_values['show_about']):
+                self.about()
+    
+    def about(self):
+        """Prints out information input varibles and associated calculated variables.
+        """
+        print(f"\nInformation about this network : \n")
 
-    Number_of_Wavefronts : int
-    Number_of_Layers : int
+        print(f"\n- The Inductor -")
+        print(f"{'Inductor Inductance Per Length :':<40}{self.Inductor_Inductance_Per_Length}")
+        print(f"{'Inductor Capacitance Per Length :':<40}{self.Inductor_Capacitance_Per_Length}")
+        print(f"{'Inductor Length :':<40}{self.Inductor_Length}")
+        print(f"{'Inductor Total Inductance :':<40}{self.Inductor_Total_Inductance}")
+        print(f"{'Inductor Total Capacitance :':<40}{self.Inductor_Total_Capacitance}")
+        print(f"{'Inductor Velocity :':<40}{self.Inductor_Velocity}")
+        print(f"{'Inductor One Way Time Delay :':<40}{self.Inductor_Time}")
+        print(f"{'Inductor Impedance :':<40}{self.Inductor_Impedance}")
+        
+        print(f"\n- The Capacitor -")
+        print(f"{'Capacitor Inductance Per Length :':<40}{self.Capacitor_Inductance_Per_Length}")
+        print(f"{'Capacitor Capacitance Per Length :':<40}{self.Capacitor_Capacitance_Per_Length}")
+        print(f"{'Capacitor Length :':<40}{self.Capacitor_Length}")
+        print(f"{'Capacitor Total Inductance :':<40}{self.Capacitor_Total_Inductance}")
+        print(f"{'Capacitor Total Capacitance :':<40}{self.Capacitor_Total_Capacitance}")
+        print(f"{'Capacitor Velocity :':<40}{self.Capacitor_Velocity}")
+        print(f"{'Capacitor One Way Time Delay :':<40}{self.Capacitor_Time}")
+        print(f"{'Capacitor Impedance :':<40}{self.Capacitor_Impedance}")
+        
+        print(f"\n- The Time -")
+        print(f"{'Number Periods :':<40}{self.Number_Periods}")
+        print(f"{'Simulation Stop Time :':<40}{self.Simulation_Stop_Time}")
+        print(f"{'Number of Wavefronts :':<40}{self.Number_of_Wavefronts}")
+        print(f"{'Number of Layers :':<40}{self.Number_of_Layers}")
+        print(f"{'Inductor Return Time Delay :':<40}{2*self.Inductor_Time}")
+        print(f"{'Inductor LCM Factor :':<40}{self.Inductor_LCM_Factor}")
+        print(f"{'Capacitor Return Time Delay :':<40}{2*self.Capacitor_Time}")
+        print(f"{'Capacitor LCM Factor :':<40}{self.Capacitor_LCM_Factor}")
+        print(f"{'LCM :':<40}{self.LCM}")
+        print(f"{'GCD :':<40}{self.GCD}")
+        print(f"{'Higher Merging? :':<40}{self.is_Higher_Merging}")
+        
+
+        print(f"\n- The Circuit -")
+        print(f"{'Votage Source Magnitude :':<40}{self.Voltage_Souce_Magnitude}")
+        print(f"{'Buck Converter :':<40}{self.Is_Buck}")
+        print(f"{'Load Resistance :':<40}{self.Load_Impedance}")
     
 @dataclass
 class Data_Output_Storage:
@@ -404,198 +524,7 @@ def Steady_State_Analysis(TL:Decimal,TC:Decimal):
     print(f"The last event before Steady State operation is at {LCM-num_small_original}s")
     
     return time_before_regular_GCF, time_before_regular_Steady_State
-
-def Calculate_Variables(**input_values):
-    
-    altered_input_values = copy.copy(default_input_values)
-    altered_input_values = handle_default_kwargs(input_values,altered_input_values)
-    
-    Is_Buck = True
-    if altered_input_values['Load_impedance'] == 'inf':
-        Is_Buck = False
-    
-    Custom_stop_time = True
-    if altered_input_values['Simulation_stop_time'] == '0':
-        Custom_stop_time = False
-    
-    # INDUCTOR
-    Inductor_Impedance = Decimal(altered_input_values['L_impedance'])
-    Inductor_Time = Decimal(altered_input_values['L_time'])/2
-    Inductor_Length = Decimal(altered_input_values['L_length'])
-    
-    Inductor_Velocity = Inductor_Length/Inductor_Time
-    Inductor_Inductance_Per_Length =  Inductor_Time*Inductor_Impedance
-    Inductor_Capacitance_Per_Length =  Inductor_Time/Inductor_Impedance
-    Inductor_Total_Inductance = Inductor_Inductance_Per_Length * Inductor_Length
-    Inductor_Total_Capacitance = Inductor_Capacitance_Per_Length * Inductor_Length
-
-    # CAPACITOR
-    Capacitor_Impedance = Decimal(altered_input_values['C_impedance'])
-    Capacitor_Time = Decimal(altered_input_values['C_time'])/2
-    Capacitor_Length = Decimal(altered_input_values['C_length'])
-    
-    Capacitor_Velocity = Capacitor_Length/Capacitor_Time
-    Capacitor_Inductance_Per_Length =  Capacitor_Time*Capacitor_Impedance
-    Capacitor_Capacitance_Per_Length =  Capacitor_Time/Capacitor_Impedance
-    Capacitor_Total_Inductance = Capacitor_Inductance_Per_Length * Capacitor_Length
-    Capacitor_Total_Capacitance = Capacitor_Capacitance_Per_Length * Capacitor_Length
-
-    # CIRCUIT
-    Voltage_Souce_Magnitude = Decimal(altered_input_values['V_source'])
-    Number_Periods = Decimal(altered_input_values['number_periods'])
-    Load_Resistance = Decimal(altered_input_values['Load_impedance'])
-    
-    Simulation_Stop_Time = Decimal()
-    if(Custom_stop_time):
-        Simulation_Stop_Time = Decimal(altered_input_values['Simulation_stop_time'])
-        Number_Periods = Simulation_Stop_Time/(Decimal('6.28318530718')*(Decimal.sqrt(Capacitor_Total_Capacitance*Inductor_Total_Inductance)))
-    else:
-        Simulation_Stop_Time = Number_Periods*Decimal('6.28318530718')*(Decimal.sqrt(Capacitor_Total_Capacitance*Inductor_Total_Inductance))
-    
-    if (Capacitor_Time < Inductor_Time):
-        Number_of_Layers = math.ceil(Simulation_Stop_Time/(Capacitor_Time*2))+1
-    else:
-        Number_of_Layers = math.ceil(Simulation_Stop_Time/(Inductor_Time*2))+1
-    
-    Number_of_Wavefronts = 0
-    for i in range(0,Number_of_Layers+1):
-        Number_of_Wavefronts = Number_of_Wavefronts + 4*i
-    
-    Factor_Dict = lcm_gcd_euclid(Inductor_Time*2,Capacitor_Time*2)
-    
-    Inductor_LCM_Factor = int(Factor_Dict['KL'])
-    Capacitor_LCM_Factor = int(Factor_Dict['KC'])
-    
-    
-    if(Factor_Dict['LCM'] > Simulation_Stop_Time):
-        is_Higher_Merging = False
-    else:
-        is_Higher_Merging = True
-    
-
-    if(Is_Buck):
-        Load_Parallel_Inductor = 1/(1/Load_Resistance + 1/Inductor_Impedance)
-        Load_Parallel_Capacitor = 1/(1/Load_Resistance + 1/Capacitor_Impedance)
-
-        Inductor_Solver_Term_VL  = Inductor_Impedance/( Inductor_Impedance + Load_Parallel_Capacitor )
-        Inductor_Solver_Term_VC  = Load_Parallel_Inductor/( Capacitor_Impedance + Load_Parallel_Inductor )
-        Inductor_Solver_Term_IL  = Capacitor_Impedance * Inductor_Impedance * Load_Resistance /(Load_Resistance*Inductor_Impedance + Load_Resistance*Capacitor_Impedance + Inductor_Impedance * Capacitor_Impedance)
-        Inductor_Solver_Term_IC  = Inductor_Solver_Term_IL
-        Inductor_Solver_Term_VS  = Inductor_Impedance / ( Inductor_Impedance + Load_Parallel_Capacitor )
-
-        Inductor_Solver_Term_VL_I  = Inductor_Solver_Term_VL / Inductor_Impedance
-        Inductor_Solver_Term_VC_I  = Inductor_Solver_Term_VC / Inductor_Impedance
-        Inductor_Solver_Term_IL_I  = Inductor_Solver_Term_IL / Inductor_Impedance
-        Inductor_Solver_Term_IC_I  = Inductor_Solver_Term_IC / Inductor_Impedance
-        Inductor_Solver_Term_VS_I  = Inductor_Solver_Term_VS / Inductor_Impedance
-
-        Capacitor_Solver_Term_VC  = Capacitor_Impedance/( Capacitor_Impedance + Load_Parallel_Inductor )
-        Capacitor_Solver_Term_VL  = Load_Parallel_Capacitor/( Inductor_Impedance + Load_Parallel_Capacitor )
-        Capacitor_Solver_Term_IC  = Capacitor_Impedance * Inductor_Impedance * Load_Resistance /(Load_Resistance*Inductor_Impedance + Load_Resistance*Capacitor_Impedance + Inductor_Impedance * Capacitor_Impedance)
-        Capacitor_Solver_Term_IL  = Capacitor_Solver_Term_IC
-        Capacitor_Solver_Term_VS  = Load_Parallel_Capacitor / ( Inductor_Impedance + Load_Parallel_Capacitor )
-
-        Capacitor_Solver_Term_VC_I  = Capacitor_Solver_Term_VC / Capacitor_Impedance
-        Capacitor_Solver_Term_VL_I  = Capacitor_Solver_Term_VL / Capacitor_Impedance
-        Capacitor_Solver_Term_IC_I  = Capacitor_Solver_Term_IC / Capacitor_Impedance
-        Capacitor_Solver_Term_IL_I  = Capacitor_Solver_Term_IL / Capacitor_Impedance
-        Capacitor_Solver_Term_VS_I  = Capacitor_Solver_Term_VS / Capacitor_Impedance
-        
-        Initial_Inductor_Current = Voltage_Souce_Magnitude/(Inductor_Impedance + Load_Parallel_Capacitor)
-        Initial_Inductor_Voltage = Initial_Inductor_Current * Inductor_Impedance
-        
-        Initial_Capacitor_Voltage = Initial_Inductor_Current * Load_Parallel_Capacitor
-        Initial_Capacitor_Current = Initial_Capacitor_Voltage/Capacitor_Impedance
-        
-    else:
-        Load_Parallel_Inductor = Inductor_Impedance
-        Load_Parallel_Capacitor = Capacitor_Impedance
-
-        Inductor_Solver_Term_VL  = Inductor_Impedance/( Inductor_Impedance + Capacitor_Impedance )
-        Inductor_Solver_Term_VC  = Inductor_Impedance/( Inductor_Impedance + Capacitor_Impedance )
-        Inductor_Solver_Term_IL  = Capacitor_Impedance * Inductor_Impedance /(Inductor_Impedance + Capacitor_Impedance )
-        Inductor_Solver_Term_IC  = Inductor_Solver_Term_IL
-        Inductor_Solver_Term_VS  = Inductor_Impedance / ( Inductor_Impedance + Capacitor_Impedance )
-
-        Inductor_Solver_Term_VL_I  = Inductor_Solver_Term_VL / Inductor_Impedance
-        Inductor_Solver_Term_VC_I  = Inductor_Solver_Term_VC / Inductor_Impedance
-        Inductor_Solver_Term_IL_I  = Inductor_Solver_Term_IL / Inductor_Impedance
-        Inductor_Solver_Term_IC_I  = Inductor_Solver_Term_IC / Inductor_Impedance
-        Inductor_Solver_Term_VS_I  = Inductor_Solver_Term_VS / Inductor_Impedance
-
-        Capacitor_Solver_Term_VC  = Capacitor_Impedance/( Capacitor_Impedance + Inductor_Impedance )
-        Capacitor_Solver_Term_VL  = Capacitor_Impedance/( Inductor_Impedance + Capacitor_Impedance )
-        Capacitor_Solver_Term_IC  = Capacitor_Impedance * Inductor_Impedance  /(Inductor_Impedance + Capacitor_Impedance )
-        Capacitor_Solver_Term_IL  = Capacitor_Solver_Term_IC
-        Capacitor_Solver_Term_VS  = Capacitor_Impedance / ( Inductor_Impedance + Capacitor_Impedance )
-
-        Capacitor_Solver_Term_VC_I  = Capacitor_Solver_Term_VC / Capacitor_Impedance
-        Capacitor_Solver_Term_VL_I  = Capacitor_Solver_Term_VL / Capacitor_Impedance
-        Capacitor_Solver_Term_IC_I  = Capacitor_Solver_Term_IC / Capacitor_Impedance
-        Capacitor_Solver_Term_IL_I  = Capacitor_Solver_Term_IL / Capacitor_Impedance
-        Capacitor_Solver_Term_VS_I  = Capacitor_Solver_Term_VS / Capacitor_Impedance
-
-        Initial_Inductor_Current = Voltage_Souce_Magnitude/(Inductor_Impedance + Capacitor_Impedance)
-        Initial_Inductor_Voltage = Initial_Inductor_Current * Inductor_Impedance
-        
-        Initial_Capacitor_Current = Initial_Inductor_Current
-        Initial_Capacitor_Voltage = Initial_Capacitor_Current* Capacitor_Impedance
-               
-    return Data_Input_Storage(Number_Periods
-                                ,Simulation_Stop_Time 
-                                ,Is_Buck
-                                ,Voltage_Souce_Magnitude 
-                                ,Load_Resistance 
-                                ,Inductor_Inductance_Per_Length 
-                                ,Inductor_Capacitance_Per_Length 
-                                ,Inductor_Length 
-                                ,Capacitor_Inductance_Per_Length 
-                                ,Capacitor_Capacitance_Per_Length 
-                                ,Capacitor_Length 
-                                ,Inductor_Total_Inductance 
-                                ,Inductor_Total_Capacitance 
-                                ,Inductor_Velocity 
-                                ,Inductor_Time 
-                                ,Inductor_Impedance 
-                                ,Capacitor_Total_Inductance 
-                                ,Capacitor_Total_Capacitance 
-                                ,Capacitor_Velocity 
-                                ,Capacitor_Time 
-                                ,Capacitor_Impedance 
-                                ,Load_Parallel_Inductor 
-                                ,Load_Parallel_Capacitor 
-                                ,Inductor_Solver_Term_VL  
-                                ,Inductor_Solver_Term_VC  
-                                ,Inductor_Solver_Term_IL  
-                                ,Inductor_Solver_Term_IC  
-                                ,Inductor_Solver_Term_VS  
-                                ,Inductor_Solver_Term_VL_I  
-                                ,Inductor_Solver_Term_VC_I  
-                                ,Inductor_Solver_Term_IL_I  
-                                ,Inductor_Solver_Term_IC_I  
-                                ,Inductor_Solver_Term_VS_I  
-                                ,Capacitor_Solver_Term_VC  
-                                ,Capacitor_Solver_Term_VL  
-                                ,Capacitor_Solver_Term_IC  
-                                ,Capacitor_Solver_Term_IL  
-                                ,Capacitor_Solver_Term_VS  
-                                ,Capacitor_Solver_Term_VC_I  
-                                ,Capacitor_Solver_Term_VL_I  
-                                ,Capacitor_Solver_Term_IC_I  
-                                ,Capacitor_Solver_Term_IL_I  
-                                ,Capacitor_Solver_Term_VS_I  
-                                ,Initial_Inductor_Voltage
-                                ,Initial_Inductor_Current
-                                ,Initial_Capacitor_Voltage
-                                ,Initial_Capacitor_Current
-                                ,Factor_Dict['GCD']
-                                ,Factor_Dict['LCM']
-                                ,Capacitor_LCM_Factor
-                                ,Inductor_LCM_Factor
-                                ,is_Higher_Merging
-                                ,Number_of_Wavefronts
-                                ,Number_of_Layers)
-        
+  
 def multiplicative_merge_cycle(arr,Inductor_LCM_Factor,Capacitor_LCM_Factor):
     
     def make_upper_and_lower(arr,Capacitor_LCM_Factor):
@@ -638,49 +567,6 @@ def multiplicative_merging(arr,Inductor_LCM_Factor ,Capacitor_LCM_Factor ,number
         arr = multiplicative_merge_cycle(arr,Inductor_LCM_Factor,Capacitor_LCM_Factor)
 
     return arr[:,0:Capacitor_LCM_Factor]
-
-def About_Network(Data: Data_Input_Storage):
-    print(f"\nInformation about this network : \n")
-
-    print(f"\n- The Inductor -")
-    print(f"{'Inductor Inductance Per Length :':<40}{Data.Inductor_Inductance_Per_Length}")
-    print(f"{'Inductor Capacitance Per Length :':<40}{Data.Inductor_Capacitance_Per_Length}")
-    print(f"{'Inductor Length :':<40}{Data.Inductor_Length}")
-    print(f"{'Inductor Total Inductance :':<40}{Data.Inductor_Total_Inductance}")
-    print(f"{'Inductor Total Capacitance :':<40}{Data.Inductor_Total_Capacitance}")
-    print(f"{'Inductor Velocity :':<40}{Data.Inductor_Velocity}")
-    print(f"{'Inductor One Way Time Delay :':<40}{Data.Inductor_Time}")
-    print(f"{'Inductor Impedance :':<40}{Data.Inductor_Impedance}")
-    
-
-    print(f"\n- The Capacitor -")
-    print(f"{'Capacitor Inductance Per Length :':<40}{Data.Capacitor_Inductance_Per_Length}")
-    print(f"{'Capacitor Capacitance Per Length :':<40}{Data.Capacitor_Capacitance_Per_Length}")
-    print(f"{'Capacitor Length :':<40}{Data.Capacitor_Length}")
-    print(f"{'Capacitor Total Inductance :':<40}{Data.Capacitor_Total_Inductance}")
-    print(f"{'Capacitor Total Capacitance :':<40}{Data.Capacitor_Total_Capacitance}")
-    print(f"{'Capacitor Velocity :':<40}{Data.Capacitor_Velocity}")
-    print(f"{'Capacitor One Way Time Delay :':<40}{Data.Capacitor_Time}")
-    print(f"{'Capacitor Impedance :':<40}{Data.Capacitor_Impedance}")
-    
-    print(f"\n- The Time -")
-    print(f"{'Number Periods :':<40}{Data.Number_Periods}")
-    print(f"{'Simulation Stop Time :':<40}{Data.Simulation_Stop_Time}")
-    print(f"{'Number of Wavefronts :':<40}{Data.Number_of_Wavefronts}")
-    print(f"{'Number of Layers :':<40}{Data.Number_of_Layers}")
-    print(f"{'Inductor Return Time Delay :':<40}{2*Data.Inductor_Time}")
-    print(f"{'Inductor LCM Factor :':<40}{Data.Inductor_LCM_Factor}")
-    print(f"{'Capacitor Return Time Delay :':<40}{2*Data.Capacitor_Time}")
-    print(f"{'Capacitor LCM Factor :':<40}{Data.Capacitor_LCM_Factor}")
-    print(f"{'LCM :':<40}{Data.LCM}")
-    print(f"{'GCD :':<40}{Data.GCD}")
-    print(f"{'Higher Merging? :':<40}{Data.is_Higher_Merging}")
-    
-
-    print(f"\n- The Circuit -")
-    print(f"{'Votage Source Magnitude :':<40}{Data.Voltage_Souce_Magnitude}")
-    print(f"{'Buck Converter :':<40}{Data.Is_Buck}")
-    print(f"{'Load Resistance :':<40}{Data.Load_Resistance}")
 
 def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Output_Storage):
     Data_Inputs = copy.deepcopy(Data_Inputs)
@@ -762,7 +648,7 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
         
         return value, index
     
-    # Orderded Data Structure
+    # Orderded self Structure
     out_time = []
 
     out_voltage_inductor = []
@@ -869,35 +755,31 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
         out_indexes
     )        
 
-def Process_Wavefronts(show_about = True, **input_values):
+def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
 
-    data_input_storage = Calculate_Variables(**input_values)
-    if show_about:
-        About_Network(data_input_storage)
-    
     def Circuit_Solver_Inductor_Voltage(VL,IL,VC,IC):
-        return -VL * data_input_storage.Inductor_Solver_Term_VL - VC * data_input_storage.Inductor_Solver_Term_VC - IL * data_input_storage.Inductor_Solver_Term_IL + IC * data_input_storage.Inductor_Solver_Term_IC 
+        return -VL * Data_Input.Inductor_Solver_Term_VL - VC * Data_Input.Inductor_Solver_Term_VC - IL * Data_Input.Inductor_Solver_Term_IL + IC * Data_Input.Inductor_Solver_Term_IC 
 
     def Circuit_Solver_Inductor_Current(VL,IL,VC,IC):
-        return -VL * data_input_storage.Inductor_Solver_Term_VL_I - VC * data_input_storage.Inductor_Solver_Term_VC_I - IL * data_input_storage.Inductor_Solver_Term_IL_I + IC * data_input_storage.Inductor_Solver_Term_IC_I 
+        return -VL * Data_Input.Inductor_Solver_Term_VL_I - VC * Data_Input.Inductor_Solver_Term_VC_I - IL * Data_Input.Inductor_Solver_Term_IL_I + IC * Data_Input.Inductor_Solver_Term_IC_I 
 
     def Circuit_Solver_Inductor_Source_Voltage(VS):
-        return VS * data_input_storage.Inductor_Solver_Term_VS
+        return VS * Data_Input.Inductor_Solver_Term_VS
 
     def Circuit_Solver_Inductor_Source_Current(VS):
-        return VS * data_input_storage.Inductor_Solver_Term_VS_I
+        return VS * Data_Input.Inductor_Solver_Term_VS_I
 
     def Circuit_Solver_Capacitor_Voltage(VL,IL,VC,IC):
-        return -VC * data_input_storage.Capacitor_Solver_Term_VC - VL * data_input_storage.Capacitor_Solver_Term_VL - IC * data_input_storage.Capacitor_Solver_Term_IC + IL * data_input_storage.Capacitor_Solver_Term_IL 
+        return -VC * Data_Input.Capacitor_Solver_Term_VC - VL * Data_Input.Capacitor_Solver_Term_VL - IC * Data_Input.Capacitor_Solver_Term_IC + IL * Data_Input.Capacitor_Solver_Term_IL 
 
     def Circuit_Solver_Capacitor_Current(VL,IL,VC,IC):
-        return -VC * data_input_storage.Capacitor_Solver_Term_VC_I - VL * data_input_storage.Capacitor_Solver_Term_VL_I - IC * data_input_storage.Capacitor_Solver_Term_IC_I + IL * data_input_storage.Capacitor_Solver_Term_IL_I 
+        return -VC * Data_Input.Capacitor_Solver_Term_VC_I - VL * Data_Input.Capacitor_Solver_Term_VL_I - IC * Data_Input.Capacitor_Solver_Term_IC_I + IL * Data_Input.Capacitor_Solver_Term_IL_I 
 
     def Circuit_Solver_Capacitor_Source_Voltage(VS):
-        return VS * data_input_storage.Capacitor_Solver_Term_VS
+        return VS * Data_Input.Capacitor_Solver_Term_VS
 
     def Circuit_Solver_Capacitor_Source_Current(VS):
-        return VS * data_input_storage.Capacitor_Solver_Term_VS_I
+        return VS * Data_Input.Capacitor_Solver_Term_VS_I
     
     class Wavefront:
         velocity = Decimal()
@@ -982,17 +864,17 @@ def Process_Wavefronts(show_about = True, **input_values):
 
         def __init__(self, Wavefront_Parent : Wavefront, is_reflection : bool):
             
-            self.velocity = data_input_storage.Capacitor_Velocity
-            self.length = data_input_storage.Capacitor_Length
+            self.velocity = Data_Input.Capacitor_Velocity
+            self.length = Data_Input.Capacitor_Length
 
             self.position_start = Wavefront_Parent.position_end
 
             self.time_start = Wavefront_Parent.time_end
-            self.time_end = self.time_start + data_input_storage.Capacitor_Time
+            self.time_end = self.time_start + Data_Input.Capacitor_Time
 
             if self.position_start == 0:
 
-                self.position_end = data_input_storage.Capacitor_Length
+                self.position_end = Data_Input.Capacitor_Length
 
                 if is_reflection: # A reflected wave at source side   |<--
 
@@ -1002,7 +884,7 @@ def Process_Wavefronts(show_about = True, **input_values):
                 elif isinstance(Wavefront_Parent, Wavefront_Source) : # A generate source wave (Vs)-|->
 
                     self.time_start = Wavefront_Parent.time_start
-                    self.time_end = self.time_start + data_input_storage.Capacitor_Time
+                    self.time_end = self.time_start + Data_Input.Capacitor_Time
 
                     self.magnitude_voltage = Circuit_Solver_Capacitor_Source_Voltage(Wavefront_Parent.magnitude_voltage)
                     self.magnitude_current = Circuit_Solver_Capacitor_Source_Current(Wavefront_Parent.magnitude_voltage)
@@ -1040,17 +922,17 @@ def Process_Wavefronts(show_about = True, **input_values):
 
         def __init__(self, Wavefront_Parent : Wavefront, is_reflection : bool):
             
-            self.velocity = data_input_storage.Inductor_Velocity
-            self.length = data_input_storage.Inductor_Length
+            self.velocity = Data_Input.Inductor_Velocity
+            self.length = Data_Input.Inductor_Length
 
             self.position_start = Wavefront_Parent.position_end
 
             self.time_start = Wavefront_Parent.time_end
-            self.time_end = self.time_start + data_input_storage.Inductor_Time
+            self.time_end = self.time_start + Data_Input.Inductor_Time
 
             if self.position_start == 0:
 
-                self.position_end = data_input_storage.Inductor_Length
+                self.position_end = Data_Input.Inductor_Length
 
                 if is_reflection: # A reflected wave at source side   |<--
 
@@ -1060,7 +942,7 @@ def Process_Wavefronts(show_about = True, **input_values):
                 elif isinstance(Wavefront_Parent, Wavefront_Source) : # A generate source wave (Vs)-|->
 
                     self.time_start = Wavefront_Parent.time_start
-                    self.time_end = self.time_start + data_input_storage.Inductor_Time
+                    self.time_end = self.time_start + Data_Input.Inductor_Time
 
                     self.magnitude_voltage = Circuit_Solver_Inductor_Source_Voltage(Wavefront_Parent.magnitude_voltage)
                     self.magnitude_current = Circuit_Solver_Inductor_Source_Current(Wavefront_Parent.magnitude_voltage)
@@ -1103,26 +985,26 @@ def Process_Wavefronts(show_about = True, **input_values):
     Storage_Away : Wavefront = deque()
     Storage_Return : Wavefront = deque()
     
-    Wavefronts_Away = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Wavefront_Source(0,0,0))
-    Wavefronts_Return = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Wavefront_Source(0,0,0))
+    Wavefronts_Away = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0,0))
+    Wavefronts_Return = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0,0))
     
-    Cartesian_Time = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Decimal('0'))
+    Cartesian_Time = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Decimal('0'))
     
-    Voltage_Interconnect_Inductor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Decimal('0'))
-    Current_Interconnect_Inductor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Decimal('0'))
+    Voltage_Interconnect_Inductor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Decimal('0'))
+    Current_Interconnect_Inductor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Decimal('0'))
 
-    Voltage_Interconnect_Capacitor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Decimal('0'))
-    Current_Interconnect_Capacitor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)),Decimal('0'))
+    Voltage_Interconnect_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Decimal('0'))
+    Current_Interconnect_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Decimal('0'))
     
-    Wavefronts_Sending_Inductor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0))
-    Wavefronts_Sending_Capacitor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Sending_Inductor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Sending_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     
-    Wavefronts_Returning_Inductor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0))
-    Wavefronts_Returning_Capacitor = np.full((2*(data_input_storage.Number_of_Layers+1),2*(data_input_storage.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Returning_Inductor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Returning_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     
     ## LAYER 0
     # Generate Intial Away Waves
-    Storage_Voltage_Active.append(Wavefront_Source(data_input_storage.Voltage_Souce_Magnitude,0,0))
+    Storage_Voltage_Active.append(Wavefront_Source(Data_Input.Voltage_Souce_Magnitude,0,0))
     temp_wavefront = Storage_Voltage_Active.popleft()
     
     temp_wavefront.Generate(Storage_Away)
@@ -1143,7 +1025,7 @@ def Process_Wavefronts(show_about = True, **input_values):
     Wavefronts_Away[0,1] = temp_wavefront_capacitive
 
     # Merge_Algorithm
-    for layer_number in range(1,data_input_storage.Number_of_Layers):
+    for layer_number in range(1,Data_Input.Number_of_Layers):
 
         # Manage return waves
         
@@ -1224,7 +1106,7 @@ def Process_Wavefronts(show_about = True, **input_values):
             Cartesian_Index_y = Cartesian_Index_y + 1
 
     # Accumulation_Arrays
-    for layer_number in range(0,data_input_storage.Number_of_Layers):
+    for layer_number in range(0,Data_Input.Number_of_Layers):
         ## Reset Centre Index    
         Centre_Index_x = 2*layer_number
         Centre_Index_y = 0
@@ -1318,7 +1200,7 @@ def Process_Wavefronts(show_about = True, **input_values):
     Wavefronts_Returning_Inductor = delete_alternating(Wavefronts_Returning_Inductor)
     Wavefronts_Returning_Capacitor = delete_alternating(Wavefronts_Returning_Capacitor)
     
-    data_output_storage = Data_Output_Storage(
+    return Data_Output_Storage(
         Cartesian_Time, # Merge Times
         Voltage_Interconnect_Inductor, # Values at interconnect 
         Current_Interconnect_Inductor, # Values at interconnect
@@ -1329,15 +1211,11 @@ def Process_Wavefronts(show_about = True, **input_values):
         Wavefronts_Returning_Inductor, # Specific Wavefronts at Nodes
         Wavefronts_Returning_Capacitor # Specific Wavefronts at Nodes
         )
-    
-    
-    return (
-        data_input_storage,
-        data_output_storage
-    ) 
 
-def Full_Cycle(show_about = True, **input_values):
-    data_input, data_output = Process_Wavefronts(show_about, **input_values)
+def Full_Cycle(**input_values):
+    
+    data_input = Data_Input_Storage(**input_values)
+    data_output = Generate_Wavefronts_Commutatively(data_input)
     data_output_merged = Higher_Order_Merging(data_input,data_output)
     data_output_ordered = Order_Data_Output_Merged(data_input,data_output_merged)
     
@@ -1523,8 +1401,8 @@ def plot_time_interconnect_3_both(data_output_merged : Data_Output_Storage
     plot_time_interconnect(data_output_ordered,ax['B'],which_string,True)
     plot_time_interconnect(data_output_ordered_2,ax['B'],which_string,True)
     
-    plot_fanout_interconnect(data_output_merged,ax['C'],which_string," Data 1")
-    plot_fanout_interconnect(data_output_merged_2,ax['D'],which_string," Data 2")
+    plot_fanout_interconnect(data_output_merged,ax['C'],which_string," self 1")
+    plot_fanout_interconnect(data_output_merged_2,ax['D'],which_string," self 2")
 
     for i,index in enumerate(data_output_ordered.Indexes):
         if(i  == 0):
