@@ -45,108 +45,110 @@ def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
 
 class Data_Input_Storage :
     """Handles the calculation of input variables required for the simulation.
-    
+
         Is initialised using key-word arguments. All values with the provided keys are of type string. 
         This each input variable is converterted to a Decimal value to be used for precision calculations.
         The possible parameters to change and their defualt values are as follows:
         
-        **Kwargs:
-        =========
-        :param 'L_impedance' ='100': Characteristic impedance of the inductor, assigned to self.Inductor_Impedance
-        :param 'L_time' ='1': The time delay of the inductor in seconds, assigned to self.Inductor_Time
-        :param 'L_length'='1': The length of the inductor in meters, assigned to self.Inductor_Length
-        
-        :param 'C_impedance'='1': Characteristic impedance of the capacitor, assigned to self.Capacitor_Impedance
-        :param 'C_time' ='1': The time delay of the capacitor in seconds, assigned to self.Capacitor_Time
-        :param 'C_length'='1': The length of the capacitor in meters, assigned to self.Capacitor_Length
-        
-        :param 'V_source'='1': The magnitude of the initial voltage excitation in volts, assigned to self.Voltage_Souce_Magnitude
-        :param 'number_periods'='1': The number of periods as according to Lumped-Element LC-Osscilator solution. 
-                Used to calculate the simulation stop time if provided. Overidden if 'Simulation_stop_time' is provided.
-        :param 'Load_impedance'='inf': The magnitude of the load resistance, if left inf the load is ignored and the interface takes form of an LC-Osscilator.
-                                        If a value is provided the load is considered and the self.Is_Buck flag is set to True.
-        :param 'Simulation_stop_time'='0': The time to which the interface will be simulated. If provided it will overwrite the 'number_periods' simulation stop time calculation.
-        :param 'show_about'=True: Indicates information about the calcualted variabels must be printed.
+        **provided_input_values:
+        ------------------------
+        :L_impedance = '100': Characteristic impedance of the inductor, assigned to self.Inductor_Impedance
+        :L_time  = '1': The time delay of the inductor in seconds, assigned to self.Inductor_Time
+        :L_length = '1': The length of the inductor in meters, assigned to self.Inductor_Length
+    
+        :C_impedance = '1': Characteristic impedance of the capacitor, assigned to self.Capacitor_Impedance
+        :C_time  = '1': The time delay of the capacitor in seconds, assigned to self.Capacitor_Time
+        :C_length = '1': The length of the capacitor in meters, assigned to self.Capacitor_Length
+    
+        :V_source = '1': The magnitude of the initial voltage excitation in volts, assigned to self.Voltage_Souce_Magnitude
+        :number_periods = '1': The number of periods as according to Lumped-Element LC-Osscilator solution. 
+            Used to calculate the simulation stop time if provided. Overidden if 'Simulation_stop_time' is provided.
+        :Load_impedance = 'inf': The magnitude of the load resistance, if left inf the load is ignored and the interface takes form of an LC-Osscilator.
+            If a value is provided the load is considered and the self.Is_Buck flag is set to True.
+        :Simulation_stop_time = '0': The time to which the interface will be simulated. If provided it will overwrite the 'number_periods' simulation stop time calculation.
+        :show_about =T rue: Indicates information about the calcualted variabels must be printed.
         
         Stored Variables:
-        =================
+        ------------------------
         
-        :var self.Number_Periods  : Decimal
-        :var self.Simulation_Stop_Time  : Decimal
-        :var self.Is_Buck : bool
+        :self.Number_Periods: Decimal
+        :self.Simulation_Stop_Time: Decimal
+        :self.Is_Buck: bool
 
-        :var self.Voltage_Souce_Magnitude  : Decimal
-        :var self.Load_Resistance  : Decimal
+        :self.Voltage_Souce_Magnitude: Decimal
+        :self.Load_Resistance: Decimal
 
-        :var self.Inductor_Inductance_Per_Length  : Decimal
-        :var self.Inductor_Capacitance_Per_Length  : Decimal
-        :var self.Inductor_Length  : Decimal
+        :self.Inductor_Inductance_Per_Length: Decimal
+        :self.Inductor_Capacitance_Per_Length: Decimal
+        :self.Inductor_Length: Decimal
 
-        :var self.Capacitor_Inductance_Per_Length  : Decimal
-        :var self.Capacitor_Capacitance_Per_Length  : Decimal
-        :var self.Capacitor_Length  : Decimal
+        :self.Capacitor_Inductance_Per_Length: Decimal
+        :self.Capacitor_Capacitance_Per_Length: Decimal
+        :self.Capacitor_Length: Decimal
 
-        :var self.Inductor_Total_Inductance  : Decimal
-        :var self.Inductor_Total_Capacitance  : Decimal
-        :var self.Inductor_Velocity  : Decimal
-        :var self.Inductor_Time  : Decimal
-        :var self.Inductor_Impedance  : Decimal
+        :self.Inductor_Total_Inductance: Decimal
+        :self.Inductor_Total_Capacitance: Decimal
+        :self.Inductor_Velocity: Decimal
+        :self.Inductor_Time: Decimal
+        :self.Inductor_Impedance: Decimal
 
-        :var self.Capacitor_Total_Inductance  : Decimal
-        :var self.Capacitor_Total_Capacitance  : Decimal
-        :var self.Capacitor_Velocity  : Decimal
-        :var self.Capacitor_Time  : Decimal
-        :var self.Capacitor_Impedance  : Decimal
+        :self.Capacitor_Total_Inductance: Decimal
+        :self.Capacitor_Total_Capacitance: Decimal
+        :self.Capacitor_Velocity: Decimal
+        :self.Capacitor_Time: Decimal
+        :self.Capacitor_Impedance: Decimal
 
-        :var self.Load_Parallel_Inductor  : Decimal
-        self.Load_Parallel_Capacitor  : Decimal
 
-        **Terms used for calculating wavefront responses at interface**
-        :var self.Inductor_Solver_Term_VL   : Decimal
-        :var self.Inductor_Solver_Term_VC   : Decimal
-        :var self.Inductor_Solver_Term_IL   : Decimal
-        :var self.Inductor_Solver_Term_IC   : Decimal
-        :var self.Inductor_Solver_Term_VS   : Decimal
-
-        :var self.Inductor_Solver_Term_VL_I   : Decimal
-        :var self.Inductor_Solver_Term_VC_I   : Decimal
-        :var self.Inductor_Solver_Term_IL_I   : Decimal
-        :var self.Inductor_Solver_Term_IC_I   : Decimal
-        :var self.Inductor_Solver_Term_VS_I   : Decimal
-
-        :var self.Capacitor_Solver_Term_VC   : Decimal
-        :var self.Capacitor_Solver_Term_VL   : Decimal
-        :var self.Capacitor_Solver_Term_IC   : Decimal
-        :var self.Capacitor_Solver_Term_IL   : Decimal
-        :var self.Capacitor_Solver_Term_VS   : Decimal
-
-        :var self.Capacitor_Solver_Term_VC_I   : Decimal
-        :var self.Capacitor_Solver_Term_VL_I   : Decimal
-        :var self.Capacitor_Solver_Term_IC_I   : Decimal
-        :var self.Capacitor_Solver_Term_IL_I   : Decimal
-        :var self.Capacitor_Solver_Term_VS_I   : Decimal
-
-        :var self.Initial_Inductor_Voltage : Decimal
-        :var self.Initial_Inductor_Current : Decimal
-        :var self.Initial_Capacitor_Voltage : Decimal
-        :var self.Initial_Capacitor_Current : Decimal
-
-        :var GCD : Decimal
-        :var LCM : Decimal
-        :var self.Capacitor_LCM_Factor : int
-        :var self.Inductor_LCM_Factor : int
-        :var self.is_Higher_Merging : bool
-
-        :var self.Number_of_Wavefronts : int
-        :var self.Number_of_Layers : int
+        Terms used for calculating wavefront responses at interface:
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        :self.Load_Parallel_Inductor: Decimal
+        :self.Load_Parallel_Capacitor: Decimal
         
-        :Example :
+        :self.Inductor_Solver_Term_VL: Decimal
+        :self.Inductor_Solver_Term_VC: Decimal
+        :self.Inductor_Solver_Term_IL: Decimal
+        :self.Inductor_Solver_Term_IC: Decimal
+        :self.Inductor_Solver_Term_VS: Decimal
+
+        :self.Inductor_Solver_Term_VL_I: Decimal
+        :self.Inductor_Solver_Term_VC_I: Decimal
+        :self.Inductor_Solver_Term_IL_I: Decimal
+        :self.Inductor_Solver_Term_IC_I: Decimal
+        :self.Inductor_Solver_Term_VS_I: Decimal
+
+        :self.Capacitor_Solver_Term_VC: Decimal
+        :self.Capacitor_Solver_Term_VL: Decimal
+        :self.Capacitor_Solver_Term_IC: Decimal
+        :self.Capacitor_Solver_Term_IL: Decimal
+        :self.Capacitor_Solver_Term_VS: Decimal
+
+        :self.Capacitor_Solver_Term_VC_I: Decimal
+        :self.Capacitor_Solver_Term_VL_I: Decimal
+        :self.Capacitor_Solver_Term_IC_I: Decimal
+        :self.Capacitor_Solver_Term_IL_I: Decimal
+        :self.Capacitor_Solver_Term_VS_I: Decimal
+
+        :self.Initial_Inductor_Voltage: Decimal
+        :self.Initial_Inductor_Current: Decimal
+        :self.Initial_Capacitor_Voltage: Decimal
+        :self.Initial_Capacitor_Current: Decimal
+
+        :GCD: Decimal
+        :LCM: Decimal
+        :self.Capacitor_LCM_Factor: int
+        :self.Inductor_LCM_Factor: int
+        :self.is_Higher_Merging: bool
+
+        :self.Number_of_Wavefronts: int
+        :self.Number_of_Layers: int
+        
+
         .. code-block:: python
-        data_input = Data_Input_Storage(Simulation_stop_time = '100',L_impedance = '225',show_about = 'False')
-        
-        print(data_input.Simulation_Stop_Time) # prints '100'
-        print(data_input.Capacitor_Impedance) # prints '1', assigned by default.
-    
+
+            data_input = Data_Input_Storage(Simulation_stop_time = '100',L_impedance = '225')
+            print(data_input.Simulation_Stop_Time) # prints '100'
+            print(data_input.Capacitor_Impedance) # prints '1', assigned by default.
+
     """
     def __init__(self,**provided_input_values):
 
