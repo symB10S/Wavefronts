@@ -7,5 +7,6 @@ Main_Algorithm
    LTSpice_Simulator
    Merge_Cartesian
    Merge_Full
+   Wavefront_Plotting
    dot_plots
    ltspy3

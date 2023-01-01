@@ -92,8 +92,6 @@ class Data_Input_Storage :
 
         Terms used for calculating wavefront responses at interface:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        :self.Load_Parallel_Inductor: Decimal
-        :self.Load_Parallel_Capacitor: Decimal
         
         :self.Inductor_Solver_Term_VL: Decimal
         :self.Inductor_Solver_Term_VC: Decimal
@@ -124,8 +122,8 @@ class Data_Input_Storage :
         :self.Initial_Capacitor_Voltage: Decimal
         :self.Initial_Capacitor_Current: Decimal
 
-        :GCD: Decimal
-        :LCM: Decimal
+        :self.GCD: Decimal
+        :self.LCM: Decimal
         :self.Capacitor_LCM_Factor: int
         :self.Inductor_LCM_Factor: int
         :self.is_Higher_Merging: bool
@@ -219,14 +217,14 @@ class Data_Input_Storage :
                 self.is_Higher_Merging = True
             
             if(self.Is_Buck):
-                self.Load_Parallel_Inductor = 1/(1/self.Load_Impedance + 1/self.Inductor_Impedance)
-                self.Load_Parallel_Capacitor = 1/(1/self.Load_Impedance + 1/self.Capacitor_Impedance)
+                Load_Parallel_Inductor = 1/(1/self.Load_Impedance + 1/self.Inductor_Impedance)
+                Load_Parallel_Capacitor = 1/(1/self.Load_Impedance + 1/self.Capacitor_Impedance)
 
-                self.Inductor_Solver_Term_VL  = self.Inductor_Impedance/( self.Inductor_Impedance + self.Load_Parallel_Capacitor )
-                self.Inductor_Solver_Term_VC  = self.Load_Parallel_Inductor/( self.Capacitor_Impedance + self.Load_Parallel_Inductor )
+                self.Inductor_Solver_Term_VL  = self.Inductor_Impedance/( self.Inductor_Impedance + Load_Parallel_Capacitor )
+                self.Inductor_Solver_Term_VC  = Load_Parallel_Inductor/( self.Capacitor_Impedance + Load_Parallel_Inductor )
                 self.Inductor_Solver_Term_IL  = self.Capacitor_Impedance * self.Inductor_Impedance * self.Load_Impedance /(self.Load_Impedance*self.Inductor_Impedance + self.Load_Impedance*self.Capacitor_Impedance + self.Inductor_Impedance * self.Capacitor_Impedance)
                 self.Inductor_Solver_Term_IC  = self.Inductor_Solver_Term_IL
-                self.Inductor_Solver_Term_VS  = self.Inductor_Impedance / ( self.Inductor_Impedance + self.Load_Parallel_Capacitor )
+                self.Inductor_Solver_Term_VS  = self.Inductor_Impedance / ( self.Inductor_Impedance + Load_Parallel_Capacitor )
 
                 self.Inductor_Solver_Term_VL_I  = self.Inductor_Solver_Term_VL / self.Inductor_Impedance
                 self.Inductor_Solver_Term_VC_I  = self.Inductor_Solver_Term_VC / self.Inductor_Impedance
@@ -234,11 +232,11 @@ class Data_Input_Storage :
                 self.Inductor_Solver_Term_IC_I  = self.Inductor_Solver_Term_IC / self.Inductor_Impedance
                 self.Inductor_Solver_Term_VS_I  = self.Inductor_Solver_Term_VS / self.Inductor_Impedance
 
-                self.Capacitor_Solver_Term_VC  = self.Capacitor_Impedance/( self.Capacitor_Impedance + self.Load_Parallel_Inductor )
-                self.Capacitor_Solver_Term_VL  = self.Load_Parallel_Capacitor/( self.Inductor_Impedance + self.Load_Parallel_Capacitor )
+                self.Capacitor_Solver_Term_VC  = self.Capacitor_Impedance/( self.Capacitor_Impedance + Load_Parallel_Inductor )
+                self.Capacitor_Solver_Term_VL  = Load_Parallel_Capacitor/( self.Inductor_Impedance + Load_Parallel_Capacitor )
                 self.Capacitor_Solver_Term_IC  = self.Capacitor_Impedance * self.Inductor_Impedance * self.Load_Impedance /(self.Load_Impedance*self.Inductor_Impedance + self.Load_Impedance*self.Capacitor_Impedance + self.Inductor_Impedance * self.Capacitor_Impedance)
                 self.Capacitor_Solver_Term_IL  = self.Capacitor_Solver_Term_IC
-                self.Capacitor_Solver_Term_VS  = self.Load_Parallel_Capacitor / ( self.Inductor_Impedance + self.Load_Parallel_Capacitor )
+                self.Capacitor_Solver_Term_VS  = Load_Parallel_Capacitor / ( self.Inductor_Impedance + Load_Parallel_Capacitor )
 
                 self.Capacitor_Solver_Term_VC_I  = self.Capacitor_Solver_Term_VC / self.Capacitor_Impedance
                 self.Capacitor_Solver_Term_VL_I  = self.Capacitor_Solver_Term_VL / self.Capacitor_Impedance
@@ -246,15 +244,15 @@ class Data_Input_Storage :
                 self.Capacitor_Solver_Term_IL_I  = self.Capacitor_Solver_Term_IL / self.Capacitor_Impedance
                 self.Capacitor_Solver_Term_VS_I  = self.Capacitor_Solver_Term_VS / self.Capacitor_Impedance
                 
-                self.Initial_Inductor_Current = self.Voltage_Souce_Magnitude/(self.Inductor_Impedance + self.Load_Parallel_Capacitor)
+                self.Initial_Inductor_Current = self.Voltage_Souce_Magnitude/(self.Inductor_Impedance + Load_Parallel_Capacitor)
                 self.Initial_Inductor_Voltage = self.Initial_Inductor_Current * self.Inductor_Impedance
                 
-                self.Initial_Capacitor_Voltage = self.Initial_Inductor_Current * self.Load_Parallel_Capacitor
+                self.Initial_Capacitor_Voltage = self.Initial_Inductor_Current * Load_Parallel_Capacitor
                 self.Initial_Capacitor_Current = self.Initial_Capacitor_Voltage/self.Capacitor_Impedance
                 
             else:
-                self.Load_Parallel_Inductor = self.Inductor_Impedance
-                self.Load_Parallel_Capacitor = self.Capacitor_Impedance
+                Load_Parallel_Inductor = self.Inductor_Impedance
+                Load_Parallel_Capacitor = self.Capacitor_Impedance
 
                 self.Inductor_Solver_Term_VL  = self.Inductor_Impedance/( self.Inductor_Impedance + self.Capacitor_Impedance )
                 self.Inductor_Solver_Term_VC  = self.Inductor_Impedance/( self.Inductor_Impedance + self.Capacitor_Impedance )
@@ -288,6 +286,30 @@ class Data_Input_Storage :
                 
             if(self.input_values['show_about']):
                 self.about()
+    
+    def Circuit_Solver_Inductor_Voltage(self,VL,IL,VC,IC):
+        return -VL * self.Inductor_Solver_Term_VL - VC * self.Inductor_Solver_Term_VC - IL * self.Inductor_Solver_Term_IL + IC * self.Inductor_Solver_Term_IC 
+
+    def Circuit_Solver_Inductor_Current(self,VL,IL,VC,IC):
+        return -VL * self.Inductor_Solver_Term_VL_I - VC * self.Inductor_Solver_Term_VC_I - IL * self.Inductor_Solver_Term_IL_I + IC * self.Inductor_Solver_Term_IC_I 
+
+    def Circuit_Solver_Inductor_Source_Voltage(self,VS):
+        return VS * self.Inductor_Solver_Term_VS
+
+    def Circuit_Solver_Inductor_Source_Current(self,VS):
+        return VS * self.Inductor_Solver_Term_VS_I
+
+    def Circuit_Solver_Capacitor_Voltage(self,VL,IL,VC,IC):
+        return -VC * self.Capacitor_Solver_Term_VC - VL * self.Capacitor_Solver_Term_VL - IC * self.Capacitor_Solver_Term_IC + IL * self.Capacitor_Solver_Term_IL 
+
+    def Circuit_Solver_Capacitor_Current(self,VL,IL,VC,IC):
+        return -VC * self.Capacitor_Solver_Term_VC_I - VL * self.Capacitor_Solver_Term_VL_I - IC * self.Capacitor_Solver_Term_IC_I + IL * self.Capacitor_Solver_Term_IL_I 
+
+    def Circuit_Solver_Capacitor_Source_Voltage(self,VS):
+        return VS * self.Capacitor_Solver_Term_VS
+
+    def Circuit_Solver_Capacitor_Source_Current(self,VS):
+        return VS * self.Capacitor_Solver_Term_VS_I
     
     def about(self):
         """Prints out information input varibles and associated calculated variables.
@@ -335,9 +357,21 @@ class Data_Input_Storage :
     
 @dataclass
 class Data_Output_Storage:
+    """Stores data of various types of fanout diagrams after simulation. 
+        Stores information for commutatively merged fanouts, as well as, multipicatively merged fanouts.
+        
+        Fanout diagrams take form of 2D numpy arrays of format Array[L,C] where L is the inductive event number and C the capacitve event number.
+        There are a total of 9 arrays stored, one for the arrival time of each grid node, 
+        four for the current and voltage at the interconncet for the capacitor and inductor, 
+        and another four for the sending and returning wavefronts of the capacitor and inductor. 
+        
+        The following arrays are stored:
+        --------------------------------
+    """
+    
     Time : np.ndarray
-
-    Voltage_Interconnect_Inductor : np.ndarray
+    
+    Voltage_Interconnect_Inductor : np.ndarray 
     Current_Interconnect_Inductor : np.ndarray
 
     Voltage_Interconnect_Capacitor : np.ndarray
@@ -349,7 +383,15 @@ class Data_Output_Storage:
     Wavefronts_Returning_Inductor : np.ndarray
     Wavefronts_Returning_Capacitor : np.ndarray
     
-    def get_sending(self,which_string):
+    def get_sending_wavefronts_magnitudes(self,which_string):
+        """A method for extracting voltage or current from *sending* wavefronts.
+
+        :param which_string: possible options: ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+        :type which_string: str
+        :raises ValueError: errors if incorrect string is given. 
+        :return: Sending wavefront's Current or Voltage magnitudes 
+        :rtype: np.ndarray
+        """
         allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
         if(which_string.lower() == allowed_strings[0] ):
             return  get_voltage_array(self.Wavefronts_Sending_Inductor)
@@ -366,7 +408,15 @@ class Data_Output_Storage:
         else:
             raise ValueError("Incorrect plotting choice,\'"+which_string+"\' is not an option. Options are : "+ str(allowed_strings))
         
-    def get_returning(self,which_string):
+    def get_returning_wavefronts_magnitudes(self,which_string):
+        """A method for extracting voltage or current from *returning* wavefronts.
+
+        :param which_string: possible options: ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+        :type which_string: str
+        :raises ValueError: errors if incorrect string is given. 
+        :return: Returning wavefront's Current or Voltage magnitudes 
+        :rtype: np.ndarray
+        """
         allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
         if(which_string.lower() == allowed_strings[0] ):
             return  get_voltage_array(self.Wavefronts_Returning_Inductor)
@@ -386,6 +436,11 @@ class Data_Output_Storage:
         
 @dataclass
 class Data_Output_Storage_Ordered(Data_Output_Storage):
+    """Stores the same data arrays as in the Data_Output_Storage, but in this case the data is organised in chronological order.
+    Arrays are of a single dimesion, were values are in the order in which they occur instead of a grid/ fanout structure. 
+    
+    An additonal storage paramter of *Indexes* is included, indicating the grid co-ordiantes on the merged fanout structure in the order events occured.
+    """
     Indexes : np.ndarray
     
 def get_array_absolute_maximum(array):
@@ -433,7 +488,18 @@ def transform_merged_array_to_L_axis(data_input : Data_Input_Storage,merged_arra
     return new_array
 
 def lcm_gcd_euclid(TL:Decimal,TC:Decimal):
+    """Gets the LCM, GCD and two co-factors KL and KC for time delays TL and TC.
     
+    This function makes use of the Euclidean algorithm, which is typically only defined for the integers. 
+    In this implementation the functionallity is extended to the rational numbers. 
+    
+    :param TL: any rational number, Typically the inductive time delay
+    :type TL: Decimal
+    :param TC: any rational number, Typically the capacitve time delay
+    :type TC: Decimal
+    :return: A dictionary that contains the LCM, GCD and two co-factors.
+    :rtype: _type_
+    """
     num_big = max(TL,TC)
     num_small = min(TL,TC)
     
@@ -675,7 +741,6 @@ def multiplicative_merging(arr,Inductor_LCM_Factor ,Capacitor_LCM_Factor ,number
     return arr[:,0:Capacitor_LCM_Factor]
 
 def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Output_Storage):
-    Data_Inputs = copy.deepcopy(Data_Inputs)
     Data_Outputs = copy.deepcopy(Data_Outputs)
     
     if(Data_Inputs.is_Higher_Merging):
@@ -722,12 +787,10 @@ def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Ou
 
 def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merged : Data_Output_Storage):
     
-    Data_Input = copy.deepcopy(Data_Input)
     Data_Output_Merged = copy.deepcopy(Data_Output_Merged)
     
     def store_options(input_arr,x,y,magnitude,indexes):
         x_size,y_size = input_arr.shape
-        
         
         if(x+1 < x_size and Marked[x+1,y] == 0):
             
@@ -863,30 +926,6 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
 
 def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
 
-    def Circuit_Solver_Inductor_Voltage(VL,IL,VC,IC):
-        return -VL * Data_Input.Inductor_Solver_Term_VL - VC * Data_Input.Inductor_Solver_Term_VC - IL * Data_Input.Inductor_Solver_Term_IL + IC * Data_Input.Inductor_Solver_Term_IC 
-
-    def Circuit_Solver_Inductor_Current(VL,IL,VC,IC):
-        return -VL * Data_Input.Inductor_Solver_Term_VL_I - VC * Data_Input.Inductor_Solver_Term_VC_I - IL * Data_Input.Inductor_Solver_Term_IL_I + IC * Data_Input.Inductor_Solver_Term_IC_I 
-
-    def Circuit_Solver_Inductor_Source_Voltage(VS):
-        return VS * Data_Input.Inductor_Solver_Term_VS
-
-    def Circuit_Solver_Inductor_Source_Current(VS):
-        return VS * Data_Input.Inductor_Solver_Term_VS_I
-
-    def Circuit_Solver_Capacitor_Voltage(VL,IL,VC,IC):
-        return -VC * Data_Input.Capacitor_Solver_Term_VC - VL * Data_Input.Capacitor_Solver_Term_VL - IC * Data_Input.Capacitor_Solver_Term_IC + IL * Data_Input.Capacitor_Solver_Term_IL 
-
-    def Circuit_Solver_Capacitor_Current(VL,IL,VC,IC):
-        return -VC * Data_Input.Capacitor_Solver_Term_VC_I - VL * Data_Input.Capacitor_Solver_Term_VL_I - IC * Data_Input.Capacitor_Solver_Term_IC_I + IL * Data_Input.Capacitor_Solver_Term_IL_I 
-
-    def Circuit_Solver_Capacitor_Source_Voltage(VS):
-        return VS * Data_Input.Capacitor_Solver_Term_VS
-
-    def Circuit_Solver_Capacitor_Source_Current(VS):
-        return VS * Data_Input.Capacitor_Solver_Term_VS_I
-    
     class Wavefront:
         velocity = Decimal()
         length = Decimal()
@@ -984,21 +1023,21 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
 
                 if is_reflection: # A reflected wave at source side   |<--
 
-                    self.magnitude_voltage = Circuit_Solver_Capacitor_Voltage(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
-                    self.magnitude_current = Circuit_Solver_Capacitor_Current(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
+                    self.magnitude_voltage = Data_Input.Circuit_Solver_Capacitor_Voltage(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
+                    self.magnitude_current = Data_Input.Circuit_Solver_Capacitor_Current(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
 
                 elif isinstance(Wavefront_Parent, Wavefront_Source) : # A generate source wave (Vs)-|->
 
                     self.time_start = Wavefront_Parent.time_start
                     self.time_end = self.time_start + Data_Input.Capacitor_Time
 
-                    self.magnitude_voltage = Circuit_Solver_Capacitor_Source_Voltage(Wavefront_Parent.magnitude_voltage)
-                    self.magnitude_current = Circuit_Solver_Capacitor_Source_Current(Wavefront_Parent.magnitude_voltage)
+                    self.magnitude_voltage = Data_Input.Circuit_Solver_Capacitor_Source_Voltage(Wavefront_Parent.magnitude_voltage)
+                    self.magnitude_current = Data_Input.Circuit_Solver_Capacitor_Source_Current(Wavefront_Parent.magnitude_voltage)
 
                 else: # A transmitted wave at source side  -|->
 
-                    self.magnitude_voltage = Circuit_Solver_Capacitor_Voltage(Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
-                    self.magnitude_current = Circuit_Solver_Capacitor_Current(Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
+                    self.magnitude_voltage = Data_Input.Circuit_Solver_Capacitor_Voltage(Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
+                    self.magnitude_current = Data_Input.Circuit_Solver_Capacitor_Current(Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
 
             else: # A reflected wave at load side   -->|
 
@@ -1042,21 +1081,21 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
 
                 if is_reflection: # A reflected wave at source side   |<--
 
-                    self.magnitude_voltage = Circuit_Solver_Inductor_Voltage( Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
-                    self.magnitude_current = Circuit_Solver_Inductor_Current( Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
+                    self.magnitude_voltage = Data_Input.Circuit_Solver_Inductor_Voltage( Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
+                    self.magnitude_current = Data_Input.Circuit_Solver_Inductor_Current( Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
 
                 elif isinstance(Wavefront_Parent, Wavefront_Source) : # A generate source wave (Vs)-|->
 
                     self.time_start = Wavefront_Parent.time_start
                     self.time_end = self.time_start + Data_Input.Inductor_Time
 
-                    self.magnitude_voltage = Circuit_Solver_Inductor_Source_Voltage(Wavefront_Parent.magnitude_voltage)
-                    self.magnitude_current = Circuit_Solver_Inductor_Source_Current(Wavefront_Parent.magnitude_voltage)
+                    self.magnitude_voltage = Data_Input.Circuit_Solver_Inductor_Source_Voltage(Wavefront_Parent.magnitude_voltage)
+                    self.magnitude_current = Data_Input.Circuit_Solver_Inductor_Source_Current(Wavefront_Parent.magnitude_voltage)
                     
                 else: # A transmitted wave at source side  -|->
 
-                    self.magnitude_voltage = Circuit_Solver_Inductor_Voltage(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
-                    self.magnitude_current = Circuit_Solver_Inductor_Current(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
+                    self.magnitude_voltage = Data_Input.Circuit_Solver_Inductor_Voltage(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
+                    self.magnitude_current = Data_Input.Circuit_Solver_Inductor_Current(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
 
             else: # A reflected wave at load side   -->|
                 

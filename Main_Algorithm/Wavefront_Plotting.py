@@ -94,24 +94,24 @@ def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
 
 def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :str, is_sending : bool = True):
     if(is_sending):
-        plot_fanout_seismic(data_output.get_sending(which_string),ax)
+        plot_fanout_seismic(data_output.get_sending_wavefronts_magnitudes(which_string),ax)
     else:
-        plot_fanout_seismic(data_output.get_returning(which_string),ax)
+        plot_fanout_seismic(data_output.get_returning_wavefronts_magnitudes(which_string),ax)
 
 def plot_fanout_wavefronts_all(data_output: Data_Output_Storage, is_sending : bool = True, data_str :str = ""):
     fig, ax = plt.subplot_mosaic([['A','B','C','D'],['E','F','G','H']])
     
     fig.suptitle("Wavefront Fanouts " + data_str)
     
-    plot_fanout_seismic(data_output.get_sending("voltage inductor"),ax['A'],"sending voltage inductor")
-    plot_fanout_seismic(data_output.get_sending("current inductor"),ax['B'],"sending current inductor")
-    plot_fanout_seismic(data_output.get_sending("voltage capacitor"),ax['C'],"sending voltage capacitor")
-    plot_fanout_seismic(data_output.get_sending("current capacitor"),ax['D'],"sending current capacitor")
+    plot_fanout_seismic(data_output.get_sending_wavefronts_magnitudes("voltage inductor"),ax['A'],"sending voltage inductor")
+    plot_fanout_seismic(data_output.get_sending_wavefronts_magnitudes("current inductor"),ax['B'],"sending current inductor")
+    plot_fanout_seismic(data_output.get_sending_wavefronts_magnitudes("voltage capacitor"),ax['C'],"sending voltage capacitor")
+    plot_fanout_seismic(data_output.get_sending_wavefronts_magnitudes("current capacitor"),ax['D'],"sending current capacitor")
 
-    plot_fanout_seismic(data_output.get_returning("voltage inductor"),ax['E'],"returning voltage inductor")
-    plot_fanout_seismic(data_output.get_returning("current inductor"),ax['F'],"returning current inductor")
-    plot_fanout_seismic(data_output.get_returning("voltage capacitor"),ax['G'],"returning voltage capacitor")
-    plot_fanout_seismic(data_output.get_returning("current capacitor"),ax['H'],"returning current capacitor")
+    plot_fanout_seismic(data_output.get_returning_wavefronts_magnitudes("voltage inductor"),ax['E'],"returning voltage inductor")
+    plot_fanout_seismic(data_output.get_returning_wavefronts_magnitudes("current inductor"),ax['F'],"returning current inductor")
+    plot_fanout_seismic(data_output.get_returning_wavefronts_magnitudes("voltage capacitor"),ax['G'],"returning voltage capacitor")
+    plot_fanout_seismic(data_output.get_returning_wavefronts_magnitudes("current capacitor"),ax['H'],"returning current capacitor")
         
     return fig, ax
     
@@ -301,18 +301,18 @@ def plot_time_wavefronts_all(data_output : Data_Output_Storage, what_to_plot : s
     fig_sub.suptitle("Wavefronts of the "+ what_to_plot)
      
     ax_sub[0,0].set_title("sending voltage")
-    ax_sub[0,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
     ax_sub[0,1].set_title("returning voltage")
-    ax_sub[0,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
     ax_sub[0,2].set_title("sending + returning voltage")
-    ax_sub[0,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("voltage "+ what_to_plot)+data_output.get_sending("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)+data_output.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
 
     ax_sub[1,0].set_title("sending current")
-    ax_sub[1,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending("current " + what_to_plot)),where='post')
+    ax_sub[1,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
     ax_sub[1,1].set_title("returning current")
-    ax_sub[1,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("current " + what_to_plot)),where='post')
+    ax_sub[1,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("current " + what_to_plot)),where='post')
     ax_sub[1,2].set_title("sending + returning current")
-    ax_sub[1,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("current " + what_to_plot)+data_output.get_sending("current " + what_to_plot)),where='post')
+    ax_sub[1,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("current " + what_to_plot)+data_output.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
     
     return fig_sub, ax_sub
 
@@ -322,24 +322,24 @@ def plot_time_wavefronts_all_both(data_output : Data_Output_Storage, data_output
     fig_sub.suptitle("Wavefronts of the "+ what_to_plot)
      
     ax_sub[0,0].set_title("sending voltage")
-    ax_sub[0,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending("voltage "+ what_to_plot)),where='post')
-    ax_sub[0,0].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_sending("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,0].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
     ax_sub[0,1].set_title("returning voltage")
-    ax_sub[0,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("voltage "+ what_to_plot)),where='post')
-    ax_sub[0,1].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,1].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
     ax_sub[0,2].set_title("sending + returning voltage")
-    ax_sub[0,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("voltage "+ what_to_plot)+data_output.get_sending("voltage "+ what_to_plot)),where='post')
-    ax_sub[0,2].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning("voltage "+ what_to_plot)+data_output_2.get_sending("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)+data_output.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
+    ax_sub[0,2].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)+data_output_2.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
 
     ax_sub[1,0].set_title("sending current")
-    ax_sub[1,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending("current " + what_to_plot)),where='post')
-    ax_sub[1,0].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_sending("current " + what_to_plot)),where='post')
+    ax_sub[1,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
+    ax_sub[1,0].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
     ax_sub[1,1].set_title("returning current")
-    ax_sub[1,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("current " + what_to_plot)),where='post')
-    ax_sub[1,1].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning("current " + what_to_plot)),where='post')
+    ax_sub[1,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("current " + what_to_plot)),where='post')
+    ax_sub[1,1].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning_wavefronts_magnitudes("current " + what_to_plot)),where='post')
     ax_sub[1,2].set_title("sending + returning current")
-    ax_sub[1,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning("current " + what_to_plot)+data_output.get_sending("current " + what_to_plot)),where='post')
-    ax_sub[1,2].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning("current " + what_to_plot)+data_output_2.get_sending("current " + what_to_plot)),where='post')
+    ax_sub[1,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("current " + what_to_plot)+data_output.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
+    ax_sub[1,2].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning_wavefronts_magnitudes("current " + what_to_plot)+data_output_2.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
     
     return fig_sub, ax_sub
    
@@ -819,25 +819,25 @@ def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output
     boundary = 0 
     
     if(is_current):
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending("current capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending("current capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending("current inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending("current inductor")))
+        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
+        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
+        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
+        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
 
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning("current capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning("current capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning("current inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning("current inductor")))
+        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
+        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
+        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
+        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
     else:
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending("voltage capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending("voltage capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending("voltage inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending("voltage inductor")))
+        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
+        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
+        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
+        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
 
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning("voltage capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning("voltage capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning("voltage inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning("voltage inductor")))
+        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
+        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
+        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
+        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
         
     boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
     
@@ -983,25 +983,25 @@ def plot_refelction_diagram_sending(Data_Input: Data_Input_Storage, Data_Output_
     boundary = 0 
     
     if(is_current):
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending("current capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending("current capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending("current inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending("current inductor")))
+        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
+        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
+        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
+        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
 
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning("current capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning("current capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning("current inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning("current inductor")))
+        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
+        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
+        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
+        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
     else:
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending("voltage capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending("voltage capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending("voltage inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending("voltage inductor")))
+        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
+        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
+        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
+        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
 
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning("voltage capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning("voltage capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning("voltage inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning("voltage inductor")))
+        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
+        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
+        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
+        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
         
     boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
     
@@ -1147,25 +1147,25 @@ def plot_refelction_diagram_returning(Data_Input: Data_Input_Storage, Data_Outpu
     boundary = 0 
     
     if(is_current):
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending("current capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending("current capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending("current inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending("current inductor")))
+        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
+        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
+        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
+        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
 
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning("current capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning("current capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning("current inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning("current inductor")))
+        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
+        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
+        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
+        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
     else:
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending("voltage capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending("voltage capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending("voltage inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending("voltage inductor")))
+        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
+        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
+        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
+        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
 
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning("voltage capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning("voltage capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning("voltage inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning("voltage inductor")))
+        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
+        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
+        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
+        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
         
     boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
     
@@ -1321,25 +1321,25 @@ def plot_refelction_diagram_one_tx_s_and_r(Data_Input: Data_Input_Storage, Data_
     boundary = 0 
     
     if(is_current):
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending("current capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending("current capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending("current inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending("current inductor")))
+        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
+        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
+        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
+        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
 
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning("current capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning("current capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning("current inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning("current inductor")))
+        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
+        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
+        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
+        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
     else:
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending("voltage capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending("voltage capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending("voltage inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending("voltage inductor")))
+        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
+        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
+        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
+        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
 
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning("voltage capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning("voltage capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning("voltage inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning("voltage inductor")))
+        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
+        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
+        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
+        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
         
     boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
     
@@ -1509,25 +1509,25 @@ def plot_refelction_diagram_one_tx_s_or_r(Data_Input: Data_Input_Storage, Data_O
     boundary = 0 
     
     if(is_current):
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending("current capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending("current capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending("current inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending("current inductor")))
+        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
+        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
+        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
+        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
 
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning("current capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning("current capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning("current inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning("current inductor")))
+        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
+        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
+        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
+        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
     else:
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending("voltage capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending("voltage capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending("voltage inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending("voltage inductor")))
+        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
+        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
+        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
+        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
 
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning("voltage capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning("voltage capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning("voltage inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning("voltage inductor")))
+        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
+        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
+        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
+        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
         
     boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
     
