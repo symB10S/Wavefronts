@@ -1168,23 +1168,23 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     
     #Storage Arrays
 
-    Storage_Away : Wavefront = deque()
-    Storage_Return : Wavefront = deque()
+    Wavefronts_Away_deque : Wavefront = deque()
+    Wavefronts_Returning_deque : Wavefront = deque()
 
     # Generate Intial Away Waves from voltage excitation
     temp_wavefront = Wavefront_Source(Data_Input.Voltage_Souce_Magnitude,0,0)
-    temp_wavefront.Generate(Storage_Away)
+    temp_wavefront.Generate(Wavefronts_Away_deque)
 
     # Generate Intial Return Waves,
     # Get Intial Sending wavefront, this will be an inductive wavefront
-    temp_wavefront_inductive = Storage_Away.popleft()
-    temp_wavefront_inductive.Generate(Storage_Return)
+    temp_wavefront_inductive = Wavefronts_Away_deque.popleft()
+    temp_wavefront_inductive.Generate(Wavefronts_Returning_deque)
     Wavefronts_Away[1,0] = temp_wavefront_inductive
     Time[1-1,0] = temp_wavefront_inductive.time_start
     
     # Get Next Initial Sending wavefront, thiw will be a capacitive wavefront
-    temp_wavefront_capacitive = Storage_Away.popleft()
-    temp_wavefront_capacitive.Generate(Storage_Return)
+    temp_wavefront_capacitive = Wavefronts_Away_deque.popleft()
+    temp_wavefront_capacitive.Generate(Wavefronts_Returning_deque)
     Wavefronts_Away[0,1] = temp_wavefront_capacitive
 
     # Merge_Algorithm
@@ -1197,23 +1197,23 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         Cartesian_Index_y = 0
         
         # Get first Returning inductive wavefront 
-        temp_wavefront = Storage_Return.popleft()
+        temp_wavefront = Wavefronts_Returning_deque.popleft()
 
         # Generate Away Waves, Store Return Waves
         ## First wavefront does not merge:
-        temp_wavefront.Generate(Storage_Away)
+        temp_wavefront.Generate(Wavefronts_Away_deque)
         
         Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront
         Cartesian_Index_x = Cartesian_Index_x - 1
         Cartesian_Index_y = Cartesian_Index_y + 1
         
-        while len(Storage_Return) > 0:
+        while len(Wavefronts_Returning_deque) > 0:
             
             # Get a Returning wavefront (will be capacitve)
-            temp_wavefront = Storage_Return.popleft()
+            temp_wavefront = Wavefronts_Returning_deque.popleft()
             
-            if len(Storage_Return) == 0 : # It is the last wave
-                temp_wavefront.Generate(Storage_Away)
+            if len(Wavefronts_Returning_deque) == 0 : # It is the last wave
+                temp_wavefront.Generate(Wavefronts_Away_deque)
                 Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront
                 Cartesian_Index_x = Cartesian_Index_x - 1
                 Cartesian_Index_y = Cartesian_Index_y + 1
@@ -1221,7 +1221,7 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             else: # It is not the last wave
                 
                 # Get next Returning wavefront (will be inductive)
-                temp_next_wavefront = Storage_Return.popleft()
+                temp_next_wavefront = Wavefronts_Returning_deque.popleft()
 
                 temp_wavefront_inductive, temp_wavefront_capacitve = temp_wavefront.Generate_Return()
                 temp_next_wavefront_inductive, temp_next_wavefront_capacitve = temp_next_wavefront.Generate_Return()
@@ -1229,8 +1229,8 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
                 temp_wavefront_inductive.Merge(temp_next_wavefront_inductive)
                 temp_wavefront_capacitve.Merge(temp_next_wavefront_capacitve)
 
-                Storage_Away.append(temp_wavefront_inductive)
-                Storage_Away.append(temp_wavefront_capacitve)
+                Wavefronts_Away_deque.append(temp_wavefront_inductive)
+                Wavefronts_Away_deque.append(temp_wavefront_capacitve)
 
                 Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront
                 Cartesian_Index_x = Cartesian_Index_x - 1
@@ -1246,18 +1246,18 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         Cartesian_Index_x = 2*(layer_number+1)-1
         Cartesian_Index_y = 0
         
-        while len(Storage_Away)> 0:
+        while len(Wavefronts_Away_deque)> 0:
             # Get an Away wavefront (will be inductive)
-            temp_wavefront_inductive = Storage_Away.popleft()
-            temp_wavefront_inductive.Generate(Storage_Return)
+            temp_wavefront_inductive = Wavefronts_Away_deque.popleft()
+            temp_wavefront_inductive.Generate(Wavefronts_Returning_deque)
             Wavefronts_Away[Cartesian_Index_x, Cartesian_Index_y] = temp_wavefront_inductive
             Time[Cartesian_Index_x-1,Cartesian_Index_y] = temp_wavefront_inductive.time_start
             Cartesian_Index_x = Cartesian_Index_x - 1
             Cartesian_Index_y = Cartesian_Index_y + 1
             
             # Get the next Away wavefront (will be capacitive)
-            temp_wavefront_capacitve = Storage_Away.popleft()
-            temp_wavefront_capacitve.Generate(Storage_Return)
+            temp_wavefront_capacitve = Wavefronts_Away_deque.popleft()
+            temp_wavefront_capacitve.Generate(Wavefronts_Returning_deque)
             Wavefronts_Away[Cartesian_Index_x, Cartesian_Index_y] = temp_wavefront_capacitve
             Cartesian_Index_x = Cartesian_Index_x - 1
             Cartesian_Index_y = Cartesian_Index_y + 1
