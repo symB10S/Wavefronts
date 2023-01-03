@@ -1174,19 +1174,19 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     Wavefronts_Away = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0,0))
     Wavefronts_Return = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0,0))
     
-    Time = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Decimal('0'))
+    Time = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)),Decimal('0'))
     
-    Voltage_Interconnect_Inductor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Decimal('0'))
-    Current_Interconnect_Inductor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Decimal('0'))
+    Voltage_Interconnect_Inductor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)),Decimal('0'))
+    Current_Interconnect_Inductor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)),Decimal('0'))
 
-    Voltage_Interconnect_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Decimal('0'))
-    Current_Interconnect_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Decimal('0'))
+    Voltage_Interconnect_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)),Decimal('0'))
+    Current_Interconnect_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)),Decimal('0'))
     
-    Wavefronts_Sending_Inductor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
-    Wavefronts_Sending_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Sending_Inductor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Sending_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     
-    Wavefronts_Returning_Inductor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
-    Wavefronts_Returning_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Returning_Inductor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Returning_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     
     #Deques of wavefronts thare are used to temporairaly store wavefronts as they are being processed.
     Wavefronts_Away_deque : Wavefront = deque()
@@ -1201,7 +1201,6 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     temp_wavefront_inductive = Wavefronts_Away_deque.popleft()
     temp_wavefront_inductive.Generate(Wavefronts_Returning_deque)
     Wavefronts_Away[1,0] = temp_wavefront_inductive
-    Time[1-1,0] = temp_wavefront_inductive.time_start
     
     # Get Next Initial Sending wavefront, thiw will be a capacitive wavefront
     temp_wavefront_capacitive = Wavefronts_Away_deque.popleft()
@@ -1284,7 +1283,7 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         
         # AWAY WAVEFRONTS
         # ================
-        # Set Index for Away waveferonts
+        # Set Index for Away wavefronts in Sparse array
         # (will be one ahead of returning) 
         Wavefront_Index_x = 2*(layer_number+1)-1
         Wavefront_Index_y = 0
@@ -1297,8 +1296,6 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             temp_wavefront_inductive.Generate(Wavefronts_Returning_deque)
             # store processed away wavefront
             Wavefronts_Away[Wavefront_Index_x, Wavefront_Index_y] = temp_wavefront_inductive
-            # store time-start of away wavefront at major node
-            Time[Wavefront_Index_x-1,Wavefront_Index_y] = temp_wavefront_inductive.time_start
             # shift index
             Wavefront_Index_x = Wavefront_Index_x - 1
             Wavefront_Index_y = Wavefront_Index_y + 1
@@ -1326,6 +1323,9 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         Sparse_Major_Node_Index_x = 2*layer_number
         Sparse_Major_Node_Index_y = 0
         
+        Dense_Major_Node_Index_x = layer_number
+        Dense_Major_Node_Index_y = 0
+        
         for node_number in range(0,layer_number+1):
             # Get indexes of surrounding wavefronts
             # -------------------------------------
@@ -1348,56 +1348,60 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             wavefront_returning_capacitor = Wavefronts_Return[Return_Index_Capacitor_x,Return_Index_Capacitor_y]
             
             # store AWAY wavefronts in major node position ("away from")
-            Wavefronts_Sending_Inductor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = wavefront_sending_inductor
-            Wavefronts_Sending_Capacitor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = wavefront_sending_capacitor
+            Time[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_inductor.time_start
+            Wavefronts_Sending_Inductor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_inductor
+            Wavefronts_Sending_Capacitor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_capacitor
             # store RETURNING wavefronts in major node position (also "away from")
             # (returning wavefronts are stored in assoicated to the their AWAY wavefront parents major grid node)
             # (this is not the same as the RETURNING TO format used to calculate interconncet changes)
-            Wavefronts_Returning_Inductor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = Wavefronts_Return[Away_Index_Inductor_x,Away_Index_Inductor_y]
-            Wavefronts_Returning_Capacitor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = Wavefronts_Return[Away_Index_Capacitor_x,Away_Index_Capacitor_y]
+            Wavefronts_Returning_Inductor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = Wavefronts_Return[Away_Index_Inductor_x,Away_Index_Inductor_y]
+            Wavefronts_Returning_Capacitor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = Wavefronts_Return[Away_Index_Capacitor_x,Away_Index_Capacitor_y]
 
             if(node_number == 0 and layer_number ==0): 
                     # origin node
                     # inductor interconncet magnitude for origin node has only a sent wavefront to consider
-                    Voltage_Interconnect_Inductor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = wavefront_sending_inductor.magnitude_voltage 
-                    Current_Interconnect_Inductor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = wavefront_sending_inductor.magnitude_current
+                    Voltage_Interconnect_Inductor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_inductor.magnitude_voltage 
+                    Current_Interconnect_Inductor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_inductor.magnitude_current
                     
                     # capacitor interconncet magnitude for origin node has only a sent wavefront to consider
-                    Voltage_Interconnect_Capacitor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = wavefront_sending_capacitor.magnitude_voltage 
-                    Current_Interconnect_Capacitor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = wavefront_sending_capacitor.magnitude_current
+                    Voltage_Interconnect_Capacitor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_capacitor.magnitude_voltage 
+                    Current_Interconnect_Capacitor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_capacitor.magnitude_current
 
             elif(node_number == 0 ): 
                     # first node is an INDUCTIVE UNIQUE NODE
                     # inductor interconnect magnitudes of inductive unique nodes are affected by both returning and arriving inductive wavefronts
-                    Voltage_Interconnect_Inductor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = (wavefront_sending_inductor.magnitude_voltage  + wavefront_returning_inductor.magnitude_voltage) 
-                    Current_Interconnect_Inductor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = (wavefront_sending_inductor.magnitude_current + wavefront_returning_inductor.magnitude_current ) 
+                    Voltage_Interconnect_Inductor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = (wavefront_sending_inductor.magnitude_voltage  + wavefront_returning_inductor.magnitude_voltage) 
+                    Current_Interconnect_Inductor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = (wavefront_sending_inductor.magnitude_current + wavefront_returning_inductor.magnitude_current ) 
                     
                     # capacitor interconnect magnitudes of inductive unique nodes are only affected by wavefronts sent into the capaitor
-                    Voltage_Interconnect_Capacitor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = wavefront_sending_capacitor.magnitude_voltage 
-                    Current_Interconnect_Capacitor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = wavefront_sending_capacitor.magnitude_current
+                    Voltage_Interconnect_Capacitor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_capacitor.magnitude_voltage 
+                    Current_Interconnect_Capacitor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_capacitor.magnitude_current
 
             elif(node_number == layer_number): 
                     # last node is a CAPACITVE UNIQUE NODE
                     # inductor interconnect magnitudes of capacitive unique nodes are only affected by wavefronts sent into the inductor
-                    Voltage_Interconnect_Inductor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = wavefront_sending_inductor.magnitude_voltage  
-                    Current_Interconnect_Inductor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = wavefront_sending_inductor.magnitude_current
+                    Voltage_Interconnect_Inductor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_inductor.magnitude_voltage  
+                    Current_Interconnect_Inductor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = wavefront_sending_inductor.magnitude_current
                     
                     # capacitor interconnect magnitudes of capcitive unique nodes are affected by both returning and arriving capacitor wavefronts
-                    Voltage_Interconnect_Capacitor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = (wavefront_sending_capacitor.magnitude_voltage  + wavefront_returning_capacitor.magnitude_voltage) 
-                    Current_Interconnect_Capacitor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = (wavefront_sending_capacitor.magnitude_current + wavefront_returning_capacitor.magnitude_current )
+                    Voltage_Interconnect_Capacitor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = (wavefront_sending_capacitor.magnitude_voltage  + wavefront_returning_capacitor.magnitude_voltage) 
+                    Current_Interconnect_Capacitor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = (wavefront_sending_capacitor.magnitude_current + wavefront_returning_capacitor.magnitude_current )
             else:
                     # general node
                     # interconnect values of the inductor for general nodes are a sum of both sending and returning wavefronts
-                    Voltage_Interconnect_Inductor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = (wavefront_sending_inductor.magnitude_voltage  + wavefront_returning_inductor.magnitude_voltage) 
-                    Current_Interconnect_Inductor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = (wavefront_sending_inductor.magnitude_current + wavefront_returning_inductor.magnitude_current ) 
+                    Voltage_Interconnect_Inductor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = (wavefront_sending_inductor.magnitude_voltage  + wavefront_returning_inductor.magnitude_voltage) 
+                    Current_Interconnect_Inductor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = (wavefront_sending_inductor.magnitude_current + wavefront_returning_inductor.magnitude_current ) 
                     
                     # interconnect values of the capacitor for general nodes are a sum of both sending and returning wavefronts
-                    Voltage_Interconnect_Capacitor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = (wavefront_sending_capacitor.magnitude_voltage  + wavefront_returning_capacitor.magnitude_voltage)
-                    Current_Interconnect_Capacitor[Sparse_Major_Node_Index_x,Sparse_Major_Node_Index_y] = (wavefront_sending_capacitor.magnitude_current + wavefront_returning_capacitor.magnitude_current )
+                    Voltage_Interconnect_Capacitor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = (wavefront_sending_capacitor.magnitude_voltage  + wavefront_returning_capacitor.magnitude_voltage)
+                    Current_Interconnect_Capacitor[Dense_Major_Node_Index_x,Dense_Major_Node_Index_y] = (wavefront_sending_capacitor.magnitude_current + wavefront_returning_capacitor.magnitude_current )
             
             # update index and go to next layer     
             Sparse_Major_Node_Index_x -= 2
             Sparse_Major_Node_Index_y += 2
+            
+            Dense_Major_Node_Index_x -= 1
+            Dense_Major_Node_Index_y += 1
     
     def delete_alternating(array):
         
@@ -1411,19 +1415,18 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         
         return array_deleted
         
-    Time = delete_alternating(Time)
     
-    Voltage_Interconnect_Inductor = delete_alternating(Voltage_Interconnect_Inductor)
-    Current_Interconnect_Inductor = delete_alternating(Current_Interconnect_Inductor)
+    # Voltage_Interconnect_Inductor = delete_alternating(Voltage_Interconnect_Inductor)
+    # Current_Interconnect_Inductor = delete_alternating(Current_Interconnect_Inductor)
 
-    Voltage_Interconnect_Capacitor = delete_alternating(Voltage_Interconnect_Capacitor)
-    Current_Interconnect_Capacitor = delete_alternating(Current_Interconnect_Capacitor)
+    # Voltage_Interconnect_Capacitor = delete_alternating(Voltage_Interconnect_Capacitor)
+    # Current_Interconnect_Capacitor = delete_alternating(Current_Interconnect_Capacitor)
     
-    Wavefronts_Sending_Inductor = delete_alternating(Wavefronts_Sending_Inductor)
-    Wavefronts_Sending_Capacitor = delete_alternating(Wavefronts_Sending_Capacitor)
+    # Wavefronts_Sending_Inductor = delete_alternating(Wavefronts_Sending_Inductor)
+    # Wavefronts_Sending_Capacitor = delete_alternating(Wavefronts_Sending_Capacitor)
     
-    Wavefronts_Returning_Inductor = delete_alternating(Wavefronts_Returning_Inductor)
-    Wavefronts_Returning_Capacitor = delete_alternating(Wavefronts_Returning_Capacitor)
+    # Wavefronts_Returning_Inductor = delete_alternating(Wavefronts_Returning_Inductor)
+    # Wavefronts_Returning_Capacitor = delete_alternating(Wavefronts_Returning_Capacitor)
     
     return Data_Output_Storage(
         Time, # Merge Times
