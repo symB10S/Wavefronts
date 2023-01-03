@@ -1,4 +1,4 @@
-from Merge_Cartesian import Data_Input_Storage, Data_Output_Storage, Data_Output_Storage_Ordered, Interface_Data
+from Wavefront_Generation import Data_Input_Storage, Data_Output_Storage, Data_Output_Storage_Ordered, Interface_Data
 from decimal import *
 import numpy as np
 import copy
@@ -6,7 +6,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, EngFormatter)
 from matplotlib.animation import FFMpegWriter
-# plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Jonathan\\Documents\\Academic\\Masters\\Simulator\\Git\\Wavefront_Simulator\\ffmpeg\\bin\\ffmpeg.exe'
+
 plt.rcParams['animation.ffmpeg_path'] = 'ffmpeg\\ffmpeg.exe'
 
 import ipywidgets as widgets
