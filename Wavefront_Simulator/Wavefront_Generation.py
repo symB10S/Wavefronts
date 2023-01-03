@@ -537,9 +537,12 @@ class Data_Output_Storage:
 
 @dataclass
 class Data_Output_Storage_Ordered(Data_Output_Storage):
-    """Oreders and stores data from a Data_Output_Storage object storing multiplicatively merged data.
+    """A dataclass that stored ordered inteface output data in form of single dimenstional arrays. 
+    All the core arrays that are present in the Data_Output_Storage class are present here but in their one-dimensional chronological form.
     
-    An additonal storage paramter of *Indexes* is included, indicating the grid co-ordiantes on the merged fanout structure in the order events occured.
+    :param Indexes: An additonal array, indicating the grid co-ordiantes on the merged fanout structure in the order events occured. 
+        Is a single dimesional list of (L,C) coordiante lists. The inner lists take form of [L,C].
+    :type Indexes: List[Lists]
     """
     Indexes : np.ndarray
 
@@ -601,36 +604,43 @@ def get_current_from_wavefront(wavefront):
 #: The vectorized function that extracts the currents from an np.ndarray[Wavefronts] array.
 get_current_array = np.vectorize(get_current_from_wavefront)
 
-def get_image_array(arr):
-    image_arr = np.full((len(arr),1),Decimal('0'))
+def get_image_array(array):
+    """Turns an output-ordered 1-dimesional array into a format that can be displayed by matplotlib "imshow".
+
+    :param array: a single dimension np.ndarray or List 
+    :type array: np.ndarray or List
+    :return: an output array that can be shown using "imshow"
+    :rtype: np.ndarray 
+    """
+    image_array = np.full((len(array),1),Decimal('0'))
     
-    for i,val in enumerate(arr):
-        image_arr[i][0] = val
+    for i,val in enumerate(array):
+        image_array[i][0] = val
         
-    return image_arr
+    return image_array
 
 def transform_merged_array_to_C_axis(data_input : Data_Input_Storage,merged_array):
-    """Transform 
+    """Transform merged data output array to a C-axis merging representation
 
-    :param data_input: _description_
+    :param data_input: input data for merged array
     :type data_input: Data_Input_Storage
-    :param merged_array: _description_
-    :type merged_array: _type_
+    :param merged_array: merged array aligne to the C-axis
+    :type merged_array: np.ndarray[Decimal]
     """
     
     def extract_merging_region(data_input : Data_Input_Storage,merged_array, KL_index):
-        
+        # extract a mergign region along the inductive axis
         KL = data_input.Inductor_LCM_Factor
         KC = data_input.Capacitor_LCM_Factor
     
         return merged_array[KL_index*KL:KL_index*KL+KL,0:KC]
 
-
+    # get first meging region
     new_array = extract_merging_region(data_input,merged_array,0)
-    
+    # determine number of merging regions
     number_of_KLs = int((data_input.Number_of_Layers+1)/data_input.Inductor_LCM_Factor)
-
     for i in range(1,number_of_KLs):
+        # rearrange and add merging regions allong the C-axis
         new_merging_region = extract_merging_region(data_input,merged_array,i)
         new_array = np.concatenate((new_array,new_merging_region),axis =1)
         
@@ -699,14 +709,17 @@ def lcm_gcd_euclid(TL:Decimal,TC:Decimal):
 
     return Factor_dict
 
-get_lcm_gcd_euclid = np.vectorize(lcm_gcd_euclid)
-
 def Steady_State_Analysis(TL:Decimal,TC:Decimal):
-    '''
-    A function that takes in two time delays and indicates when Steady-State will occur.
-    
-        The main part of this function is effectively the Extended Euclidean Algorithm that has been extended to the rational numbers.
-    '''
+    """Prints out the steady-state analysis of an interface described by two time delays.
+    Returns when each of the two criteria for steady-state to be reach will occur. 
+
+    :param TL: inductive time delay
+    :type TL: Decimal
+    :param TC: capacitive time delay
+    :type TC: Decimal
+    :return: (time_before_regular_GCF, time_before_regular_Steady_State)
+    :rtype: Tuple
+    """
     print(f'Bezout analysis for TL = {TL}s and TC = {TC}s \n')
     # Determine the larger of the two numbers
     num_big = max(TL,TC)
@@ -847,8 +860,20 @@ def Steady_State_Analysis(TL:Decimal,TC:Decimal):
     return time_before_regular_GCF, time_before_regular_Steady_State
 
 def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
+    """Generates a Data_Output_Storage object from the calculated input variables stored in a Data_Input_Storage object. 
+    
+    :param Data_Input: Input data object containing simulation input variables
+    :type Data_Input: Data_Input_Storage
+    :return: output data (a collection commutative fanouts in form of np.ndarrays)
+    :rtype: Data_Output_Storage
+    
+    Resposible for generating wavefronts and simultaneously commutatively merging the wavefronts. 
+    The simaltaneous commutative merging of wavefronts is mandatory for longer simulation times.
+    """
 
     class Wavefront:
+        """Base wavefront class.
+        """
         velocity = Decimal()
         length = Decimal()
         
@@ -861,6 +886,13 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         magnitude_voltage = Decimal()
         magnitude_current = Decimal()
         def __add__(self, Wavefront_add ):
+            """superimposes two wavefronts and adds their magnitudes.
+
+            :param Wavefront_add: wavefront to be added with self
+            :type Wavefront_add: Wavefront
+            :return: self wavefront with magnitudes added
+            :rtype: Wavefront (same as self)
+            """
             
             if(Wavefront_add == 0):
                 pass
@@ -889,15 +921,14 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             print(f"{'Voltage Magnitude :':<35}{self.magnitude_voltage}")
             print(f"{'Current Magnitude :':<35}{self.magnitude_current}")
         
-        def Time_at_position(self,position):
-            x = Decimal(position)
-
-            if self.position_start == 0 :
-                return (self.time_start + x/self.velocity)
-            else:
-                return (self.time_start + (self.length -x)/self.velocity)
-
         def Position_at_time(self,time):
+            """Generates the position of wavefront at time-equirey. Returns False if no intercept.
+
+            :param time: time enquirey
+            :type time: Decimal or str
+            :return: position attime enquiret
+            :rtype: Decimal
+            """
             t = Decimal(time)
 
             if self.time_start <= t <= self.time_end:
@@ -906,11 +937,22 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
                 else:
                     return self.length - (t-self.time_start)*self.velocity
             else:
-                return -1
+                return False
 
     class Wavefront_Source( Wavefront ):
+        """Class representing switiching wavefronts of the voltage source. 
+        In this release wavefonts switching is not supported, 
+        this class used to initiated wavefronts at t=0 only. 
+        """
 
-        def __init__(self,magnitude,time_start,time_end):
+        def __init__(self,magnitude,time_start):
+            """intialised the wavefront.
+
+            :param magnitude: Source magnitude
+            :type magnitude: str or Decimal
+            :param time_start: start of pulse
+            :type time_start: str or Decimal
+            """
             
             self.length = Decimal(0)
 
@@ -918,16 +960,23 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             self.position_end = Decimal(0)
 
             self.time_start = Decimal(time_start)
-            self.time_end = Decimal(time_end)
 
             self.magnitude_voltage = Decimal(magnitude)
             self.magnitude_current = Decimal(0)
 
-        def generate_and_store(self, Wavefront_Storage : list):
-            Wavefront_Storage.append(Wavefront_Inductive(self,False))
-            Wavefront_Storage.append(Wavefront_Capacitive(self,False))
+        def generate_and_store(self, Wavefront_Storage_Away : deque):
+            """triggers the creation of the inital wavefronts in the inductor and capacitor. 
+            Stores them in the Wavefront_Storage. Order is important, inductive first followed by capacitive. 
+
+            :param Wavefront_Storage: Storage array for away waves
+            :type Wavefront_Storage: deque
+            """
+            Wavefront_Storage_Away.append(Wavefront_Inductive(self,False))
+            Wavefront_Storage_Away.append(Wavefront_Capacitive(self,False))
             
     class Wavefront_Capacitive( Wavefront ):
+        """A wavefront travelling in the capacitor. 
+        """
 
         def __init__(self, Wavefront_Parent : Wavefront, is_reflection : bool):
             
@@ -1065,8 +1114,8 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     
     # The two Sparse storage arrays:
     # ------------------------------
-    Wavefronts_Away = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0,0))
-    Wavefronts_Return = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0,0))
+    Wavefronts_Away = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0))
+    Wavefronts_Return = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0))
     
     
     # These Sparse arrays are then post-porcessed in a 'gemoetric" way to extract magnitude data in a dense format.
@@ -1094,11 +1143,11 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     Voltage_Interconnect_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)),Decimal('0'))
     Current_Interconnect_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)),Decimal('0'))
     
-    Wavefronts_Sending_Inductor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
-    Wavefronts_Sending_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Sending_Inductor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0))
+    Wavefronts_Sending_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0))
     
-    Wavefronts_Returning_Inductor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
-    Wavefronts_Returning_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
+    Wavefronts_Returning_Inductor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0))
+    Wavefronts_Returning_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0))
     
     # POPULATE THE SPARSE STORAGE ARRAYS
     # ===================================
