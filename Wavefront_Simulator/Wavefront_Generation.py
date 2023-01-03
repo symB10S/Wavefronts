@@ -1167,28 +1167,24 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     Wavefronts_Returning_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     
     #Storage Arrays
-    Storage_Capacitor_Completed : Wavefront_Capacitive = deque()
-    Storage_Inductor_Completed : Wavefront_Inductive = deque()
 
     Storage_Away : Wavefront = deque()
     Storage_Return : Wavefront = deque()
-    ## LAYER 0
-    # Generate Intial Away Waves
+
+    # Generate Intial Away Waves from voltage excitation
     temp_wavefront = Wavefront_Source(Data_Input.Voltage_Souce_Magnitude,0,0)
     temp_wavefront.Generate(Storage_Away)
 
-    # Generate Intial Return Waves, Store Away Waves
-    # Get First Sending Intial Inductive wavefront
+    # Generate Intial Return Waves,
+    # Get Intial Sending wavefront, this will be an inductive wavefront
     temp_wavefront_inductive = Storage_Away.popleft()
     temp_wavefront_inductive.Generate(Storage_Return)
-    Storage_Inductor_Completed.append(temp_wavefront_inductive)
     Wavefronts_Away[1,0] = temp_wavefront_inductive
     Time[1-1,0] = temp_wavefront_inductive.time_start
     
-    # Get Next Sending Initial Capacitive wavefront
+    # Get Next Initial Sending wavefront, thiw will be a capacitive wavefront
     temp_wavefront_capacitive = Storage_Away.popleft()
     temp_wavefront_capacitive.Generate(Storage_Return)
-    Storage_Capacitor_Completed.append(temp_wavefront_capacitive)
     Wavefronts_Away[0,1] = temp_wavefront_capacitive
 
     # Merge_Algorithm
@@ -1207,7 +1203,6 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         ## First wavefront does not merge:
         temp_wavefront.Generate(Storage_Away)
         
-        Storage_Inductor_Completed.append(temp_wavefront)
         Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront
         Cartesian_Index_x = Cartesian_Index_x - 1
         Cartesian_Index_y = Cartesian_Index_y + 1
@@ -1219,7 +1214,6 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             
             if len(Storage_Return) == 0 : # It is the last wave
                 temp_wavefront.Generate(Storage_Away)
-                Storage_Capacitor_Completed.append(temp_wavefront)
                 Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront
                 Cartesian_Index_x = Cartesian_Index_x - 1
                 Cartesian_Index_y = Cartesian_Index_y + 1
@@ -1238,12 +1232,10 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
                 Storage_Away.append(temp_wavefront_inductive)
                 Storage_Away.append(temp_wavefront_capacitve)
 
-                Storage_Capacitor_Completed.append(temp_wavefront)
                 Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront
                 Cartesian_Index_x = Cartesian_Index_x - 1
                 Cartesian_Index_y = Cartesian_Index_y + 1
                 
-                Storage_Inductor_Completed.append(temp_next_wavefront)
                 Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_next_wavefront
                 Cartesian_Index_x = Cartesian_Index_x - 1
                 Cartesian_Index_y = Cartesian_Index_y + 1
@@ -1258,7 +1250,6 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             # Get an Away wavefront (will be inductive)
             temp_wavefront_inductive = Storage_Away.popleft()
             temp_wavefront_inductive.Generate(Storage_Return)
-            Storage_Inductor_Completed.append(temp_wavefront_inductive)
             Wavefronts_Away[Cartesian_Index_x, Cartesian_Index_y] = temp_wavefront_inductive
             Time[Cartesian_Index_x-1,Cartesian_Index_y] = temp_wavefront_inductive.time_start
             Cartesian_Index_x = Cartesian_Index_x - 1
@@ -1267,7 +1258,6 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             # Get the next Away wavefront (will be capacitive)
             temp_wavefront_capacitve = Storage_Away.popleft()
             temp_wavefront_capacitve.Generate(Storage_Return)
-            Storage_Capacitor_Completed.append(temp_wavefront_capacitve)
             Wavefronts_Away[Cartesian_Index_x, Cartesian_Index_y] = temp_wavefront_capacitve
             Cartesian_Index_x = Cartesian_Index_x - 1
             Cartesian_Index_y = Cartesian_Index_y + 1
