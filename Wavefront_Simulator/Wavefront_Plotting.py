@@ -1,4 +1,4 @@
-from Merge_Cartesian import Data_Input_Storage, Data_Output_Storage, Data_Output_Storage_Ordered
+from Merge_Cartesian import Data_Input_Storage, Data_Output_Storage, Data_Output_Storage_Ordered, Interface_Data
 from decimal import *
 import numpy as np
 import copy
@@ -6,7 +6,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, EngFormatter)
 from matplotlib.animation import FFMpegWriter
-plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Jonathan\\Documents\\Academic\\Masters\\Simulator\\Git\\Main_Algorithm\\ffmpeg\\bin\\ffmpeg.exe'
+# plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Jonathan\\Documents\\Academic\\Masters\\Simulator\\Git\\Wavefront_Simulator\\ffmpeg\\bin\\ffmpeg.exe'
+plt.rcParams['animation.ffmpeg_path'] = 'ffmpeg\\ffmpeg.exe'
 
 import ipywidgets as widgets
 from IPython.display import display
@@ -1907,15 +1908,15 @@ def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_
 
 # SAVE VIDEO
 
-def save_spatial_interconnect(data_input,data_output_merged,data_output_ordered,**kwargs):
+def save_spatial_interconnect(interface_data : Interface_Data,**kwargs):
 
     #Default Values
     kwarg_options = dict([
-        ('start_time',Decimal('0')), ('end_time',data_input.Simulation_Stop_Time), 
+        ('start_time',Decimal('0')), ('end_time',interface_data.data_input.Simulation_Stop_Time), 
         ('fps',Decimal('30')),('video_runtime',Decimal('60')),('dpi',300),
         ('fig_size',(14, 8)),
         ('meta_data',dict(title='Distributed Modelling', artist='Jonathan Meerholz')),
-        ('save_name',f'spatial_and_time_{data_input.Inductor_Impedance}_{data_input.Capacitor_Impedance}ohm_{data_input.Inductor_Time}_{data_input.Capacitor_Time}s')
+        ('save_name',f'spatial_and_time_{interface_data.data_input.Inductor_Impedance}_{interface_data.data_input.Capacitor_Impedance}ohm_{interface_data.data_input.Inductor_Time}_{interface_data.data_input.Capacitor_Time}s')
         ])
     
     #Set Kwargs
@@ -1949,8 +1950,8 @@ def save_spatial_interconnect(data_input,data_output_merged,data_output_ordered,
     with writer.saving(fig_save_2d, (save_name+".mp4"), float(dpi)):
 
         for i in range(0,int(number_frames)):
-            first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,data_output_merged,data_output_ordered,ax_save_2d[0,0],ax_save_2d[1,0])
-            plot_time_interconnect_and_intercept(time,data_output_ordered,ax_save_2d[0,1],ax_save_2d[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+            first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,interface_data.data_output_multiplicative,interface_data.data_output_ordered,ax_save_2d[0,0],ax_save_2d[1,0])
+            plot_time_interconnect_and_intercept(time,interface_data.data_output_ordered,ax_save_2d[0,1],ax_save_2d[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
             
             writer.grab_frame()
             
