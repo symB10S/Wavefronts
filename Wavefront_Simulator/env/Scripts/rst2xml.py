@@ -1,4 +1,4 @@
-#!c:\users\jonathan\documents\academic\masters\simulator\git\main_algorithm\env\scripts\python.exe
+#!c:\users\jonathan\documents\academic\masters\simulator\git\wavefront_simulator\env\scripts\python.exe
 
 # $Id: rst2xml.py 4564 2006-05-21 20:44:42Z wiemann $
 # Author: David Goodger <goodger@python.org>

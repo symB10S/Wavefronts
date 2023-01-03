@@ -1,4 +1,4 @@
-#!c:\users\jonathan\documents\academic\masters\simulator\git\main_algorithm\env\scripts\python.exe
+#!c:\users\jonathan\documents\academic\masters\simulator\git\wavefront_simulator\env\scripts\python.exe
 
 # $Id: rst2xetex.py 7847 2015-03-17 17:30:47Z milde $
 # Author: Guenter Milde

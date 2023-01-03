@@ -1,4 +1,4 @@
-#!c:\users\jonathan\documents\academic\masters\simulator\git\main_algorithm\env\scripts\python.exe
+#!c:\users\jonathan\documents\academic\masters\simulator\git\wavefront_simulator\env\scripts\python.exe
 # -*- coding: utf8 -*-
 # :Copyright: © 2015 Günter Milde.
 # :License: Released under the terms of the `2-Clause BSD license`_, in short:

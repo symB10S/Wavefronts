@@ -1,4 +1,4 @@
-#!c:\users\jonathan\documents\academic\masters\simulator\git\main_algorithm\env\scripts\python.exe
+#!c:\users\jonathan\documents\academic\masters\simulator\git\wavefront_simulator\env\scripts\python.exe
 
 # Author:
 # Contact: grubert@users.sf.net
