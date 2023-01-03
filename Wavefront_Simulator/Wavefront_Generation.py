@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 getcontext().traps[FloatOperation] = True
 
-#:
+#: The default values used in the simulation if not specified otherwise
 default_input_values : dict = dict ([
     ('L_impedance','100'),('L_time' ,'1'),('L_length','1'),
     ('C_impedance','1'),  ('C_time' ,'1'),('C_length','1'),
@@ -144,11 +144,11 @@ class Data_Input_Storage :
             self.input_values = handle_default_kwargs(provided_input_values,self.input_values)
             
             # Make input dictionary compatible with SPICE simulation inputs
-            self.new_input_values = provided_input_values.copy()
-            if(self.new_input_values.get('show_about') is None):
+            self.SPICE_input_values = provided_input_values.copy()
+            if(self.SPICE_input_values.get('show_about') is None):
                 pass
             else:
-                del self.new_input_values['show_about']
+                del self.SPICE_input_values['show_about']
             
             #: does the converter consider the load, or is it a LC osscilator.
             self.Is_Buck = True
@@ -714,10 +714,8 @@ def Steady_State_Analysis(TL:Decimal,TC:Decimal):
     
     return time_before_regular_GCF, time_before_regular_Steady_State
   
-def multiplicative_merge_cycle(input_array:np.ndarray,Inductor_LCM_Factor:int,Capacitor_LCM_Factor:int):
-    """A function that completes a single merging cycle of a mangitude fanout along its first (inductive) axis.
-    
-    The merging process 
+def multiplicative_merge_single_cycle(input_array:np.ndarray,Inductor_LCM_Factor:int,Capacitor_LCM_Factor:int):
+    """Completes a single merging cycle of a mangitude fanout along its first (inductive) axis.
 
     :param input_array: An output array from Datat_Output_Storage class., i.e. data_output.Voltage_Interconnect_Inductor
     :type input_array: np.ndarray
@@ -761,14 +759,13 @@ def multiplicative_merge_cycle(input_array:np.ndarray,Inductor_LCM_Factor:int,Ca
     
     return array_merged
 
-def multiplicative_merging(arr,Inductor_LCM_Factor ,Capacitor_LCM_Factor ,number_of_layers):
-    
-    number_merge_cycles = math.ceil(number_of_layers/Capacitor_LCM_Factor) + 1
+def multiplicative_merging(input_array:np.ndarray,Inductor_LCM_Factor:int ,Capacitor_LCM_Factor:int ,number_of_layers:int):
+    number_merge_cycles:int = math.ceil(number_of_layers/Capacitor_LCM_Factor) + 1
     
     for _ in range (0,number_merge_cycles):
-        arr = multiplicative_merge_cycle(arr,Inductor_LCM_Factor,Capacitor_LCM_Factor)
+        input_array:np.ndarray = multiplicative_merge_single_cycle(input_array,Inductor_LCM_Factor,Capacitor_LCM_Factor)
 
-    return arr[:,0:Capacitor_LCM_Factor]
+    return input_array[:,0:Capacitor_LCM_Factor]
 
 def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Output_Storage):
     Data_Outputs = copy.deepcopy(Data_Outputs)
@@ -1170,8 +1167,6 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     Wavefronts_Returning_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     
     #Storage Arrays
-    Storage_Voltage_Active : Wavefront_Source = deque()
-    Storage_Voltage_Completed : Wavefront_Source = deque()
     Storage_Capacitor_Completed : Wavefront_Capacitive = deque()
     Storage_Inductor_Completed : Wavefront_Inductive = deque()
 
@@ -1179,12 +1174,9 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     Storage_Return : Wavefront = deque()
     ## LAYER 0
     # Generate Intial Away Waves
-    Storage_Voltage_Active.append(Wavefront_Source(Data_Input.Voltage_Souce_Magnitude,0,0))
-    temp_wavefront = Storage_Voltage_Active.popleft()
-    
+    temp_wavefront = Wavefront_Source(Data_Input.Voltage_Souce_Magnitude,0,0)
     temp_wavefront.Generate(Storage_Away)
-    Storage_Voltage_Completed.append(temp_wavefront)
-    
+
     # Generate Intial Return Waves, Store Away Waves
     # Get First Sending Intial Inductive wavefront
     temp_wavefront_inductive = Storage_Away.popleft()

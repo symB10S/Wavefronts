@@ -36,7 +36,7 @@ def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour
         max_boundary = max(max_boundary, min_boundary)
     
     ax.set_title(title)
-    c = ax.imshow(np.pad(arr.astype(float),(padwidth,padwidth)),cmap= mpl.cm.seismic,vmax =max_boundary, vmin = - max_boundary)
+    c = ax.imshow(np.pad(arr.astype(float),(padwidth,padwidth)),cmap= mpl.cm.seismic,vmax =max_boundary, vmin = - max_boundary,origin='lower')
     
     if(show_colour_bar):
         cb = ax.get_figure().colorbar(c,ax=ax)
