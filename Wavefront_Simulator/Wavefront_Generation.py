@@ -3,6 +3,7 @@ from collections import deque
 import numpy as np
 import math
 import copy
+import warnings
 from dataclasses import dataclass
 
 getcontext().traps[FloatOperation] = True
@@ -129,12 +130,12 @@ class Data_Input_Storage :
         else:
             del self.SPICE_input_values['show_about']
         
-        #: does the converter consider the load, or is it a LC osscilator.
+        # does the converter consider the load, or is it a LC osscilator.
         self.Is_Buck = True
         if self.input_values['Load_impedance'] == 'inf':
             self.Is_Buck = False
         
-        #: if simulation end time is specified, or is it calculated using "number_periods" input variable.
+        # if simulation end time is specified, or is it calculated using "number_periods" input variable.
         self.Custom_stop_time = True
         if self.input_values['Simulation_stop_time'] == '0':
             self.Custom_stop_time = False
@@ -429,8 +430,39 @@ class Data_Output_Storage:
         four for the current and voltage at the interconncet for the capacitor and inductor, 
         and another four for the sending and returning wavefronts of the capacitor and inductor. 
         
-        The following arrays are stored:
-        --------------------------------
+        :param Time: 2D numpy array of the return times of grid nodes
+        :type Time: np.ndarray[Decimal]
+        :param Voltage_Interconnect_Inductor: 2D numpy array of the interconnect voltage change of the inductor at a grid node
+        :type Voltage_Interconnect_Inductor: np.ndarray[Decimal]
+        :param Current_Interconnect_Inductor: 2D numpy array of the interconnect current change of the inductor at a grid node
+        :type Current_Interconnect_Inductor: np.ndarray[Decimal]
+        :param Voltage_Interconnect_Capacitor: 2D numpy array of the interconnect voltage change of the capacitor at a grid node
+        :type Voltage_Interconnect_Capacitor: np.ndarray[Decimal]
+        :param Current_Interconnect_Capacitor: 2D numpy array of the interconnect current change of the capacitor at a grid node
+        :type Current_Interconnect_Capacitor: np.ndarray[Decimal]
+        :param Wavefronts_Sending_Inductor: 2D numpy array of the wavefronts sent into the inductor at grid nodes
+        :type Wavefronts_Sending_Inductor: np.ndarray[Wavefront_Inductive]
+        :param Wavefronts_Sending_Capacitor: 2D numpy array of the wavefronts sent into the capacitor at grid nodes
+        :type Wavefronts_Sending_Capacitor: np.ndarray[Wavefront_Capacitive]
+        :param Wavefronts_Returning_Inductor: 2D numpy array of the wavefronts returning from the inductor at grid nodes
+        :type Wavefronts_Returning_Inductor: np.ndarray[Wavefront_Inductive]
+        :param Wavefronts_Returning_Capacitor: 2D numpy array of the wavefronts returning from the capacitor at grid nodes
+        :type Wavefronts_Returning_Capacitor: np.ndarray[Wavefront_Capacitive]
+        :param has_merged: indicates if the data stored has been multiplicatively merged or not.
+        :type has_merged: bool
+        
+        .. code-block:: python
+            :caption: Example use of Data_Output_Storage
+            
+            # Generate input data object from input paramters
+            data_input = Data_Input_Storage(Simulation_stop_time = '100',L_impedance = '225')
+            
+            # Generate the commutative merging output data from the created Data_Input_Storage object:
+            data_output_commutative : Data_Output_Storage = Generate_Wavefronts_Commutatively(data_input)
+            
+            # Generate the merged data after multiplicative merging:
+            data_output_merged  : Data_Output_Storage = Higher_Order_Merging(data_input,data_output_commutative)
+        
     """
     
     Time : np.ndarray
@@ -447,6 +479,8 @@ class Data_Output_Storage:
     Wavefronts_Returning_Inductor : np.ndarray
     Wavefronts_Returning_Capacitor : np.ndarray
     
+    has_merged : bool 
+    
     def get_sending_wavefronts_magnitudes(self,which_string):
         """A method for extracting voltage or current from *sending* wavefronts.
 
@@ -454,7 +488,7 @@ class Data_Output_Storage:
         :type which_string: str
         :raises ValueError: errors if incorrect string is given. 
         :return: Sending wavefront's Current or Voltage magnitudes 
-        :rtype: np.ndarray
+        :rtype: np.ndarray[Decimal]
         """
         allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
         if(which_string.lower() == allowed_strings[0] ):
@@ -479,7 +513,7 @@ class Data_Output_Storage:
         :type which_string: str
         :raises ValueError: errors if incorrect string is given. 
         :return: Returning wavefront's Current or Voltage magnitudes 
-        :rtype: np.ndarray
+        :rtype: np.ndarray[Decimal]
         """
         allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
         if(which_string.lower() == allowed_strings[0] ):
@@ -499,8 +533,7 @@ class Data_Output_Storage:
 
 @dataclass
 class Data_Output_Storage_Ordered(Data_Output_Storage):
-    """Stores the same data arrays as in the Data_Output_Storage, but in this case the data is organised in chronological order.
-    Arrays are of a single dimesion, were values are in the order in which they occur instead of a grid/ fanout structure. 
+    """Oreders and stores data from a Data_Output_Storage object storing multiplicatively merged data.
     
     An additonal storage paramter of *Indexes* is included, indicating the grid co-ordiantes on the merged fanout structure in the order events occured.
     """
@@ -1249,7 +1282,8 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         Wavefronts_Sending_Inductor, # Specific Wavefronts at Nodes
         Wavefronts_Sending_Capacitor, # Specific Wavefronts at Nodes
         Wavefronts_Returning_Inductor, # Specific Wavefronts at Nodes
-        Wavefronts_Returning_Capacitor # Specific Wavefronts at Nodes
+        Wavefronts_Returning_Capacitor, # Specific Wavefronts at Nodes
+        False, # indicated that multiplicative merging has not occured
         )
 
 
@@ -1348,10 +1382,14 @@ def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Ou
         Wavefronts_Sending_Inductor_merged ,
         Wavefronts_Sending_Capacitor_merged ,
         Wavefronts_Returning_Inductor_merged ,
-        Wavefronts_Returning_Capacitor_merged 
+        Wavefronts_Returning_Capacitor_merged ,
+        True # indicates Higher order merging has occured
     )
 
 def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merged : Data_Output_Storage):
+    
+    if (Data_Output_Merged.has_merged == False):
+        raise warnings.warn("Provided Data_Output_Storage object to be ordered has not been merged yet. This can produce incorrect results if merging is not accounted for.")
     
     Data_Output_Merged = copy.deepcopy(Data_Output_Merged)
     
@@ -1487,6 +1525,7 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
         out_wavefront_sending_capacitor ,
         out_wavefront_returning_inductor ,
         out_wavefront_returning_capacitor ,
+        True ,
         out_indexes
     )        
 
