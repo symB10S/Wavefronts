@@ -1028,7 +1028,7 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             self.magnitude_voltage = Decimal(magnitude)
             self.magnitude_current = Decimal(0)
 
-        def Generate(self, Wavefront_Storage : list):
+        def generate_and_store(self, Wavefront_Storage : list):
             Wavefront_Storage.append(Wavefront_Inductive(self,False))
             Wavefront_Storage.append(Wavefront_Capacitive(self,False))
             
@@ -1073,14 +1073,14 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
                 self.magnitude_voltage = Wavefront_Parent.magnitude_voltage
                 self.magnitude_current = - Wavefront_Parent.magnitude_current
 
-        def Generate(self, Wavefront_Storage):
+        def generate_and_store(self, Wavefront_Storage):
             if self.position_end == 0:
                 Wavefront_Storage.append(Wavefront_Inductive(self,False))
                 Wavefront_Storage.append(Wavefront_Capacitive(self,True))
             else:
                 Wavefront_Storage.append(Wavefront_Capacitive(self,True))
         
-        def Generate_Return(self):
+        def generate_and_return(self):
             if self.position_end == 0:
                 return Wavefront_Inductive(self,False), Wavefront_Capacitive(self,True)
             else :
@@ -1131,14 +1131,14 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
                 self.magnitude_voltage = - Wavefront_Parent.magnitude_voltage
                 self.magnitude_current = Wavefront_Parent.magnitude_current
 
-        def Generate(self, Wavefront_Storage):
+        def generate_and_store(self, Wavefront_Storage):
             if self.position_end == 0:
                 Wavefront_Storage.append(Wavefront_Inductive(self,True))
                 Wavefront_Storage.append(Wavefront_Capacitive(self,False))
             else :
                 Wavefront_Storage.append(Wavefront_Inductive(self,True))
 
-        def Generate_Return(self):
+        def generate_and_return(self):
             if self.position_end == 0:
                 return Wavefront_Inductive(self,True), Wavefront_Capacitive(self,False)
             else :
@@ -1152,9 +1152,9 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     # this is done as to store both capacitve and inductive wavefronts in a single array
     # (there will be two spares arrays, one for AWAY wavefronts and one for RETURNING wavefronts).
 
-    # SPARSE FANOUT STORAGE ARRAY FORMAT:
+    # SPARSE FANOUT STORAGE ARRAY FORMAT FOR 5 LAYERS:
     # (horizontal = inductive axis, vertical = capacitive axis)
-    # x = major gird node, → = wavefront inductive, ↓ = wavefront capacitve, 0 = empty value
+    # x = major gird node, → = wavefront inductive, ↓ = wavefront capacitve, 0 = 'blank entry'
     #   0 1 2 3 4 5 6 7 8 9
     #   ____________________
     #0 |x → x → x → x → x →
@@ -1168,12 +1168,29 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     #8 |x →
     #9 |↓
     
-    # After sparse arrays are calcualted, they will be post-porcessed in a 'gemoetric" way,
-    # to allow for the calculation of 'interconnect magnitude' effects of wavefronts.
-    
+    # The two Sparse storage arrays:
+    # ------------------------------
     Wavefronts_Away = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0,0))
     Wavefronts_Return = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0,0))
     
+    
+    # These Sparse arrays are then post-porcessed in a 'gemoetric" way to extract magnitude data in a dense format.
+    # Dense format arrays will store data as a function of major nodes, and will have no 'blank entries'.
+    # An example of a Dense array would be "Wavefronts sent from the Inductor" (Wavefronts_Sending_Inductor):
+    
+    # DENSE FANOUT STORAGE ARRAY FORMAT FOR 5 LAYERS:
+    # (horizontal = inductive axis, vertical = capacitive axis)
+    # x = major gird node, → = wavefront inductive, ↓ = wavefront capacitve, 0 = 'blank entry'
+    #   0 1 2 3 4 
+    #   __________
+    #0 |→ → → → →
+    #1 |→ → → →  
+    #2 |→ → → 
+    #3 |→ → 
+    #4 |→ 
+
+    # Dense format arrays tracked:
+    # ----------------------------
     Time = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)),Decimal('0'))
     
     Voltage_Interconnect_Inductor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)),Decimal('0'))
@@ -1188,43 +1205,45 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     Wavefronts_Returning_Inductor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     Wavefronts_Returning_Capacitor = np.full(((Data_Input.Number_of_Layers+1),(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     
-    #Deques of wavefronts thare are used to temporairaly store wavefronts as they are being processed.
+    # POPULATE THE SPARSE STORAGE ARRAYS
+    # ===================================
+    #Deques of wavefronts thare are used to temporarily store wavefronts as they are being processed.
     Wavefronts_Away_deque : Wavefront = deque()
     Wavefronts_Returning_deque : Wavefront = deque()
 
     # Generate Intial Away Waves from voltage excitation
     temp_wavefront = Wavefront_Source(Data_Input.Voltage_Souce_Magnitude,0,0)
-    temp_wavefront.Generate(Wavefronts_Away_deque)
+    temp_wavefront.generate_and_store(Wavefronts_Away_deque)
 
     # Generate Intial Return Waves,
     # Get Intial Sending wavefront, this will be an inductive wavefront
     temp_wavefront_inductive = Wavefronts_Away_deque.popleft()
-    temp_wavefront_inductive.Generate(Wavefronts_Returning_deque)
+    temp_wavefront_inductive.generate_and_store(Wavefronts_Returning_deque)
     Wavefronts_Away[1,0] = temp_wavefront_inductive
     
-    # Get Next Initial Sending wavefront, thiw will be a capacitive wavefront
+    # Get Next Initial Sending wavefront, this will be a capacitive wavefront
     temp_wavefront_capacitive = Wavefronts_Away_deque.popleft()
-    temp_wavefront_capacitive.Generate(Wavefronts_Returning_deque)
+    temp_wavefront_capacitive.generate_and_store(Wavefronts_Returning_deque)
     Wavefronts_Away[0,1] = temp_wavefront_capacitive
 
     # GENERATE WAVEFRONTS AND MERGE COMMUTATIVELY
     for layer_number in range(1,Data_Input.Number_of_Layers):
 
         # RETURNING WAVEFRONTS
-        #=====================
+        # --------------------
         
         # set Index    
         Wavefront_Index_x = 2*layer_number-1
         Wavefront_Index_y = 0
         
         # process first Returning Wavefront:
-        #-----------------------------------
+
         # (will be inductive wavefront) 
         # (first wavefront does not merge)
         temp_wavefront = Wavefronts_Returning_deque.popleft()
 
         # generate away wavefronts,  
-        temp_wavefront.Generate(Wavefronts_Away_deque)
+        temp_wavefront.generate_and_store(Wavefronts_Away_deque)
         # store returning wavefront, 
         Wavefronts_Return[Wavefront_Index_x,Wavefront_Index_y] = temp_wavefront
         # shift index
@@ -1232,7 +1251,7 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         Wavefront_Index_y = Wavefront_Index_y + 1
         
         # process remaining Returning Wavefronts:
-        # ----------------------------------------
+
         while len(Wavefronts_Returning_deque) > 0:
             # Get a Returning wavefront 
             # (will be capacitve)
@@ -1241,7 +1260,7 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             if len(Wavefronts_Returning_deque) == 0 : # It is the last wave?
                 # (Last wavefront does not merge)
                 # generate away wavefronts and store in Away wavefronts deque
-                temp_wavefront.Generate(Wavefronts_Away_deque)
+                temp_wavefront.generate_and_store(Wavefronts_Away_deque)
                 # store returning wavefronts
                 Wavefronts_Return[Wavefront_Index_x,Wavefront_Index_y] = temp_wavefront
                 # shift index
@@ -1251,14 +1270,14 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             else: # It is not the last wave :
                 
                 # merge children of 'adjacent' returning wavefronts:
-                # ---------------------------------------------------
+
                 # get next returning wavefront 
                 # (will be inductive)
                 temp_next_wavefront = Wavefronts_Returning_deque.popleft()
 
                 # get children of the two current wavefronts
-                temp_wavefront_inductive, temp_wavefront_capacitve = temp_wavefront.Generate_Return()
-                temp_next_wavefront_inductive, temp_next_wavefront_capacitve = temp_next_wavefront.Generate_Return()
+                temp_wavefront_inductive, temp_wavefront_capacitve = temp_wavefront.generate_and_return()
+                temp_next_wavefront_inductive, temp_next_wavefront_capacitve = temp_next_wavefront.generate_and_return()
 
                 # commutatively merge the children appropriately 
                 temp_wavefront_inductive.Merge(temp_next_wavefront_inductive)
@@ -1293,7 +1312,7 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             # (will be inductive)
             temp_wavefront_inductive = Wavefronts_Away_deque.popleft()
             # Generate and store its returning children
-            temp_wavefront_inductive.Generate(Wavefronts_Returning_deque)
+            temp_wavefront_inductive.generate_and_store(Wavefronts_Returning_deque)
             # store processed away wavefront
             Wavefronts_Away[Wavefront_Index_x, Wavefront_Index_y] = temp_wavefront_inductive
             # shift index
@@ -1304,22 +1323,18 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             # (will be capacitive)
             temp_wavefront_capacitve = Wavefronts_Away_deque.popleft()
             # Generate and store its returning children
-            temp_wavefront_capacitve.Generate(Wavefronts_Returning_deque)
+            temp_wavefront_capacitve.generate_and_store(Wavefronts_Returning_deque)
             # store processed away wavefront
             Wavefronts_Away[Wavefront_Index_x, Wavefront_Index_y] = temp_wavefront_capacitve
             # shift index
             Wavefront_Index_x = Wavefront_Index_x - 1
             Wavefront_Index_y = Wavefront_Index_y + 1
 
-    # POST PORCESSING OF WAVEFRONT GENERATION ALGORITHM
-    # =================================================
-    # 1.Calculate interconnect magnitudes as a sum of wavefronts
-    # 2.Store wavefronts in fanout grid format
-    # 3.Turn 'sparse arrays' into dense arrays by deleting empty vlaues
+    # POST PORCESSING OF SPARSE ARRAY
+    # ===============================
     
-    # Steps 1. and 2.
     for layer_number in range(0,Data_Input.Number_of_Layers):
-        # Get major grid node coord for first node in layer
+        # Get major grid node coords for first node in layer
         Sparse_Major_Node_Index_x = 2*layer_number
         Sparse_Major_Node_Index_y = 0
         
@@ -1402,31 +1417,6 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             
             Dense_Major_Node_Index_x -= 1
             Dense_Major_Node_Index_y += 1
-    
-    def delete_alternating(array):
-        
-        x_len,ylen = array.shape
-        
-        x_delete = np.arange(1,x_len,2)
-        y_delete = np.arange(1,ylen,2)
-
-        array_deleted = np.delete(array,x_delete, axis=0)
-        array_deleted = np.delete(array_deleted,y_delete, axis=1)
-        
-        return array_deleted
-        
-    
-    # Voltage_Interconnect_Inductor = delete_alternating(Voltage_Interconnect_Inductor)
-    # Current_Interconnect_Inductor = delete_alternating(Current_Interconnect_Inductor)
-
-    # Voltage_Interconnect_Capacitor = delete_alternating(Voltage_Interconnect_Capacitor)
-    # Current_Interconnect_Capacitor = delete_alternating(Current_Interconnect_Capacitor)
-    
-    # Wavefronts_Sending_Inductor = delete_alternating(Wavefronts_Sending_Inductor)
-    # Wavefronts_Sending_Capacitor = delete_alternating(Wavefronts_Sending_Capacitor)
-    
-    # Wavefronts_Returning_Inductor = delete_alternating(Wavefronts_Returning_Inductor)
-    # Wavefronts_Returning_Capacitor = delete_alternating(Wavefronts_Returning_Capacitor)
     
     return Data_Output_Storage(
         Time, # Merge Times
