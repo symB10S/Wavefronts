@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 getcontext().traps[FloatOperation] = True
 
+#:
 default_input_values : dict = dict ([
     ('L_impedance','100'),('L_time' ,'1'),('L_length','1'),
     ('C_impedance','1'),  ('C_time' ,'1'),('C_length','1'),
@@ -41,8 +42,8 @@ class Data_Input_Storage :
         This each input variable is converterted to a Decimal value to be used for precision calculations.
         The possible parameters to change and their defualt values are as follows:
         
-        **provided_input_values:
-        ------------------------
+        :param **provided_input_values:
+
         :L_impedance = '100': Characteristic impedance of the inductor, assigned to self.Inductor_Impedance
         :L_time  = '1': The time delay of the inductor in seconds, assigned to self.Inductor_Time
         :L_length = '1': The length of the inductor in meters, assigned to self.Inductor_Length
@@ -138,7 +139,7 @@ class Data_Input_Storage :
     """
     def __init__(self,**provided_input_values):
 
-            # create a  new dictionary with altered default values were relevant
+            #: an inut variable dictionary with altered default values were relevant.
             self.input_values = default_input_values.copy()
             self.input_values = handle_default_kwargs(provided_input_values,self.input_values)
             
@@ -149,12 +150,12 @@ class Data_Input_Storage :
             else:
                 del self.new_input_values['show_about']
             
-            # Determine if a load must be considered
+            #: does the converter consider the load, or is it a LC osscilator.
             self.Is_Buck = True
             if self.input_values['Load_impedance'] == 'inf':
                 self.Is_Buck = False
             
-            # Determine if Simulation stop time is provided or must be calculated
+            #: if simulation end time is specified, or is it calculated using "number_periods" input variable.
             self.Custom_stop_time = True
             if self.input_values['Simulation_stop_time'] == '0':
                 self.Custom_stop_time = False
@@ -445,7 +446,20 @@ class Data_Output_Storage_Ordered(Data_Output_Storage):
     An additonal storage paramter of *Indexes* is included, indicating the grid co-ordiantes on the merged fanout structure in the order events occured.
     """
     Indexes : np.ndarray
-    
+
+@dataclass
+class Interface_Data:
+    """A Dataclass that holds all simulation data for a praticular interface. Contains four data storage components: 
+    the input data, 
+    output wavefront data after commutative merging,
+    output wavefront data after multiplicative merging,
+    output wavefront data after ordering.
+    """
+    data_input : Data_Input_Storage
+    data_output_commutative : Data_Output_Storage
+    data_output_multiplicative : Data_Output_Storage
+    data_output_ordered : Data_Output_Storage_Ordered
+  
 def get_array_absolute_maximum(array):
     max_boundary = abs(np.max(array.astype(float)))
     min_boundary = abs(np.min(array.astype(float)))
@@ -700,39 +714,52 @@ def Steady_State_Analysis(TL:Decimal,TC:Decimal):
     
     return time_before_regular_GCF, time_before_regular_Steady_State
   
-def multiplicative_merge_cycle(arr,Inductor_LCM_Factor,Capacitor_LCM_Factor):
+def multiplicative_merge_cycle(input_array:np.ndarray,Inductor_LCM_Factor:int,Capacitor_LCM_Factor:int):
+    """A function that completes a single merging cycle of a mangitude fanout along its first (inductive) axis.
     
-    def make_upper_and_lower(arr,Capacitor_LCM_Factor):
-        upper = arr[:,0:Capacitor_LCM_Factor]
-        lower = arr[:,Capacitor_LCM_Factor:]
-        
-        padding_for_upper = np.full(lower.shape,0,dtype=lower.dtype)
-        padding_for_lower = np.full(upper.shape,0,dtype=upper.dtype)
-        
-        upper= np.append(upper,padding_for_upper,axis=1)
-        lower= np.append(lower,padding_for_lower,axis=1)
-        
-        return upper,lower
+    The merging process 
+
+    :param input_array: An output array from Datat_Output_Storage class., i.e. data_output.Voltage_Interconnect_Inductor
+    :type input_array: np.ndarray
+    :param Inductor_LCM_Factor: The co-factor of the time-delay for the inductor, KL. KL x TL = LCM(TL,TC)
+    :type Inductor_LCM_Factor: int
+    :param Capacitor_LCM_Factor: The co-factor of the time-delay for the capacitor axis, KC. KC x TC = LCM(TL,TC)
+    :type Capacitor_LCM_Factor: int
+    :return: returns the input_array after one more subsequent merging cycle.
+    "type: np.ndarray
+    """
     
-    def shif_and_pad_array_x(arr,number_lines):
-    
-        rolled_arr = np.roll(arr, number_lines, axis=0)
+    def make_upper_and_lower(input_array,Capacitor_LCM_Factor):
+        upper_array : np.ndarray = input_array[:,0:Capacitor_LCM_Factor]
+        lower_array : np.ndarray = input_array[:,Capacitor_LCM_Factor:]
         
-        left_arr = rolled_arr[0:number_lines,:]
-        left_arr = np.full(left_arr.shape,0,dtype=left_arr.dtype)
+        padding_array_for_upper : np.ndarray = np.full(lower_array.shape,0,dtype=lower_array.dtype)
+        padding_array_for_lower : np.ndarray = np.full(upper_array.shape,0,dtype=upper_array.dtype)
+        
+        upper_array= np.append(upper_array,padding_array_for_upper,axis=1)
+        lower_array= np.append(lower_array,padding_array_for_lower,axis=1)
+        
+        return upper_array,lower_array
+    
+    def shif_and_pad_array_x(input_array,number_lines):
+    
+        rolled_array : np.ndarray = np.roll(input_array, number_lines, axis=0)
+        
+        left_array : np.ndarray = rolled_array[0:number_lines,:]
+        left_array : np.ndarray = np.full(left_array.shape,0,dtype=left_array.dtype)
         
         
-        rolled_arr= np.delete(rolled_arr,np.arange(0,number_lines,1),axis=0)
-        rolled_arr = np.append(left_arr,rolled_arr,axis=0)
+        rolled_array : np.ndarray= np.delete(rolled_array,np.arange(0,number_lines,1),axis=0)
+        rolled_array : np.ndarray = np.append(left_array,rolled_array,axis=0)
         
-        return rolled_arr
+        return rolled_array 
     
-    upper_arr,lower_arr = make_upper_and_lower(arr,Capacitor_LCM_Factor)
-    arr_merge_ready = shif_and_pad_array_x(lower_arr,Inductor_LCM_Factor)
+    upper_array,lower_array = make_upper_and_lower(input_array,Capacitor_LCM_Factor)
+    array_merge_ready = shif_and_pad_array_x(lower_array,Inductor_LCM_Factor)
     
-    arr_merged = upper_arr + arr_merge_ready
+    array_merged = upper_array + array_merge_ready
     
-    return arr_merged
+    return array_merged
 
 def multiplicative_merging(arr,Inductor_LCM_Factor ,Capacitor_LCM_Factor ,number_of_layers):
     
@@ -1367,5 +1394,5 @@ def Full_Cycle(**input_values):
     data_output_merged = Higher_Order_Merging(data_input,data_output_commutative)
     data_output_ordered = Order_Data_Output_Merged(data_input,data_output_merged)
     
-    return data_input,data_output_commutative,data_output_merged,data_output_ordered
+    return Interface_Data(data_input,data_output_commutative,data_output_merged,data_output_ordered)
 

@@ -14,10 +14,11 @@ Here we will discover how the code can be used to simulate various self-reflecti
    :maxdepth: 2
    :caption: Contents:
 
-   modules
-   
    beforeyoubegin
+
    notebooks/test
+
+   modules
 
 
 
