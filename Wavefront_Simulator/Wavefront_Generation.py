@@ -1148,7 +1148,7 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
             self.magnitude_voltage = self.magnitude_voltage + Wavefront_Other.magnitude_voltage
             self.magnitude_current = self.magnitude_current + Wavefront_Other.magnitude_current
 
-    
+    # Empty 'Sparsely' populated arrays, diagonals of these array are filled storing both sending and returning information.
     Wavefronts_Away = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0,0))
     Wavefronts_Return = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)),Wavefront_Source(0,0,0))
     
@@ -1166,8 +1166,7 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     Wavefronts_Returning_Inductor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     Wavefronts_Returning_Capacitor = np.full((2*(Data_Input.Number_of_Layers+1),2*(Data_Input.Number_of_Layers+1)), Wavefront_Source(0,0,0))
     
-    #Storage Arrays
-
+    #Deques of wavefronts thare are used to temporairaly store wavefronts as they are being processed.
     Wavefronts_Away_deque : Wavefront = deque()
     Wavefronts_Returning_deque : Wavefront = deque()
 
@@ -1187,149 +1186,180 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     temp_wavefront_capacitive.Generate(Wavefronts_Returning_deque)
     Wavefronts_Away[0,1] = temp_wavefront_capacitive
 
-    # Merge_Algorithm
+    # Merge Algorithm
     for layer_number in range(1,Data_Input.Number_of_Layers):
 
-        # Manage return waves
+        # RETURNING WAVEFRONTS
+        #=====================
         
-        ## Set Index    
+        # set Index    
         Cartesian_Index_x = 2*layer_number-1
         Cartesian_Index_y = 0
         
-        # Get first Returning inductive wavefront 
+        # process first Returning Wavefront:
+        #-----------------------------------
+        # (will be inductive wavefront) 
+        # (first wavefront does not merge)
         temp_wavefront = Wavefronts_Returning_deque.popleft()
 
-        # Generate Away Waves, Store Return Waves
-        ## First wavefront does not merge:
+        # generate away wavefronts,  
         temp_wavefront.Generate(Wavefronts_Away_deque)
-        
+        # store returning wavefront, 
         Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront
+        # shift index
         Cartesian_Index_x = Cartesian_Index_x - 1
         Cartesian_Index_y = Cartesian_Index_y + 1
         
+        # process remaining Returning Wavefronts:
+        # ----------------------------------------
         while len(Wavefronts_Returning_deque) > 0:
-            
-            # Get a Returning wavefront (will be capacitve)
+            # Get a Returning wavefront 
+            # (will be capacitve)
             temp_wavefront = Wavefronts_Returning_deque.popleft()
             
-            if len(Wavefronts_Returning_deque) == 0 : # It is the last wave
+            if len(Wavefronts_Returning_deque) == 0 : # It is the last wave?
+                # (Last wavefront does not merge)
+                # generate away wavefronts and store in Away wavefronts deque
                 temp_wavefront.Generate(Wavefronts_Away_deque)
+                # store returning wavefronts
                 Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront
+                # shift index
                 Cartesian_Index_x = Cartesian_Index_x - 1
                 Cartesian_Index_y = Cartesian_Index_y + 1
 
-            else: # It is not the last wave
+            else: # It is not the last wave :
                 
-                # Get next Returning wavefront (will be inductive)
+                # merge children of 'adjacent' returning wavefronts:
+                # ---------------------------------------------------
+                # get next returning wavefront 
+                # (will be inductive)
                 temp_next_wavefront = Wavefronts_Returning_deque.popleft()
 
+                # get children of the two current wavefronts
                 temp_wavefront_inductive, temp_wavefront_capacitve = temp_wavefront.Generate_Return()
                 temp_next_wavefront_inductive, temp_next_wavefront_capacitve = temp_next_wavefront.Generate_Return()
 
+                # commutatively merge the children appropriately 
                 temp_wavefront_inductive.Merge(temp_next_wavefront_inductive)
                 temp_wavefront_capacitve.Merge(temp_next_wavefront_capacitve)
 
+                # add newly merged children in Away wavefronts deque
                 Wavefronts_Away_deque.append(temp_wavefront_inductive)
                 Wavefronts_Away_deque.append(temp_wavefront_capacitve)
-
+                
+                # Store current returning wavefronts in their completion storage array
+                # capacitive returning wavefront
                 Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_wavefront
+                # Shift index
                 Cartesian_Index_x = Cartesian_Index_x - 1
                 Cartesian_Index_y = Cartesian_Index_y + 1
                 
+                # inductive returning wavefront
                 Wavefronts_Return[Cartesian_Index_x,Cartesian_Index_y] = temp_next_wavefront
+                # shift index
                 Cartesian_Index_x = Cartesian_Index_x - 1
                 Cartesian_Index_y = Cartesian_Index_y + 1
         
-        # Generate Return Waves, Store Away Waves
-        
-        ## Set Index for Away waves, will be 1 ahead! 
+        # AWAY WAVEFRONTS
+        # ================
+        # Set Index for Away waveferonts
+        # (will be one ahead of returning) 
         Cartesian_Index_x = 2*(layer_number+1)-1
         Cartesian_Index_y = 0
         
         while len(Wavefronts_Away_deque)> 0:
-            # Get an Away wavefront (will be inductive)
+            # get an away wavefront in the away wavefront deque
+            # (will be inductive)
             temp_wavefront_inductive = Wavefronts_Away_deque.popleft()
+            # Generate and store its returning children
             temp_wavefront_inductive.Generate(Wavefronts_Returning_deque)
+            # store processed away wavefront
             Wavefronts_Away[Cartesian_Index_x, Cartesian_Index_y] = temp_wavefront_inductive
+            # store time-start of away wavefront at major node
             Time[Cartesian_Index_x-1,Cartesian_Index_y] = temp_wavefront_inductive.time_start
+            # shift index
             Cartesian_Index_x = Cartesian_Index_x - 1
             Cartesian_Index_y = Cartesian_Index_y + 1
             
-            # Get the next Away wavefront (will be capacitive)
+            # Get the next Away wavefront 
+            # (will be capacitive)
             temp_wavefront_capacitve = Wavefronts_Away_deque.popleft()
+            # Generate and store its returning children
             temp_wavefront_capacitve.Generate(Wavefronts_Returning_deque)
+            # store processed away wavefront
             Wavefronts_Away[Cartesian_Index_x, Cartesian_Index_y] = temp_wavefront_capacitve
+            # shift index
             Cartesian_Index_x = Cartesian_Index_x - 1
             Cartesian_Index_y = Cartesian_Index_y + 1
 
-    # Accumulation_Arrays
+    # Calculate Interconnect values and store wavefront magnitudes
     for layer_number in range(0,Data_Input.Number_of_Layers):
-        ## Reset Centre Index    
-        Centre_Index_x = 2*layer_number
-        Centre_Index_y = 0
+        # Reset Centre Index    
+        Major_Node_Index_x = 2*layer_number
+        Major_Node_Index_y = 0
         
         for node_number in range(0,layer_number+1):
                 # Inductor
-                Away_Index_Inductor_x = Centre_Index_x + 1
-                Away_Index_Inductor_y = Centre_Index_y
+                Away_Index_Inductor_x = Major_Node_Index_x + 1
+                Away_Index_Inductor_y = Major_Node_Index_y
                 
-                Return_Index_Inductor_x = Centre_Index_x - 1
-                Return_Index_Inductor_y = Centre_Index_y
+                Return_Index_Inductor_x = Major_Node_Index_x - 1
+                Return_Index_Inductor_y = Major_Node_Index_y
                 
                 # Capacitor
-                Away_Index_Capacitor_x = Centre_Index_x 
-                Away_Index_Capacitor_y = Centre_Index_y + 1
+                Away_Index_Capacitor_x = Major_Node_Index_x 
+                Away_Index_Capacitor_y = Major_Node_Index_y + 1
                 
-                Return_Index_Capacitor_x = Centre_Index_x 
-                Return_Index_Capacitor_y = Centre_Index_y - 1
+                Return_Index_Capacitor_x = Major_Node_Index_x 
+                Return_Index_Capacitor_y = Major_Node_Index_y - 1
                 
-                Wavefronts_Sending_Inductor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y]
-                Wavefronts_Sending_Capacitor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y]
+                Wavefronts_Sending_Inductor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y]
+                Wavefronts_Sending_Capacitor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y]
                 
-                Wavefronts_Returning_Inductor[Centre_Index_x,Centre_Index_y] = Wavefronts_Return[Away_Index_Inductor_x,Away_Index_Inductor_y]
-                Wavefronts_Returning_Capacitor[Centre_Index_x,Centre_Index_y] = Wavefronts_Return[Away_Index_Capacitor_x,Away_Index_Capacitor_y]
+                Wavefronts_Returning_Inductor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Return[Away_Index_Inductor_x,Away_Index_Inductor_y]
+                Wavefronts_Returning_Capacitor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Return[Away_Index_Capacitor_x,Away_Index_Capacitor_y]
 
                 if(node_number == 0 and layer_number ==0): 
                         # Origin Node
                         # Inductor, Origin node = Away only
-                        Voltage_Interconnect_Inductor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_voltage 
-                        Current_Interconnect_Inductor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_current
+                        Voltage_Interconnect_Inductor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_voltage 
+                        Current_Interconnect_Inductor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_current
                         
                         # Capacitor, Origin node = Away only
-                        Voltage_Interconnect_Capacitor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_voltage 
-                        Current_Interconnect_Capacitor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_current
+                        Voltage_Interconnect_Capacitor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_voltage 
+                        Current_Interconnect_Capacitor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_current
 
                 elif(node_number == 0 ): 
-                        # First Node
-                        # Inductor, First Node = Both Merging 
-                        Voltage_Interconnect_Inductor[Centre_Index_x,Centre_Index_y] = (Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_voltage  + Wavefronts_Return[Return_Index_Inductor_x,Return_Index_Inductor_y].magnitude_voltage) 
-                        Current_Interconnect_Inductor[Centre_Index_x,Centre_Index_y] = (Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_current + Wavefronts_Return[Return_Index_Inductor_x,Return_Index_Inductor_y].magnitude_current ) 
+                        # first node is an inductive unique node
+                        # inductive interconenct magnitudes of inductive unique nodes are affected by both returning and arriving inductive wavefronts
+                        Voltage_Interconnect_Inductor[Major_Node_Index_x,Major_Node_Index_y] = (Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_voltage  + Wavefronts_Return[Return_Index_Inductor_x,Return_Index_Inductor_y].magnitude_voltage) 
+                        Current_Interconnect_Inductor[Major_Node_Index_x,Major_Node_Index_y] = (Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_current + Wavefronts_Return[Return_Index_Inductor_x,Return_Index_Inductor_y].magnitude_current ) 
                         
                         # Capacitor, First Node = Away only
-                        Voltage_Interconnect_Capacitor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_voltage 
-                        Current_Interconnect_Capacitor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_current
+                        Voltage_Interconnect_Capacitor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_voltage 
+                        Current_Interconnect_Capacitor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_current
 
                 elif(node_number == layer_number): 
                         # Last Node
                         # Inductor, Last Node = Away only
-                        Voltage_Interconnect_Inductor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_voltage  
-                        Current_Interconnect_Inductor[Centre_Index_x,Centre_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_current
+                        Voltage_Interconnect_Inductor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_voltage  
+                        Current_Interconnect_Inductor[Major_Node_Index_x,Major_Node_Index_y] = Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_current
                         
                         # Capacitor, Last Node = Both Merging
-                        Voltage_Interconnect_Capacitor[Centre_Index_x,Centre_Index_y] = (Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_voltage  + Wavefronts_Return[Return_Index_Capacitor_x,Return_Index_Capacitor_y].magnitude_voltage) 
-                        Current_Interconnect_Capacitor[Centre_Index_x,Centre_Index_y] = (Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_current + Wavefronts_Return[Return_Index_Capacitor_x,Return_Index_Capacitor_y].magnitude_current )
+                        Voltage_Interconnect_Capacitor[Major_Node_Index_x,Major_Node_Index_y] = (Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_voltage  + Wavefronts_Return[Return_Index_Capacitor_x,Return_Index_Capacitor_y].magnitude_voltage) 
+                        Current_Interconnect_Capacitor[Major_Node_Index_x,Major_Node_Index_y] = (Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_current + Wavefronts_Return[Return_Index_Capacitor_x,Return_Index_Capacitor_y].magnitude_current )
                 else:
                         # General Node
                         # Inductor, General Node = Both merging
-                        Voltage_Interconnect_Inductor[Centre_Index_x,Centre_Index_y] = (Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_voltage  + Wavefronts_Return[Return_Index_Inductor_x,Return_Index_Inductor_y].magnitude_voltage) 
-                        Current_Interconnect_Inductor[Centre_Index_x,Centre_Index_y] = (Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_current + Wavefronts_Return[Return_Index_Inductor_x,Return_Index_Inductor_y].magnitude_current ) 
+                        Voltage_Interconnect_Inductor[Major_Node_Index_x,Major_Node_Index_y] = (Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_voltage  + Wavefronts_Return[Return_Index_Inductor_x,Return_Index_Inductor_y].magnitude_voltage) 
+                        Current_Interconnect_Inductor[Major_Node_Index_x,Major_Node_Index_y] = (Wavefronts_Away[Away_Index_Inductor_x,Away_Index_Inductor_y].magnitude_current + Wavefronts_Return[Return_Index_Inductor_x,Return_Index_Inductor_y].magnitude_current ) 
                         
                         # Capacitor, General Node = Both merging
-                        Voltage_Interconnect_Capacitor[Centre_Index_x,Centre_Index_y] = (Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_voltage  + Wavefronts_Return[Return_Index_Capacitor_x,Return_Index_Capacitor_y].magnitude_voltage)
-                        Current_Interconnect_Capacitor[Centre_Index_x,Centre_Index_y] = (Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_current + Wavefronts_Return[Return_Index_Capacitor_x,Return_Index_Capacitor_y].magnitude_current )
+                        Voltage_Interconnect_Capacitor[Major_Node_Index_x,Major_Node_Index_y] = (Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_voltage  + Wavefronts_Return[Return_Index_Capacitor_x,Return_Index_Capacitor_y].magnitude_voltage)
+                        Current_Interconnect_Capacitor[Major_Node_Index_x,Major_Node_Index_y] = (Wavefronts_Away[Away_Index_Capacitor_x,Away_Index_Capacitor_y].magnitude_current + Wavefronts_Return[Return_Index_Capacitor_x,Return_Index_Capacitor_y].magnitude_current )
                         
-                Centre_Index_x -= 2
-                Centre_Index_y += 2
+                Major_Node_Index_x -= 2
+                Major_Node_Index_y += 2
     
     def delete_alternating(arr):
     
