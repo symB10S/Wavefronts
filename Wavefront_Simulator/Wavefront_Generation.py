@@ -36,7 +36,8 @@ def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
     return default_kwargs
 
 class Data_Input_Storage :
-    """Handles the calculation of input variables required for the simulation.
+    """The storage object for the input varibles of a interface simulation. Calculates all the associated variables required for the simulaitons. 
+        Can be used to investigate network calcualted parameters based off input vairbles.  
 
         Is initialised using key-word arguments. All values with the provided keys are of type string. 
         This each input variable is converterted to a Decimal value to be used for precision calculations.
@@ -104,10 +105,14 @@ class Data_Input_Storage :
             - **self.Capacitor_Impedance** (*Decimal*) - the characteristic impedance of the capacitor (Ω)
 
         .. code-block:: python
+            :caption: Example use of Data_Input_Storage
 
             data_input = Data_Input_Storage(Simulation_stop_time = '100',L_impedance = '225')
             print(data_input.Simulation_Stop_Time) # prints '100'
             print(data_input.Capacitor_Impedance) # prints '1', assigned by default.
+            
+            # generate the output wavefronts from the created Data_Input_Storage object:
+            data_output = Generate_Wavefronts_Commutatively(data_input)
 
     """
     def __init__(self,**provided_input_values):
@@ -267,27 +272,107 @@ class Data_Input_Storage :
             self.about()
     
     def Circuit_Solver_Inductor_Voltage(self,VL: Decimal,IL: Decimal,VC: Decimal,IC: Decimal):
+        """Generates the voltage response of the inductor to wavefront distrubances. Solves by means of the wavefront equivalent circuit.
+
+        :param VL: the magnitude of the voltage disturbance from the inductor
+        :type VL: Decimal
+        :param IL: the magnitude of the current disturbance from the inductor
+        :type IL: Decimal
+        :param VC: the magnitude of the voltage disturbance from the capacitor
+        :type VC: Decimal
+        :param IC: the magnitude of the current disturbance from the capacitor
+        :type IC: Decimal
+        :return: the the magnitude of the voltage response of the inductor to the disturbance
+        :rtype: Decimal
+        """
         return -VL * self.Inductor_Voltage_VL_coeff - VC * self.Inductor_Voltage_VC_coeff - IL * self.Inductor_Voltage_IL_coeff + IC * self.Inductor_Voltage_IC_coeff 
 
     def Circuit_Solver_Inductor_Current(self,VL: Decimal,IL: Decimal,VC: Decimal,IC: Decimal):
+        """Generates the current response of the inductor to wavefront distrubances. Solves by means of the wavefront equivalent circuit.
+
+        :param VL: the magnitude of the voltage disturbance from the inductor
+        :type VL: Decimal
+        :param IL: the magnitude of the current disturbance from the inductor
+        :type IL: Decimal
+        :param VC: the magnitude of the voltage disturbance from the capacitor
+        :type VC: Decimal
+        :param IC: the magnitude of the current disturbance from the capacitor
+        :type IC: Decimal
+        :return: the the magnitude of the current response of the inductor to the disturbance
+        :rtype: Decimal
+        """
         return -VL * self.Inductor_Current_VL_coeff - VC * self.Inductor_Current_VC_coeff - IL * self.Inductor_Current_IL_coeff + IC * self.Inductor_Current_IC_coeff 
 
     def Circuit_Solver_Inductor_Source_Voltage(self,VS: Decimal):
+        """The magnitude of the voltage response of the inductor to a voltage source excitation.
+
+        :param VS: magnitude of soure voltage excitation. 
+        :type VS: Decimal
+        :return: the the magnitude of the voltage response of the inductor to the disturbance
+        :rtype: Decimal
+        """
         return VS * self.Inductor_Voltage_VS_coeff
 
     def Circuit_Solver_Inductor_Source_Current(self,VS: Decimal):
+        """The magnitude of the current response of the inductor to a voltage source excitation.
+
+        :param VS: magnitude of soure voltage excitation. 
+        :type VS: Decimal
+        :return: the the magnitude of the current response of the inductor to the disturbance
+        :rtype: Decimal
+        """
         return VS * self.Inductor_Current_VS_coeff
 
     def Circuit_Solver_Capacitor_Voltage(self,VL: Decimal,IL: Decimal,VC: Decimal,IC: Decimal):
+        """Generates the voltage response of the capacitor to wavefront distrubances. Solves by means of the wavefront equivalent circuit.
+
+        :param VL: the magnitude of the voltage disturbance from the inductor
+        :type VL: Decimal
+        :param IL: the magnitude of the current disturbance from the inductor
+        :type IL: Decimal
+        :param VC: the magnitude of the voltage disturbance from the capacitor
+        :type VC: Decimal
+        :param IC: the magnitude of the current disturbance from the capacitor
+        :type IC: Decimal
+        :return: the the magnitude of the voltage response of the capacitor to the disturbance
+        :rtype: Decimal
+        """
         return -VC * self.Capacitor_Voltage_VC_coeff - VL * self.Capacitor_Voltage_VL_coeff - IC * self.Capacitor_Voltage_IC_coeff + IL * self.Capacitor_Voltage_IL_coeff 
 
     def Circuit_Solver_Capacitor_Current(self,VL: Decimal,IL: Decimal,VC: Decimal,IC: Decimal):
+        """Generates the current response of the capacitor to wavefront distrubances. Solves by means of the wavefront equivalent circuit.
+
+        :param VL: the magnitude of the voltage disturbance from the inductor
+        :type VL: Decimal
+        :param IL: the magnitude of the current disturbance from the inductor
+        :type IL: Decimal
+        :param VC: the magnitude of the voltage disturbance from the capacitor
+        :type VC: Decimal
+        :param IC: the magnitude of the current disturbance from the capacitor
+        :type IC: Decimal
+        :return: the the magnitude of the current response of the capacitor to the disturbance
+        :rtype: Decimal
+        """
         return -VC * self.Capacitor_Current_VC_coeff - VL * self.Capacitor_Current_VL_coeff - IC * self.Capacitor_Current_IC_coeff + IL * self.Capacitor_Current_IL_coeff 
 
     def Circuit_Solver_Capacitor_Source_Voltage(self,VS: Decimal):
+        """The magnitude of the voltage response of the capacitor to a voltage source excitation.
+
+        :param VS: magnitude of soure voltage excitation. 
+        :type VS: Decimal
+        :return: the the magnitude of the voltage response of the capacitor to the disturbance
+        :rtype: Decimal
+        """
         return VS * self.Capacitor_Voltage_VS_coeff
 
     def Circuit_Solver_Capacitor_Source_Current(self,VS: Decimal):
+        """The magnitude of the current response of the capacitor to a voltage source excitation.
+
+        :param VS: magnitude of soure voltage excitation. 
+        :type VS: Decimal
+        :return: the the magnitude of the current response of the capacitor to the disturbance
+        :rtype: Decimal
+        """
         return VS * self.Capacitor_Current_VS_coeff
     
     def about(self):
