@@ -459,9 +459,13 @@ class Data_Output_Storage:
             
             # Generate the commutative merging output data from the created Data_Input_Storage object:
             data_output_commutative : Data_Output_Storage = Generate_Wavefronts_Commutatively(data_input)
+            # Get sending wavefronts of the capacitor after only commutative merging:
+            data_output_commutative.Wavefronts_Sending_Capacitor
             
             # Generate the merged data after multiplicative merging:
             data_output_merged  : Data_Output_Storage = Higher_Order_Merging(data_input,data_output_commutative)
+            # Get sending wavefronts of the capacitor after multiplicative merging:
+            data_output_merged.Wavefronts_Sending_Capacitor
         
     """
     
@@ -542,31 +546,60 @@ class Data_Output_Storage_Ordered(Data_Output_Storage):
 @dataclass
 class Interface_Data:
     """A Dataclass that holds all simulation data for a praticular interface. Contains four data storage components: 
-    the input data, 
-    output wavefront data after commutative merging,
-    output wavefront data after multiplicative merging,
-    output wavefront data after ordering.
+    
+    :param data_input: input data and calcualted parameters of the interface
+    :type data_input: Data_Input_Storage
+    :param data_output_commutative: Data_Output_Storage object for commutative fanouts
+    :type data_output_commutative: Data_Output_Storage
+    :param data_output_multiplicative: Data_Output_Storage object for multiplicatively merged fanouts
+    :type data_output_multiplicative: Data_Output_Storage
+    :param data_output_ordered: Chronologically ordered merged data in a linear format 
+    :type data_output_ordered: Data_Output_Storage_Ordered
     """
     data_input : Data_Input_Storage
     data_output_commutative : Data_Output_Storage
     data_output_multiplicative : Data_Output_Storage
     data_output_ordered : Data_Output_Storage_Ordered
-  
-def get_array_absolute_maximum(array):
+
+def get_array_absolute_maximum(array : np.ndarray):
+    """Get the maximum absolute value of a data_output array.
+    Used for normalising the colour bars of fanout plots.
+
+    :param array: array to get the absoulute maximum
+    :type array: np.ndarray[Decimal]
+    :return: the absolute maximum of the array
+    :rtype: Decimal
+    """
     max_boundary = abs(np.max(array.astype(float)))
     min_boundary = abs(np.min(array.astype(float)))
     
     return max(max_boundary, min_boundary)
 
-def get_voltage(wavefront):
+def get_voltage_from_wavefront(wavefront):
+    """get the voltage of a wavefront. Used as a dummy fucntion to be vectorized, see "get_voltage_array".
+
+    :param wavefront: a wavefront
+    :type wavefront: Wavefront
+    :return: voltage magnitude of wavefront
+    :rtype: Decimal
+    """
     return wavefront.magnitude_voltage
 
-get_voltage_array = np.vectorize(get_voltage)
+#: The vectorized function that extracts the voltages from an np.ndarray[Wavefronts] array.
+get_voltage_array = np.vectorize(get_voltage_from_wavefront)
 
-def get_current(wavefront):
+def get_current_from_wavefront(wavefront):
+    """get the voltage of a wavefront. Used as a dummy fucntion to be vectorized, see "get_current_array".
+
+    :param wavefront: a wavefront
+    :type wavefront: Wavefront
+    :return: current magnitude of wavefront
+    :rtype: Decimal
+    """
     return wavefront.magnitude_current
 
-get_current_array = np.vectorize(get_current)
+#: The vectorized function that extracts the currents from an np.ndarray[Wavefronts] array.
+get_current_array = np.vectorize(get_current_from_wavefront)
 
 def get_image_array(arr):
     image_arr = np.full((len(arr),1),Decimal('0'))
@@ -576,7 +609,14 @@ def get_image_array(arr):
         
     return image_arr
 
-def transform_merged_array_to_L_axis(data_input : Data_Input_Storage,merged_array):
+def transform_merged_array_to_C_axis(data_input : Data_Input_Storage,merged_array):
+    """Transform 
+
+    :param data_input: _description_
+    :type data_input: Data_Input_Storage
+    :param merged_array: _description_
+    :type merged_array: _type_
+    """
     
     def extract_merging_region(data_input : Data_Input_Storage,merged_array, KL_index):
         
@@ -1286,7 +1326,6 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         False, # indicated that multiplicative merging has not occured
         )
 
-
 def multiplicative_merge_single_cycle(input_array:np.ndarray,Inductor_LCM_Factor:int,Capacitor_LCM_Factor:int):
     """Completes a single merging cycle of a mangitude fanout along its first (inductive) axis.
 
@@ -1297,7 +1336,7 @@ def multiplicative_merge_single_cycle(input_array:np.ndarray,Inductor_LCM_Factor
     :param Capacitor_LCM_Factor: The co-factor of the time-delay for the capacitor axis, KC. KC x TC = LCM(TL,TC)
     :type Capacitor_LCM_Factor: int
     :return: returns the input_array after one more subsequent merging cycle.
-    "type: np.ndarray
+    :rtype: np.ndarray
     """
     
     def make_upper_and_lower(input_array,Capacitor_LCM_Factor):
