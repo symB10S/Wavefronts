@@ -247,7 +247,8 @@ def Steady_State_Analysis(TL:Decimal,TC:Decimal):
 
 class Data_Input_Storage :
     """The storage object for the input varibles of a interface simulation. Calculates all the associated variables required for the simulaitons. 
-        Can be used to investigate network calcualted parameters based off input vairbles.  
+        Can be used to investigate network calcualted parameters based off input vairbles. 
+        It also stores and calculates all the interaction functions of the interface.
 
         Is initialised using key-word arguments. All values with the provided keys are of type string. 
         This each input variable is converterted to a Decimal value to be used for precision calculations.
@@ -586,51 +587,121 @@ class Data_Input_Storage :
         return VS * self.Capacitor_Current_VS_coeff
     
     def Self_Reflection_Event_Solver_Inductor(self,Wavefront_Parent_voltage: Decimal,Wavefront_Parent_current: Decimal):
+        """Calculates the voltage and current magnitude of a produced inductive wavefront due to an inductive self-reflection event. 
+        A self-reflection event is when a wavefron form a transmission line arrives at the interface and is reflected back into itself.
+        The Parent wavefront's parameters are passed to this function, the self reflected child wavefront magnitudes are calculated.
         
+        :param Wavefront_Parent_voltage: voltage of the parent wavefront arriving at the interface
+        :type Wavefront_Parent_voltage: Decimal
+        :param Wavefront_Parent_current: current of the parent wavefront arriving at the interface
+        :type Wavefront_Parent_current: Decimal
+        :return: (voltage, current ) of child wavefront
+        :rtype: Tuple
+        """
         magnitude_voltage = self.Circuit_Solver_Inductor_Voltage( Wavefront_Parent_voltage, Wavefront_Parent_current, 0, 0)
         magnitude_current = self.Circuit_Solver_Inductor_Current( Wavefront_Parent_voltage, Wavefront_Parent_current, 0, 0)
         
         return magnitude_voltage, magnitude_current
     
-    def Exitation_Event_Solver_Inductor(self,Wavefront_Parent_voltage,Wavefront_Parent_current):
-        
+    def Exitation_Event_Solver_Inductor(self,Wavefront_Parent_voltage : Decimal,Wavefront_Parent_current : Decimal):
+        """The voltage and current calcualtion of the inducitve wavefront produced due to a source excitation event.
+
+        :param Wavefront_Parent_voltage: voltage of the source excitation wavefront 
+        :type Wavefront_Parent_voltage: Decimal
+        :param Wavefront_Parent_current: current of the source excitation wavefront 
+        :type Wavefront_Parent_current: Decimal
+        :return: (voltage, current) of the produced inductive wavefront 
+        :rtype: Tuple (Decimal, Decimal)
+        """
         magnitude_voltage = self.Circuit_Solver_Inductor_Source_Voltage(Wavefront_Parent_voltage)
         magnitude_current = self.Circuit_Solver_Inductor_Source_Current(Wavefront_Parent_voltage)
         
         return magnitude_voltage, magnitude_current
 
-    def Transmission_Event_Solver_Inductor(self,Wavefront_Parent_voltage,Wavefront_Parent_current):
-        
+    def Transmission_Event_Solver_Inductor(self,Wavefront_Parent_voltage : Decimal,Wavefront_Parent_current : Decimal):
+        """The voltage and current calculation of the inductive wavefront produced due to a capacitve wavefront arriving at the interface.
+
+        :param Wavefront_Parent_voltage: voltage of the incident capacitve wavefront
+        :type Wavefront_Parent_voltage: Decimal
+        :param Wavefront_Parent_current: current of the incident capacitve wavefront
+        :type Wavefront_Parent_current: Decimal
+        :return: (voltage, current) of the produced inductive wavefront 
+        :rtype: Tuple (Decimal, Decimal)
+        """
         magnitude_voltage = self.Circuit_Solver_Inductor_Voltage(0, 0, Wavefront_Parent_voltage, Wavefront_Parent_current)
         magnitude_current = self.Circuit_Solver_Inductor_Current(0, 0, Wavefront_Parent_voltage, Wavefront_Parent_current)
         
         return magnitude_voltage, magnitude_current
 
     def Termination_Event_Solver_Inductor(self,Arriving_Voltage: Decimal,Arriving_Current: Decimal):
-        return -1*Arriving_Voltage, Arriving_Current
+        """The voltage and current calcutation of the re-reflected wavefront produced when an inductive wavefront reaches its termination.
+
+        :param Arriving_Voltage: voltage of the wavefront arriving at the inductor termination
+        :type Arriving_Voltage: Decimal
+        :param Arriving_Current: current of the wavefront arriving at the inductor termination
+        :type Arriving_Current: Decimal
+        :return: (voltage, current) of the re-reflected inductive wavefront
+        :rtype: Tuple (Decimal, Decimal)
+        """
+        return -Arriving_Voltage, Arriving_Current
 
     def Self_Reflection_Event_Solver_Capacitor(self,Wavefront_Parent_voltage: Decimal,Wavefront_Parent_current: Decimal):
-        
+        """Calculates the voltage and current magnitude of a produced capcaitve wavefront due to a capacitve self-reflection event. 
+        A self-reflection event is when a wavefront form a transmission line arrives at the interface and is reflected back into itself.
+        The Parent wavefront's parameters are passed to this function, the self reflected child wavefront magnitudes are calculated.
+
+        :param Wavefront_Parent_voltage: voltage of the parent wavefront arriving at the interface
+        :type Wavefront_Parent_voltage: Decimal
+        :param Wavefront_Parent_current: current of the parent wavefront arriving at the interface
+        :type Wavefront_Parent_current: Decimal
+        :return: (voltage, current ) of child wavefront
+        :rtype: Tuple
+        """
         magnitude_voltage = self.Circuit_Solver_Capacitor_Voltage( 0,0,Wavefront_Parent_voltage, Wavefront_Parent_current)
         magnitude_current = self.Circuit_Solver_Capacitor_Current( 0,0,Wavefront_Parent_voltage, Wavefront_Parent_current)
         
         return magnitude_voltage, magnitude_current
     
-    def Exitation_Event_Solver_Capacitor(self,Wavefront_Parent_voltage,Wavefront_Parent_current):
-        
+    def Exitation_Event_Solver_Capacitor(self,Wavefront_Parent_voltage : Decimal,Wavefront_Parent_current : Decimal):
+        """The voltage and current calcualtion of the capacitive wavefront produced due to a source excitation event.
+
+        :param Wavefront_Parent_voltage: voltage of the source excitation wavefront 
+        :type Wavefront_Parent_voltage: Decimal
+        :param Wavefront_Parent_current: current of the source excitation wavefront 
+        :type Wavefront_Parent_current: Decimal
+        :return: (voltage, current) of the produced capacitive wavefront 
+        :rtype: Tuple (Decimal, Decimal)
+        """     
         magnitude_voltage = self.Circuit_Solver_Capacitor_Source_Voltage(Wavefront_Parent_voltage)
         magnitude_current = self.Circuit_Solver_Capacitor_Source_Current(Wavefront_Parent_voltage)
         
         return magnitude_voltage, magnitude_current
 
-    def Transmission_Event_Solver_Capacitor(self,Wavefront_Parent_voltage,Wavefront_Parent_current):
-        
+    def Transmission_Event_Solver_Capacitor(self,Wavefront_Parent_voltage : Decimal,Wavefront_Parent_current : Decimal):
+        """The voltage and current calculation of the capacitve wavefront produced due to a inductive wavefront arriving at the interface.
+
+        :param Wavefront_Parent_voltage: voltage of the incident inductive wavefront
+        :type Wavefront_Parent_voltage: Decimal
+        :param Wavefront_Parent_current: current of the incident inductive wavefront
+        :type Wavefront_Parent_current: Decimal
+        :return: (voltage, current) of the produced capacitve wavefront 
+        :rtype: Tuple (Decimal, Decimal)
+        """    
         magnitude_voltage = self.Circuit_Solver_Capacitor_Voltage(Wavefront_Parent_voltage, Wavefront_Parent_current,0,0)
         magnitude_current = self.Circuit_Solver_Capacitor_Current(Wavefront_Parent_voltage, Wavefront_Parent_current,0,0)
         
         return magnitude_voltage, magnitude_current
 
     def Termination_Event_Solver_Capacitor(self,Arriving_Voltage: Decimal,Arriving_Current: Decimal):
+        """The voltage and current calcutation of the re-reflected wavefront produced when a capacitve wavefront reaches its termination.
+
+        :param Arriving_Voltage: voltage of the wavefront arriving at the capcitor termination
+        :type Arriving_Voltage: Decimal
+        :param Arriving_Current: current of the wavefront arriving at the capcitor termination
+        :type Arriving_Current: Decimal
+        :return: (voltage, current) of the re-reflected capacitve wavefront
+        :rtype: Tuple (Decimal, Decimal)
+        """
         return Arriving_Voltage, -Arriving_Current
     
     def about(self):
@@ -678,13 +749,10 @@ class Data_Input_Storage :
         print(f"{'Load Resistance :':<40}{self.Load_Impedance}")
 
 class Wavefront:
-    """Base wavefront class.
+    """Base wavefront class. Assings basic wavefront parameters, all of Decimal type initialised to zero.
     """
     def __init__(self):
-        
-        # self.velocity = Decimal('0')
-        # self.length = Decimal('0')
-        
+
         self.position_start = Decimal('0')
         self.position_end = Decimal('0')
 
@@ -718,9 +786,13 @@ class Wavefront:
         return self
         
     def __radd__(self, Wavefront_add ):
+        """add operation but for RHS. same as __add__
+        """
         return self.__add__(Wavefront_add)
         
     def about(self) :
+        """Displays information anout the wavefront
+        """
         print("\nSome Information about a wavefront")
         print(f"{'Type :':<35}{type(self)}")
         print(f"{'Poisiton Start :':<35}{self.position_start}")
@@ -780,19 +852,28 @@ class Wavefront_Source(Wavefront):
         Wavefront_Storage_Away.append(Wavefront_Capacitive(self.Data_input,self,False))
    
 class Wavefront_Kintetic( Wavefront ):
-    
+    """An parent class for Inductive and Capacitve wavefronts. Contains the logic for determining how wavefronts respond to particualr events.
+    """
     def setup_Wavefront(self,Wavefront_Parent : Wavefront, is_self_reflection : bool):
-        # key:
-        # | = interface,  X = termination, --> = this wavefront ,(Vs) = Source excitation
+        """handles how the voltage and current of a newly produced wavefront must be assigned. 
+
+        :param Wavefront_Parent: The Parent wavefront that is producing this wavefronts
+        :type Wavefront_Parent: Wavefront
+        :param is_self_reflection: if the parent wavefront is in the same wavefront as the child. Limits the need for an isinstance check.
+        :type is_self_reflection: bool
         
-        #               waves travelling to termination : | --> X
-        #    | --> X  = this wavefront travelling to termination, parent from same tx - self-reflection
-        # (v)| --> X  = this wavefront travelling to termination, parent is voltage source - source excitation
-        #  ->| --> X  = this wavefront travelling to termination, parent from other tx - transmission
+        key:
+        | = interface,  X = termination, --> = this wavefront ,(Vs) = Source excitation
         
-        #               waves returning to interface : | <-- X
-        #    | <-- X  = this wavefront returning to inerface, parent from same - re-reflection
-    
+                      waves travelling to termination : | --> X
+           | --> X  = this wavefront travelling to termination, parent from same tx - self-reflection
+        (v)| --> X  = this wavefront travelling to termination, parent is voltage source - source excitation
+         ->| --> X  = this wavefront travelling to termination, parent from other tx - transmission
+        
+                      waves returning to interface : | <-- X
+           | <-- X  = this wavefront returning to inerface, parent from same - re-reflection
+           
+        """
         # waves travelling to termination : | --> X
         if self.position_start == 0:
 
@@ -815,6 +896,11 @@ class Wavefront_Kintetic( Wavefront ):
             self.magnitude_voltage,self.magnitude_current = self.Termination_Event_Solver(Wavefront_Parent.magnitude_voltage,Wavefront_Parent.magnitude_current)
     
     def Merge(self, Wavefront_Other : Wavefront):
+        """superimposes two wavefronts by altering the voltage and current magnitudes of this wavefront.
+
+        :param Wavefront_Other: Partner Wavefront to be merging 
+        :type Wavefront_Other: Wavefront
+        """
         self.magnitude_voltage = self.magnitude_voltage + Wavefront_Other.magnitude_voltage
         self.magnitude_current = self.magnitude_current + Wavefront_Other.magnitude_current
 
@@ -837,14 +923,13 @@ class Wavefront_Capacitive( Wavefront_Kintetic ):
 
     def __init__(self, Data_Input : Data_Input_Storage, Wavefront_Parent : Wavefront, is_self_reflection : bool):
         """
-        Generates a wavefront based off another wavefront. 
-        By knowing the parent wavefront 
+        Generates a capacitive wavefront based off the information of the parent wavefront. 
 
-        :param Data_Input: _description_
+        :param Data_Input: the input paramaters of the interface being investigated.
         :type Data_Input: Data_Input_Storage
-        :param Wavefront_Parent: _description_
+        :param Wavefront_Parent: the parent wavefront producing this wavefront
         :type Wavefront_Parent: Wavefront
-        :param is_self_reflection: _description_
+        :param is_self_reflection: if the parent wavefront is in the same wavefront as the child. Limits the need for an isinstance check.
         :type is_self_reflection: bool
         """
         self.Data_Input = Data_Input
@@ -872,7 +957,12 @@ class Wavefront_Capacitive( Wavefront_Kintetic ):
 
         self.setup_Wavefront(Wavefront_Parent,is_self_reflection)
 
-    def generate_and_store(self, Wavefront_Storage):
+    def generate_and_store(self, Wavefront_Storage : deque):
+        """Generates and stores wavefronts the childern wavefront in a que to be processed
+
+        :param Wavefront_Storage: The deque of wavefronts that are actively being processed
+        :type Wavefront_Storage: deque
+        """
         if self.position_end == 0:
             Wavefront_Storage.append(Wavefront_Inductive(self.Data_Input,self,False))
             Wavefront_Storage.append(Wavefront_Capacitive(self.Data_Input,self,True))
@@ -880,14 +970,31 @@ class Wavefront_Capacitive( Wavefront_Kintetic ):
             Wavefront_Storage.append(Wavefront_Capacitive(self.Data_Input,self,True))
     
     def generate_and_return(self):
+        """Generates the children wavefront/s of this wavefront without directly storing them. 
+
+        :return: children wavefront/s
+        :rtype: Tuple (Wavefront_Inductive, Wavefront_Capacitive) or Wavefront_Capacitive
+        """
         if self.position_end == 0:
             return Wavefront_Inductive(self.Data_Input,self,False), Wavefront_Capacitive(self.Data_Input,self,True)
         else :
             return Wavefront_Capacitive(self.Data_Input,self,self.Data_Input,True)
 
 class Wavefront_Inductive( Wavefront_Kintetic ):
-
+    """
+    A wavefront travelling in the inductor. Follows the "wavefronts create wavefronts" paradigm. 
+    """
     def __init__(self, Data_Input : Data_Input_Storage, Wavefront_Parent : Wavefront, is_self_reflection : bool):
+        """
+        Generates a inductive wavefront based off the information of the parent wavefront. 
+
+        :param Data_Input: the input paramaters of the interface being investigated.
+        :type Data_Input: Data_Input_Storage
+        :param Wavefront_Parent: the parent wavefront producing this wavefront
+        :type Wavefront_Parent: Wavefront
+        :param is_self_reflection: if the parent wavefront is in the same wavefront as the child. Limits the need for an isinstance check.
+        :type is_self_reflection: bool
+        """
         
         self.Data_Input = Data_Input
         
@@ -915,6 +1022,11 @@ class Wavefront_Inductive( Wavefront_Kintetic ):
         self.setup_Wavefront(Wavefront_Parent,is_self_reflection)
 
     def generate_and_store(self, Wavefront_Storage):
+        """Generates and stores wavefronts the childern wavefront in a que to be processed
+
+        :param Wavefront_Storage: The deque of wavefronts that are actively being processed
+        :type Wavefront_Storage: deque
+        """
         if self.position_end == 0:
             Wavefront_Storage.append(Wavefront_Inductive(self.Data_Input,self,True))
             Wavefront_Storage.append(Wavefront_Capacitive(self.Data_Input,self,False))
@@ -922,6 +1034,11 @@ class Wavefront_Inductive( Wavefront_Kintetic ):
             Wavefront_Storage.append(Wavefront_Inductive(self.Data_Input,self,True))
 
     def generate_and_return(self):
+        """Generates the children wavefront/s of this wavefront without directly storing them. 
+
+        :return: children wavefront/s
+        :rtype: Tuple (Wavefront_Inductive, Wavefront_Capacitive) or Wavefront_Inductive
+        """
         if self.position_end == 0:
             return Wavefront_Inductive(self.Data_Input,self,True), Wavefront_Capacitive(self.Data_Input,self,False)
         else :
