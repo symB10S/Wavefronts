@@ -748,6 +748,37 @@ class Wavefront:
         else:
             return False
 
+class Wavefront_Source(Wavefront):
+    """Class representing switiching wavefronts of the voltage source. 
+    In this release wavefonts switching is not supported, 
+    this class used to initiated wavefronts at t=0 only. 
+    """
+
+    def __init__(self, Data_input: Data_Input_Storage,time_start, magnitude = 1  ):
+        """intialised the wavefront.
+
+        :param magnitude: Source magnitude
+        :type magnitude: str or Decimal
+        :param time_start: start of pulse
+        :type time_start: str or Decimal
+        """
+        super().__init__()
+        self.Data_input = Data_input
+
+        self.time_start = Decimal(time_start)
+        self.time_end = self.time_start
+        self.magnitude_voltage = Decimal(magnitude)
+
+    def generate_and_store(self, Wavefront_Storage_Away : deque):
+        """triggers the creation of the inital wavefronts in the inductor and capacitor. 
+        Stores them in the Wavefront_Storage. Order is important, inductive first followed by capacitive. 
+
+        :param Wavefront_Storage: Storage array for away waves
+        :type Wavefront_Storage: deque
+        """
+        Wavefront_Storage_Away.append(Wavefront_Inductive(self.Data_input,self,False))
+        Wavefront_Storage_Away.append(Wavefront_Capacitive(self.Data_input,self,False))
+   
 class Wavefront_Kintetic( Wavefront ):
     
     def setup_Wavefront(self,Wavefront_Parent : Wavefront, is_self_reflection : bool):
@@ -782,6 +813,10 @@ class Wavefront_Kintetic( Wavefront ):
         # waves returning to interface : | <-- X , re-reflection
         else: 
             self.magnitude_voltage,self.magnitude_current = self.Termination_Event_Solver(Wavefront_Parent.magnitude_voltage,Wavefront_Parent.magnitude_current)
+    
+    def Merge(self, Wavefront_Other : Wavefront):
+        self.magnitude_voltage = self.magnitude_voltage + Wavefront_Other.magnitude_voltage
+        self.magnitude_current = self.magnitude_current + Wavefront_Other.magnitude_current
 
     def Self_Reflection_Event_Solver(self,Wavefront_Parent_voltage,Wavefront_Parent_current):
         pass
@@ -850,10 +885,6 @@ class Wavefront_Capacitive( Wavefront_Kintetic ):
         else :
             return Wavefront_Capacitive(self.Data_Input,self,self.Data_Input,True)
 
-    def Merge(self, Wavefront_Other : Wavefront):
-        self.magnitude_voltage = self.magnitude_voltage + Wavefront_Other.magnitude_voltage
-        self.magnitude_current = self.magnitude_current + Wavefront_Other.magnitude_current
-
 class Wavefront_Inductive( Wavefront_Kintetic ):
 
     def __init__(self, Data_Input : Data_Input_Storage, Wavefront_Parent : Wavefront, is_self_reflection : bool):
@@ -896,41 +927,7 @@ class Wavefront_Inductive( Wavefront_Kintetic ):
         else :
             return Wavefront_Inductive(self.Data_Input,self,True)
 
-    def Merge(self, Wavefront_Other : Wavefront):
-        self.magnitude_voltage = self.magnitude_voltage + Wavefront_Other.magnitude_voltage
-        self.magnitude_current = self.magnitude_current + Wavefront_Other.magnitude_current
 
-class Wavefront_Source(Wavefront):
-    """Class representing switiching wavefronts of the voltage source. 
-    In this release wavefonts switching is not supported, 
-    this class used to initiated wavefronts at t=0 only. 
-    """
-
-    def __init__(self, Data_input: Data_Input_Storage,time_start, magnitude = 1  ):
-        """intialised the wavefront.
-
-        :param magnitude: Source magnitude
-        :type magnitude: str or Decimal
-        :param time_start: start of pulse
-        :type time_start: str or Decimal
-        """
-        super().__init__()
-        self.Data_input = Data_input
-
-        self.time_start = Decimal(time_start)
-        self.time_end = self.time_start
-        self.magnitude_voltage = Decimal(magnitude)
-
-    def generate_and_store(self, Wavefront_Storage_Away : deque):
-        """triggers the creation of the inital wavefronts in the inductor and capacitor. 
-        Stores them in the Wavefront_Storage. Order is important, inductive first followed by capacitive. 
-
-        :param Wavefront_Storage: Storage array for away waves
-        :type Wavefront_Storage: deque
-        """
-        Wavefront_Storage_Away.append(Wavefront_Inductive(self.Data_input,self,False))
-        Wavefront_Storage_Away.append(Wavefront_Capacitive(self.Data_input,self,False))
-   
 @dataclass
 class Data_Output_Storage:
     """Stores data of various types of fanout diagrams after simulation. 
