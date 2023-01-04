@@ -5,7 +5,6 @@ Wavefront_Simulator
    :maxdepth: 4
 
    LTSpice_Simulator
-   Merge_Full
    Wavefront_Generation
    Wavefront_Plotting
    Wavefront_Storage

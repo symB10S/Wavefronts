@@ -5,6 +5,7 @@ import math
 import copy
 import warnings
 from Wavefront_Storage import *
+from Wavefront_Misc import *
 
 getcontext().traps[FloatOperation] = True
 
@@ -303,7 +304,8 @@ def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
         )
 
 def multiplicative_merge_single_cycle(input_array:np.ndarray,Inductor_LCM_Factor:int,Capacitor_LCM_Factor:int):
-    """Completes a single merging cycle of a mangitude fanout along its first (inductive) axis.
+    """Completes a single merging cycle of a mangitude fanout along the inductive axis.
+    A single cycle consitis of splitting -> shift -> merging.
 
     :param input_array: An output array from Datat_Output_Storage class., i.e. data_output.Voltage_Interconnect_Inductor
     :type input_array: np.ndarray
@@ -314,60 +316,11 @@ def multiplicative_merge_single_cycle(input_array:np.ndarray,Inductor_LCM_Factor
     :return: returns the input_array after one more subsequent merging cycle.
     :rtype: np.ndarray
     """
-    
-    def split_and_translate_to_L_axis(input_array : np.ndarray ,C_value : int):
-        """The first step in the recursive merging process.
-        Seperates the input array into two arrays along the line C = C_value, this line is parallel to the L-axis.
-        Both arrays are padded with 'zeros' such that the shape of the input array is maintained. 
-        The split array touching the origin and the L-axis will be padded such that it is 'stationary',
-        The other array will be shifted to the origin along the L-axis with the padding is 'ontop'.
-
-        :param input_array: array to be split.
-        :type input_array: np.ndarray
-        :param C_value: The value on the C-axis in which the array is split in two. Typically this is C = KC such as to divide along multiplicative merging region boundary.
-        :type C_value: int
-        :return: Stationary and Translated arrays in that order.
-        :rtype: tuple( np.ndarray , np.ndarray )
-        """
-        
-        # split arrays
-        stationary_array : np.ndarray = input_array[:,0:C_value]
-        translated_array : np.ndarray = input_array[:,C_value:]
-
-        # generate padding such that when appended input shape is maintianed
-        padding_array_for_stationary : np.ndarray = np.full(translated_array.shape,0,dtype=translated_array.dtype)
-        padding_array_for_translated : np.ndarray = np.full(stationary_array.shape,0,dtype=stationary_array.dtype)
-        
-        # append paddding such that there is a 'translation' for the translated array
-        stationary_array= np.append(stationary_array,padding_array_for_stationary,axis=1)
-        translated_array= np.append(translated_array,padding_array_for_translated,axis=1)
-        
-        return stationary_array,translated_array
-    
-    def translate_along_L_axis(input_array : np.ndarray , L_value : int ):
-        """The second step in the recursive merigng process.
-        Shifts an array L_value units along the L-axis, and pads it with zeros so that the input shape is maintained.
-
-        :param input_array: array to be translated.
-        :type input_array: np.ndarray
-        :param L_value: the extent to which the array is shifted.
-        :type L_value: int
-        :return: the shifted array.
-        :rtype: np.ndarray
-        """
-        
-        # isolate relevant remaining portion
-        split_array = input_array[0:-L_value,:]
-        # generate padding
-        padding_array = np.full((L_value, input_array.shape[1]), 0, dtype = input_array.dtype)
-        # combine with padding first as to shift the array
-        shifted_array = np.append(padding_array, split_array, axis=0)
-        
-        return shifted_array
-    
+    # split arrays along C = Capacitor_LCM_Factor,
     stationary_array,translated_array = split_and_translate_to_L_axis(input_array,Capacitor_LCM_Factor)
+    # shift translated array by L = Inductor_LCM_Factor
     array_merge_ready = translate_along_L_axis(translated_array,Inductor_LCM_Factor)
-    
+    # merging regions will now be aligned, can now merge. 
     array_merged = stationary_array + array_merge_ready
     
     return array_merged
@@ -580,51 +533,54 @@ def Full_Cycle(**input_values):
 
 def get_spatial_voltage_current_at_time(Time_Enquriey, Interface : Data_Interface_Storage , is_Inductor : bool):
     
-    Data_Output_Ordered = Interface.data_output_ordered
     
+    # Exctract wavefront interceptions at a specific time
+    # 1. get sending + returning wavefronts
+    # 2. determine DC line values
+    # 3. get intercept positions, voltages and currents
+    
+    sending_wavefronts = []
+    returning_wavefronts = []
     
     dc_voltage = Decimal('0')
     dc_current = Decimal('0')
 
-    send_position = []
-    send_value_voltage = []
-    send_value_current = []
+    sending_intercept_positions = []
+    sending_intercept_voltages = []
+    sending_intercept_currents = []
 
-    return_position = []
-    return_value_voltage = []
-    return_value_current = []
+    returning_intercept_positions = []
+    returning_intercept_voltages = []
+    returning_intercept_currents = []
+    
+    if(is_Inductor):
+        termination_length = Interface.data_input.Inductor_Length
+        sending_wavefronts = Interface.data_output_multiplicative.Wavefronts_Sending_Inductor
+        returning_wavefronts = Interface.data_output_multiplicative.Wavefronts_Returning_Inductor
+    else:
+        termination_length = Interface.data_input.Capacitor_Length
+        sending_wavefronts = Interface.data_output_multiplicative.Wavefronts_Sending_Capacitor
+        returning_wavefronts = Interface.data_output_multiplicative.Wavefronts_Returning_Capacitor
 
-    sending_wavefront = []
-    returning_wavefront = []
-    
-    # Exctract wavefront interceptions at a specific time
-    # 1. Get sending + returning wavefronts
-    # 2. Add DC value to line
-    # 3. If intercepting, store position
-    
-    for index in Data_Output_Ordered.Indexes:
+    for index in Interface.data_output_ordered.Indexes:
         x = index[0]
         y = index[1]
         
-        # Sending and returning wavefronts
-        if(is_Inductor):
-            termination_length = Interface.data_input.Inductor_Length
-            sending_wavefront = Interface.data_output_multiplicative.Wavefronts_Sending_Inductor[x,y]
-            returning_wavefront = Interface.data_output_multiplicative.Wavefronts_Returning_Inductor[x,y]
-        else:
-            termination_length = Interface.data_input.Capacitor_Length
-            sending_wavefront = Interface.data_output_multiplicative.Wavefronts_Sending_Capacitor[x,y]
-            returning_wavefront = Interface.data_output_multiplicative.Wavefronts_Returning_Capacitor[x,y]
+        # Get sending + returning wavefronts
+        sending_wavefront = sending_wavefronts[x,y]
+        returning_wavefront = returning_wavefronts[x,y]
+        
+        # get position intercepts and determine line DC values
         
         # x = time enquirey
         # -s-> = sending wavefront
         # -r-> = returning wavefront
         
-        # x-s->-r->
+        # x-s->-r-> before 
         if(sending_wavefront.time_start > Time_Enquriey): # Finished
             break
         
-        # -s->-r->x
+        # -s->-r->x after
         elif(returning_wavefront.time_end <= Time_Enquriey): # Both DC
             dc_voltage += sending_wavefront.magnitude_voltage
             dc_current += sending_wavefront.magnitude_current
@@ -632,20 +588,20 @@ def get_spatial_voltage_current_at_time(Time_Enquriey, Interface : Data_Interfac
             dc_voltage += returning_wavefront.magnitude_voltage
             dc_current += returning_wavefront.magnitude_current
         
-        # -s->-x-r->      
+        # -s->-x-r-> returning intercept
         elif(returning_wavefront.time_end >= Time_Enquriey and returning_wavefront.time_start < Time_Enquriey): # Returning Intercept, Sending DC
-            return_position.append(returning_wavefront.Position_at_time(Time_Enquriey))
-            return_value_voltage.append(returning_wavefront.magnitude_voltage)
-            return_value_current.append(returning_wavefront.magnitude_current)
+            returning_intercept_positions.append(returning_wavefront.Position_at_time(Time_Enquriey))
+            returning_intercept_voltages.append(returning_wavefront.magnitude_voltage)
+            returning_intercept_currents.append(returning_wavefront.magnitude_current)
                 
             dc_voltage += sending_wavefront.magnitude_voltage
             dc_current += sending_wavefront.magnitude_current
         
-        # -x-s->-r->        
+        # -x-s->-r-> sending intercept
         elif(sending_wavefront.time_end >= Time_Enquriey and sending_wavefront.time_start <= Time_Enquriey): # Sending Intercept
-            send_position.append(sending_wavefront.Position_at_time(Time_Enquriey))
-            send_value_voltage.append(sending_wavefront.magnitude_voltage)
-            send_value_current.append(sending_wavefront.magnitude_current)
+            sending_intercept_positions.append(sending_wavefront.Position_at_time(Time_Enquriey))
+            sending_intercept_voltages.append(sending_wavefront.magnitude_voltage)
+            sending_intercept_currents.append(sending_wavefront.magnitude_current)
                 
         else:
             raise Exception("Somethings wrong, wavefront has to be intecepted/ stored or done")
@@ -664,60 +620,60 @@ def get_spatial_voltage_current_at_time(Time_Enquriey, Interface : Data_Interfac
     value_right_current = []
 
     # input sending values in output form, make all DC value, add to inerconnect value
-    for i, pos in enumerate(send_position):
+    for i, pos in enumerate(sending_intercept_positions):
         position_all.append(pos)
             
         value_left_voltage.append(dc_voltage)
         value_right_voltage.append(dc_voltage)
-        interconnect_value_voltage += send_value_voltage[i]
+        interconnect_value_voltage += sending_intercept_voltages[i]
             
         value_left_current.append(dc_current)
         value_right_current.append(dc_current)
-        interconnect_value_current += send_value_current[i]
+        interconnect_value_current += sending_intercept_currents[i]
             
 
     # input returning values in output form, make all DC value
-    for i, pos in enumerate(return_position):
+    for i, pos in enumerate(returning_intercept_positions):
         position_all.append(pos)
             
         value_left_voltage.append(dc_voltage)
         value_right_voltage.append(dc_voltage)
-        termination_value_voltage += return_value_voltage[i]
+        termination_value_voltage += returning_intercept_voltages[i]
             
         value_left_current.append(dc_current)
         value_right_current.append(dc_current)
-        termination_value_current += return_value_current[i]
+        termination_value_current += returning_intercept_currents[i]
             
         if (pos ==0):
             raise Exception("Returning wavefront at interconnect, problematic")
 
     # add values left and right
     for i,position in enumerate(position_all):
-        for j, send_pos in enumerate(send_position):
+        for j, send_pos in enumerate(sending_intercept_positions):
             if(send_pos> position):
-                value_left_voltage[i] += send_value_voltage[j]
-                value_right_voltage[i] += send_value_voltage[j]
+                value_left_voltage[i] += sending_intercept_voltages[j]
+                value_right_voltage[i] += sending_intercept_voltages[j]
                     
-                value_left_current[i] += send_value_current[j]
-                value_right_current[i] += send_value_current[j]
+                value_left_current[i] += sending_intercept_currents[j]
+                value_right_current[i] += sending_intercept_currents[j]
                     
             if (send_pos == position ):
-                value_left_voltage[i] += send_value_voltage[j]
+                value_left_voltage[i] += sending_intercept_voltages[j]
                 
-                value_left_current[i] += send_value_current[j]
+                value_left_current[i] += sending_intercept_currents[j]
                 
-        for j, return_pos in enumerate(return_position):
+        for j, return_pos in enumerate(returning_intercept_positions):
             if(return_pos< position):
-                value_left_voltage[i] += return_value_voltage[j]
-                value_right_voltage[i] += return_value_voltage[j]
+                value_left_voltage[i] += returning_intercept_voltages[j]
+                value_right_voltage[i] += returning_intercept_voltages[j]
                     
-                value_left_current[i] += return_value_current[j]
-                value_right_current[i] += return_value_current[j]
+                value_left_current[i] += returning_intercept_currents[j]
+                value_right_current[i] += returning_intercept_currents[j]
                     
             if (return_pos == position ):
-                value_right_voltage[i] += return_value_voltage[j]
+                value_right_voltage[i] += returning_intercept_voltages[j]
                     
-                value_right_current[i] += return_value_current[j]
+                value_right_current[i] += returning_intercept_currents[j]
                     
     # append interconnect
     position_all.append(0)
