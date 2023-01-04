@@ -8,49 +8,6 @@ from Wavefront_Storage import *
 
 getcontext().traps[FloatOperation] = True
 
-def get_image_array(array):
-    """Turns an output-ordered 1-dimesional array into a format that can be displayed by matplotlib "imshow".
-
-    :param array: a single dimension np.ndarray or List 
-    :type array: np.ndarray or List
-    :return: an output array that can be shown using "imshow"
-    :rtype: np.ndarray 
-    """
-    image_array = np.full((len(array),1),Decimal('0'))
-    
-    for i,val in enumerate(array):
-        image_array[i][0] = val
-        
-    return image_array
-
-def transform_merged_array_to_C_axis(data_input : Data_Input_Storage,merged_array):
-    """Transform merged data output array to a C-axis merging representation
-
-    :param data_input: input data for merged array
-    :type data_input: Data_Input_Storage
-    :param merged_array: merged array aligne to the C-axis
-    :type merged_array: np.ndarray[Decimal]
-    """
-    
-    def extract_merging_region(data_input : Data_Input_Storage,merged_array, KL_index):
-        # extract a mergign region along the inductive axis
-        KL = data_input.Inductor_LCM_Factor
-        KC = data_input.Capacitor_LCM_Factor
-    
-        return merged_array[KL_index*KL:KL_index*KL+KL,0:KC]
-
-    # get first meging region
-    new_array = extract_merging_region(data_input,merged_array,0)
-    # determine number of merging regions
-    number_of_KLs = int((data_input.Number_of_Layers+1)/data_input.Inductor_LCM_Factor)
-    for i in range(1,number_of_KLs):
-        # rearrange and add merging regions allong the C-axis
-        new_merging_region = extract_merging_region(data_input,merged_array,i)
-        new_array = np.concatenate((new_array,new_merging_region),axis =1)
-        
-    return new_array
-
-
 def Generate_Wavefronts_Commutatively(Data_Input : Data_Input_Storage):
     """Generates a Data_Output_Storage object from the calculated input variables stored in a Data_Input_Storage object. 
     
@@ -596,3 +553,189 @@ def Full_Cycle(**input_values):
     
     return Interface_Data(data_input,data_output_commutative,data_output_merged,data_output_ordered)
 
+def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data_Output_Ordered : Data_Output_Storage_Ordered, is_Inductor : bool):
+    
+    termination_length = 1
+    
+    dc_voltage = Decimal('0')
+    dc_current = Decimal('0')
+
+    send_position = []
+    send_value_voltage = []
+    send_value_current = []
+
+    return_position = []
+    return_value_voltage = []
+    return_value_current = []
+
+    sending_wavefront = []
+    returning_wavefront = []
+    
+    # Exctract wavefront interceptions at a specific time
+    # 1. Get sending + returning wavefronts
+    # 2. Add DC value to line
+    # 3. If intercepting, store position
+    
+    for index in Data_Output_Ordered.Indexes:
+        x = index[0]
+        y = index[1]
+        
+        # Sending and returning wavefronts
+        if(is_Inductor):
+            sending_wavefront = Data_Output_Merged.Wavefronts_Sending_Inductor[x,y]
+            returning_wavefront = Data_Output_Merged.Wavefronts_Returning_Inductor[x,y]
+        else:
+            sending_wavefront = Data_Output_Merged.Wavefronts_Sending_Capacitor[x,y]
+            returning_wavefront = Data_Output_Merged.Wavefronts_Returning_Capacitor[x,y]
+        
+        # x = time enquirey
+        # -s-> = sending wavefront
+        # -r-> = returning wavefront
+        
+        # x-s->-r->
+        if(sending_wavefront.time_start > Time_Enquriey): # Finished
+            break
+        
+        # -s->-r->x
+        elif(returning_wavefront.time_end <= Time_Enquriey): # Both DC
+            dc_voltage += sending_wavefront.magnitude_voltage
+            dc_current += sending_wavefront.magnitude_current
+                
+            dc_voltage += returning_wavefront.magnitude_voltage
+            dc_current += returning_wavefront.magnitude_current
+        
+        # -s->-x-r->      
+        elif(returning_wavefront.time_end >= Time_Enquriey and returning_wavefront.time_start < Time_Enquriey): # Returning Intercept, Sending DC
+            return_position.append(returning_wavefront.Position_at_time(Time_Enquriey))
+            return_value_voltage.append(returning_wavefront.magnitude_voltage)
+            return_value_current.append(returning_wavefront.magnitude_current)
+                
+            dc_voltage += sending_wavefront.magnitude_voltage
+            dc_current += sending_wavefront.magnitude_current
+        
+        # -x-s->-r->        
+        elif(sending_wavefront.time_end >= Time_Enquriey and sending_wavefront.time_start <= Time_Enquriey): # Sending Intercept
+            send_position.append(sending_wavefront.Position_at_time(Time_Enquriey))
+            send_value_voltage.append(sending_wavefront.magnitude_voltage)
+            send_value_current.append(sending_wavefront.magnitude_current)
+                
+        else:
+            raise Exception("Somethings wrong, wavefront has to be intecepted/ stored or done")
+            
+    termination_value_voltage = dc_voltage
+    interconnect_value_voltage =  dc_voltage
+        
+    termination_value_current = dc_current
+    interconnect_value_current =  dc_current
+
+    position_all = []
+    value_left_voltage = []
+    value_right_voltage = []
+        
+    value_left_current = []
+    value_right_current = []
+
+    # input sending values in output form, make all DC value, add to inerconnect value
+    for i, pos in enumerate(send_position):
+        position_all.append(pos)
+            
+        value_left_voltage.append(dc_voltage)
+        value_right_voltage.append(dc_voltage)
+        interconnect_value_voltage += send_value_voltage[i]
+            
+        value_left_current.append(dc_current)
+        value_right_current.append(dc_current)
+        interconnect_value_current += send_value_current[i]
+            
+
+    # input returning values in output form, make all DC value
+    for i, pos in enumerate(return_position):
+        position_all.append(pos)
+            
+        value_left_voltage.append(dc_voltage)
+        value_right_voltage.append(dc_voltage)
+        termination_value_voltage += return_value_voltage[i]
+            
+        value_left_current.append(dc_current)
+        value_right_current.append(dc_current)
+        termination_value_current += return_value_current[i]
+            
+        if (pos ==0):
+            raise Exception("Returning wavefront at interconnect, problematic")
+
+    # add values left and right
+    for i,position in enumerate(position_all):
+        for j, send_pos in enumerate(send_position):
+            if(send_pos> position):
+                value_left_voltage[i] += send_value_voltage[j]
+                value_right_voltage[i] += send_value_voltage[j]
+                    
+                value_left_current[i] += send_value_current[j]
+                value_right_current[i] += send_value_current[j]
+                    
+            if (send_pos == position ):
+                value_left_voltage[i] += send_value_voltage[j]
+                
+                value_left_current[i] += send_value_current[j]
+                
+        for j, return_pos in enumerate(return_position):
+            if(return_pos< position):
+                value_left_voltage[i] += return_value_voltage[j]
+                value_right_voltage[i] += return_value_voltage[j]
+                    
+                value_left_current[i] += return_value_current[j]
+                value_right_current[i] += return_value_current[j]
+                    
+            if (return_pos == position ):
+                value_right_voltage[i] += return_value_voltage[j]
+                    
+                value_right_current[i] += return_value_current[j]
+                    
+    # append interconnect
+    position_all.append(0)
+        
+    value_left_voltage.append(interconnect_value_voltage)
+    value_right_voltage.append(interconnect_value_voltage)
+        
+    value_left_current.append(interconnect_value_current)
+    value_right_current.append(interconnect_value_current)
+
+    # append termination
+    position_all.append(termination_length)
+            
+    value_left_voltage.append(termination_value_voltage)
+    value_right_voltage.append(termination_value_voltage)
+        
+    value_left_current.append(termination_value_current)
+    value_right_current.append(termination_value_current)
+
+    # sort values
+    zip_positions_voltage_current = sorted(zip(position_all,value_left_voltage,value_right_voltage,value_left_current,value_right_current))
+    position_all, value_left_voltage, value_right_voltage, value_left_current, value_right_current = zip(*zip_positions_voltage_current)
+        
+    # convert to lists
+    position_all = list(position_all)
+        
+    value_left_voltage = list(value_left_voltage)
+    value_right_voltage = list(value_right_voltage)
+        
+    value_left_current = list(value_left_current)
+    value_right_current = list(value_right_current)
+        
+    # Merge neighbours
+    found_duplicate = True
+    while found_duplicate:
+        found_duplicate = False
+        for index,position in enumerate(position_all):
+            if(index < len(position_all)-1):
+                
+                if(position == position_all[index+1]):                  
+                    del position_all[index +1]
+                    del value_left_voltage[index +1]
+                    del value_right_voltage[index +1]
+                    del value_left_current[index +1]
+                    del value_right_current[index +1]
+
+                    found_duplicate = True
+                        
+    return position_all,value_left_voltage,value_right_voltage,value_left_current,value_right_current

@@ -1038,3 +1038,46 @@ def get_current_from_wavefront(wavefront):
 
 #: The vectorized function that extracts the currents from an np.ndarray[Wavefronts] array.
 get_current_array = np.vectorize(get_current_from_wavefront)
+
+def get_image_array(array):
+    """Turns an output-ordered 1-dimesional array into a format that can be displayed by matplotlib "imshow".
+
+    :param array: a single dimension np.ndarray or List 
+    :type array: np.ndarray or List
+    :return: an output array that can be shown using "imshow"
+    :rtype: np.ndarray 
+    """
+    image_array = np.full((len(array),1),Decimal('0'))
+    
+    for i,val in enumerate(array):
+        image_array[i][0] = val
+        
+    return image_array
+
+def transform_merged_array_to_C_axis(data_input : Data_Input_Storage,merged_array):
+    """Transform merged data output array to a C-axis merging representation
+
+    :param data_input: input data for merged array
+    :type data_input: Data_Input_Storage
+    :param merged_array: merged array aligne to the C-axis
+    :type merged_array: np.ndarray[Decimal]
+    """
+    
+    def extract_merging_region(data_input : Data_Input_Storage,merged_array, KL_index):
+        # extract a mergign region along the inductive axis
+        KL = data_input.Inductor_LCM_Factor
+        KC = data_input.Capacitor_LCM_Factor
+    
+        return merged_array[KL_index*KL:KL_index*KL+KL,0:KC]
+
+    # get first meging region
+    new_array = extract_merging_region(data_input,merged_array,0)
+    # determine number of merging regions
+    number_of_KLs = int((data_input.Number_of_Layers+1)/data_input.Inductor_LCM_Factor)
+    for i in range(1,number_of_KLs):
+        # rearrange and add merging regions allong the C-axis
+        new_merging_region = extract_merging_region(data_input,merged_array,i)
+        new_array = np.concatenate((new_array,new_merging_region),axis =1)
+        
+    return new_array
+
