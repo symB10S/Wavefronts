@@ -585,6 +585,12 @@ class Data_Input_Storage :
         """
         return VS * self.Capacitor_Current_VS_coeff
     
+    def Termination_Solver_Inductor(self,Arriving_Voltage: Decimal,Arriving_Current: Decimal):
+        return -Arriving_Voltage, Arriving_Current
+    
+    def Termination_Solver_Capacitor(self,Arriving_Voltage: Decimal,Arriving_Current: Decimal):
+        return Arriving_Voltage, -Arriving_Current
+    
     def about(self):
         """Prints out information input varibles and associated calculated variables.
         """
@@ -634,8 +640,8 @@ class Wavefront:
     """
     def __init__(self):
         
-        self.velocity = Decimal('0')
-        self.length = Decimal('0')
+        # self.velocity = Decimal('0')
+        # self.length = Decimal('0')
         
         self.position_start = Decimal('0')
         self.position_end = Decimal('0')
@@ -701,10 +707,22 @@ class Wavefront:
             return False
        
 class Wavefront_Capacitive( Wavefront ):
-    """A wavefront travelling in the capacitor. 
+    """
+    A wavefront travelling in the capacitor. Follows the "wavefronts create wavefronts" paradigm. 
     """
 
-    def __init__(self, Data_Input : Data_Input_Storage, Wavefront_Parent : Wavefront, is_reflection : bool):
+    def __init__(self, Data_Input : Data_Input_Storage, Wavefront_Parent : Wavefront, is_self_reflection : bool):
+        """
+        Generates a wavefront based off another wavefront. 
+        By knowing the parent wavefront 
+
+        :param Data_Input: _description_
+        :type Data_Input: Data_Input_Storage
+        :param Wavefront_Parent: _description_
+        :type Wavefront_Parent: Wavefront
+        :param is_self_reflection: _description_
+        :type is_self_reflection: bool
+        """
         
         self.Data_Input = Data_Input
         
@@ -715,17 +733,31 @@ class Wavefront_Capacitive( Wavefront ):
 
         self.time_start = Wavefront_Parent.time_end
         self.time_end = self.time_start + self.Data_Input.Capacitor_Time
-
+        
+        # key:
+        # | = interface,  X = termination, --> = this wavefront ,(Vs) = Source excitation
+        
+        #               waves travelling to termination : | --> X
+        #    | --> X  = this wavefront travelling to termination, parent from same tx - self-reflection
+        # (v)| --> X  = this wavefront travelling to termination, parent is voltage source - source excitation
+        #  ->| --> X  = this wavefront travelling to termination, parent from other tx - transmission
+        
+        #               waves returning to interface : | <-- X
+        #    | <-- X  = this wavefront returning to inerface, parent from same - re-reflection
+        
+        # waves travelling to termination : | --> X
         if self.position_start == 0:
 
             self.position_end = self.Data_Input.Capacitor_Length
 
-            if is_reflection: # A reflected wave at source side   |<--
+            # was the parent wavefront in the same transmission line?
+            if is_self_reflection: # Yes, | --> X , self-reflection
 
                 self.magnitude_voltage = self.Data_Input.Circuit_Solver_Capacitor_Voltage(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
                 self.magnitude_current = self.Data_Input.Circuit_Solver_Capacitor_Current(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
 
-            elif isinstance(Wavefront_Parent, Wavefront_Source) : # A generate source wave (Vs)-|->
+            # was the parent wavefront an excitation event ? 
+            elif isinstance(Wavefront_Parent, Wavefront_Source) : # (v)| --> X , source excitation
 
                 self.time_start = Wavefront_Parent.time_start
                 self.time_end = self.time_start + self.Data_Input.Capacitor_Time
@@ -733,17 +765,15 @@ class Wavefront_Capacitive( Wavefront ):
                 self.magnitude_voltage = self.Data_Input.Circuit_Solver_Capacitor_Source_Voltage(Wavefront_Parent.magnitude_voltage)
                 self.magnitude_current = self.Data_Input.Circuit_Solver_Capacitor_Source_Current(Wavefront_Parent.magnitude_voltage)
 
-            else: # A transmitted wave at source side  -|->
+            else: # A transmitted wave at source side  ->| --> X, transmission
 
                 self.magnitude_voltage = self.Data_Input.Circuit_Solver_Capacitor_Voltage(Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
                 self.magnitude_current = self.Data_Input.Circuit_Solver_Capacitor_Current(Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
-
-        else: # A reflected wave at load side   -->|
+        # waves returning to interface : | <-- X , re-reflection
+        else: 
 
             self.position_end = 0
-
-            self.magnitude_voltage = Wavefront_Parent.magnitude_voltage
-            self.magnitude_current = - Wavefront_Parent.magnitude_current
+            self.magnitude_voltage,self.magnitude_current = self.Data_Input.Termination_Solver_Capacitor(Wavefront_Parent.magnitude_voltage,Wavefront_Parent.magnitude_current)
 
     def generate_and_store(self, Wavefront_Storage):
         if self.position_end == 0:
@@ -764,7 +794,7 @@ class Wavefront_Capacitive( Wavefront ):
 
 class Wavefront_Inductive( Wavefront ):
 
-    def __init__(self, Data_Input : Data_Input_Storage, Wavefront_Parent : Wavefront, is_reflection : bool):
+    def __init__(self, Data_Input : Data_Input_Storage, Wavefront_Parent : Wavefront, is_self_reflection : bool):
         
         self.Data_Input = Data_Input
         
@@ -776,16 +806,30 @@ class Wavefront_Inductive( Wavefront ):
         self.time_start = Wavefront_Parent.time_end
         self.time_end = self.time_start + self.Data_Input.Inductor_Time
 
-        if self.position_start == 0:
-
+        # key:
+        # | = interface,  X = termination, --> = this wavefront ,(Vs) = Source excitation
+        
+        #               waves travelling to termination : | --> X
+        #    | --> X  = this wavefront travelling to termination, parent from same tx - self-reflection
+        # (v)| --> X  = this wavefront travelling to termination, parent is voltage source - source excitation
+        #  ->| --> X  = this wavefront travelling to termination, parent from other tx - transmission
+        
+        #               waves returning to interface : | <-- X
+        #    | <-- X  = this wavefront returning to inerface, parent from same - re-reflection
+        
+        # waves travelling to termination : | --> X
+        if self.position_start == 0: 
+            
             self.position_end = self.Data_Input.Inductor_Length
-
-            if is_reflection: # A reflected wave at source side   |<--
-
+            
+            # was the parent wavefront in the same transmission line?
+            if is_self_reflection: # Yes, | --> X , self-reflection
+                
                 self.magnitude_voltage = self.Data_Input.Circuit_Solver_Inductor_Voltage( Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
                 self.magnitude_current = self.Data_Input.Circuit_Solver_Inductor_Current( Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current, 0, 0)
-
-            elif isinstance(Wavefront_Parent, Wavefront_Source) : # A generate source wave (Vs)-|->
+            
+            # was the parent wavefront an excitation event ? 
+            elif isinstance(Wavefront_Parent, Wavefront_Source) : # (v)| --> X , source excitation
 
                 self.time_start = Wavefront_Parent.time_start
                 self.time_end = self.time_start + self.Data_Input.Inductor_Time
@@ -793,17 +837,16 @@ class Wavefront_Inductive( Wavefront ):
                 self.magnitude_voltage = self.Data_Input.Circuit_Solver_Inductor_Source_Voltage(Wavefront_Parent.magnitude_voltage)
                 self.magnitude_current = self.Data_Input.Circuit_Solver_Inductor_Source_Current(Wavefront_Parent.magnitude_voltage)
                 
-            else: # A transmitted wave at source side  -|->
+            else: # A transmitted wave at source side  ->| --> X, transmission
 
                 self.magnitude_voltage = self.Data_Input.Circuit_Solver_Inductor_Voltage(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
                 self.magnitude_current = self.Data_Input.Circuit_Solver_Inductor_Current(0, 0, Wavefront_Parent.magnitude_voltage, Wavefront_Parent.magnitude_current)
 
-        else: # A reflected wave at load side   -->|
+        # waves returning to interface : | <-- X , re-reflection
+        else: 
             
             self.position_end = 0
-
-            self.magnitude_voltage = - Wavefront_Parent.magnitude_voltage
-            self.magnitude_current = Wavefront_Parent.magnitude_current
+            self.magnitude_voltage,self.magnitude_current = self.Data_Input.Termination_Solver_Inductor(Wavefront_Parent.magnitude_voltage,Wavefront_Parent.magnitude_current)
 
     def generate_and_store(self, Wavefront_Storage):
         if self.position_end == 0:
