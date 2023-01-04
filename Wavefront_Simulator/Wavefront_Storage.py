@@ -861,19 +861,18 @@ class Wavefront_Kintetic( Wavefront ):
         :type Wavefront_Parent: Wavefront
         :param is_self_reflection: if the parent wavefront is in the same wavefront as the child. Limits the need for an isinstance check.
         :type is_self_reflection: bool
-        
-        key:
-        | = interface,  X = termination, --> = this wavefront ,(Vs) = Source excitation
-        
-                      waves travelling to termination : | --> X
-           | --> X  = this wavefront travelling to termination, parent from same tx - self-reflection
-        (v)| --> X  = this wavefront travelling to termination, parent is voltage source - source excitation
-         ->| --> X  = this wavefront travelling to termination, parent from other tx - transmission
-        
-                      waves returning to interface : | <-- X
-           | <-- X  = this wavefront returning to inerface, parent from same - re-reflection
-           
         """
+        # key:
+        # | = interface,  X = termination, --> = this wavefront ,(Vs) = Source excitation
+        
+        #               waves travelling to termination : | --> X
+        #    | --> X  = this wavefront travelling to termination, parent from same tx - self-reflection
+        # (v)| --> X  = this wavefront travelling to termination, parent is voltage source - source excitation
+        #  ->| --> X  = this wavefront travelling to termination, parent from other tx - transmission
+        
+        #               waves returning to interface : | <-- X
+        #    | <-- X  = this wavefront returning to inerface, parent from same - re-reflection
+        
         # waves travelling to termination : | --> X
         if self.position_start == 0:
 
@@ -1162,8 +1161,8 @@ class Data_Output_Storage:
 
 @dataclass
 class Data_Output_Storage_Ordered(Data_Output_Storage):
-    """A dataclass that stored ordered inteface output data in form of single dimenstional arrays. 
-    All the core arrays that are present in the Data_Output_Storage class are present here but in their one-dimensional chronological form.
+    """A dataclass that stores ordered inteface output data in form of single dimenstional arrays. 
+    All the core arrays that are present in the Data_Output_Storage class are present here but in a one-dimensional chronological form.
     
     :param Indexes: An additonal array, indicating the grid co-ordiantes on the merged fanout structure in the order events occured. 
         Is a single dimesional list of (L,C) coordiante lists. The inner lists take form of [L,C].
@@ -1251,6 +1250,8 @@ def transform_merged_array_to_C_axis(data_input : Data_Input_Storage,merged_arra
     :type data_input: Data_Input_Storage
     :param merged_array: merged array aligne to the C-axis
     :type merged_array: np.ndarray[Decimal]
+    :return: merged array aligned to the C-axis
+    :rtype: np.ndarray[Decimal]
     """
     
     def extract_merging_region(data_input : Data_Input_Storage,merged_array, KL_index):
