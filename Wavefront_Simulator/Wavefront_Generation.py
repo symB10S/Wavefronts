@@ -315,35 +315,60 @@ def multiplicative_merge_single_cycle(input_array:np.ndarray,Inductor_LCM_Factor
     :rtype: np.ndarray
     """
     
-    def make_upper_and_lower(input_array,Capacitor_LCM_Factor):
-        upper_array : np.ndarray = input_array[:,0:Capacitor_LCM_Factor]
-        lower_array : np.ndarray = input_array[:,Capacitor_LCM_Factor:]
+    def split_and_translate_to_L_axis(input_array : np.ndarray ,C_value : int):
+        """The first step in the recursive merging process.
+        Seperates the input array into two arrays along the line C = C_value, this line is parallel to the L-axis.
+        Both arrays are padded with 'zeros' such that the shape of the input array is maintained. 
+        The split array touching the origin and the L-axis will be padded such that it is 'stationary',
+        The other array will be shifted to the origin along the L-axis with the padding is 'ontop'.
 
-        padding_array_for_upper : np.ndarray = np.full(lower_array.shape,0,dtype=lower_array.dtype)
-        padding_array_for_lower : np.ndarray = np.full(upper_array.shape,0,dtype=upper_array.dtype)
+        :param input_array: array to be split.
+        :type input_array: np.ndarray
+        :param C_value: The value on the C-axis in which the array is split in two. Typically this is C = KC such as to divide along multiplicative merging region boundary.
+        :type C_value: int
+        :return: Stationary and Translated arrays in that order.
+        :rtype: tuple( np.ndarray , np.ndarray )
+        """
         
-        upper_array= np.append(upper_array,padding_array_for_upper,axis=1)
-        lower_array= np.append(lower_array,padding_array_for_lower,axis=1)
+        # split arrays
+        stationary_array : np.ndarray = input_array[:,0:C_value]
+        translated_array : np.ndarray = input_array[:,C_value:]
+
+        # generate padding such that when appended input shape is maintianed
+        padding_array_for_stationary : np.ndarray = np.full(translated_array.shape,0,dtype=translated_array.dtype)
+        padding_array_for_translated : np.ndarray = np.full(stationary_array.shape,0,dtype=stationary_array.dtype)
         
-        return upper_array,lower_array
+        # append paddding such that there is a 'translation' for the translated array
+        stationary_array= np.append(stationary_array,padding_array_for_stationary,axis=1)
+        translated_array= np.append(translated_array,padding_array_for_translated,axis=1)
+        
+        return stationary_array,translated_array
     
-    def shif_and_pad_array_x(input_array,number_lines):
+    def translate_along_L_axis(input_array : np.ndarray , L_value : int ):
+        """The second step in the recursive merigng process.
+        Shifts an array L_value units along the L-axis, and pads it with zeros so that the input shape is maintained.
+
+        :param input_array: array to be translated.
+        :type input_array: np.ndarray
+        :param L_value: the extent to which the array is shifted.
+        :type L_value: int
+        :return: the shifted array.
+        :rtype: np.ndarray
+        """
+        
+        # isolate relevant remaining portion
+        split_array = input_array[0:-L_value,:]
+        # generate padding
+        padding_array = np.full((L_value, input_array.shape[1]), 0, dtype = input_array.dtype)
+        # combine with padding first as to shift the array
+        shifted_array = np.append(padding_array, split_array, axis=0)
+        
+        return shifted_array
     
-        rolled_array : np.ndarray = np.roll(input_array, number_lines, axis=0)
-        
-        left_array : np.ndarray = rolled_array[0:number_lines,:]
-        left_array : np.ndarray = np.full(left_array.shape,0,dtype=left_array.dtype)
-        
-        
-        rolled_array : np.ndarray= np.delete(rolled_array,np.arange(0,number_lines,1),axis=0)
-        rolled_array : np.ndarray = np.append(left_array,rolled_array,axis=0)
-        
-        return rolled_array 
+    stationary_array,translated_array = split_and_translate_to_L_axis(input_array,Capacitor_LCM_Factor)
+    array_merge_ready = translate_along_L_axis(translated_array,Inductor_LCM_Factor)
     
-    upper_array,lower_array = make_upper_and_lower(input_array,Capacitor_LCM_Factor)
-    array_merge_ready = shif_and_pad_array_x(lower_array,Inductor_LCM_Factor)
-    
-    array_merged = upper_array + array_merge_ready
+    array_merged = stationary_array + array_merge_ready
     
     return array_merged
 
