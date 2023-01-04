@@ -1,11 +1,13 @@
-from Wavefront_Generation import Data_Input_Storage, Data_Output_Storage, Data_Output_Storage_Ordered, Interface_Data, get_spatial_zip
-from decimal import *
+from Wavefront_Generation import Data_Input_Storage, Data_Output_Storage, Data_Output_Storage_Ordered, Data_Interface_Storage, get_spatial_voltage_current_at_time, handle_default_kwargs
+from Wavefront_Storage import *
+from decimal import Decimal, ROUND_HALF_DOWN
 import numpy as np
 import copy
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, EngFormatter)
 from matplotlib.animation import FFMpegWriter
+from tqdm import tqdm
 
 plt.rcParams['animation.ffmpeg_path'] = 'ffmpeg\\ffmpeg.exe'
 
@@ -343,114 +345,6 @@ def plot_time_wavefronts_all_both(data_output : Data_Output_Storage, data_output
     ax_sub[1,2].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning_wavefronts_magnitudes("current " + what_to_plot)+data_output_2.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
     
     return fig_sub, ax_sub
-
-def plot_spatial_at_time_4(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data_Output_Ordered : Data_Output_Storage_Ordered ,fig ,ax ):
-    
-    ax['A'].cla()
-    ax['B'].cla()
-    ax['C'].cla()
-    ax['D'].cla()
-
-    termination_length = 1
-    
-    # Create Plot
-    fig.suptitle("Spatial Waveforms at " + str(Time_Enquriey.quantize(Decimal('.0001'), rounding=ROUND_HALF_DOWN)) + "s")
-
-    # Get inductor zip
-    pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey, Data_Output_Merged,Data_Output_Ordered,True)
-    zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
-    
-    x = 0
-    x_old = 0
-    
-    
-    y1_voltage = 0
-    y2_voltage = 0
-    y_voltage_old = value_lv[0]
-    
-    y1_current = 0
-    y2_current = 0
-    y_current_old = value_lc[0]
-    
-    ax["A"].set_title(str(value_rv[-1].quantize(Decimal('0.0001')))+"   ←   Voltage Inductor   →   "+str(y_voltage_old.quantize(Decimal('.0001'))))
-    ax["C"].set_title(str(value_rc[-1].quantize(Decimal('0.0001')))+"   ←   Current Inductor   →   "+str(y_current_old.quantize(Decimal('.0001'))))
-    
-    ax["A"].plot([0,0],[0,y_voltage_old],'k--')
-    ax["C"].plot([0,0],[0,y_current_old],'k--')
-
-    for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
-        x = position
-        
-        y1_voltage = left_voltage
-        y2_voltage = right_voltage
-        
-        y1_current = left_current
-        y2_current = right_current
-        
-        ax["A"].plot([x_old,x], [y_voltage_old,y1_voltage],'k-')
-        ax["A"].plot([x,x] ,   [y1_voltage,y2_voltage])
-        
-        ax["C"].plot([x_old,x], [y_current_old,y1_current],'k-')
-        ax["C"].plot([x,x],    [y1_current,y2_current])
-        
-        x_old = x
-        
-        y_voltage_old = y2_voltage
-        y_current_old = y2_current
-        
-    
-    ax["A"].plot([termination_length,termination_length],[0,y_voltage_old],'k--')
-    ax["C"].plot([termination_length,termination_length],[0,y_current_old],'k--')
-    
-    ax["A"].invert_xaxis()
-    ax["C"].invert_xaxis()
-    
-    
-    # Get Capacitor Zip
-    pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey,Data_Output_Merged, Data_Output_Ordered, False)
-    zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
-
-    x = 0
-    x_old = 0
-    
-    
-    y1_voltage = 0
-    y2_voltage = 0
-    y_voltage_old = value_lv[0]
-    
-    y1_current = 0
-    y2_current = 0
-    y_current_old = value_lc[0]
-    
-    ax["B"].set_title(str(y_voltage_old.quantize(Decimal('.0001')))+"   ←   Voltage Capacitor   →   "+str(value_rv[-1].quantize(Decimal('.0001'))))
-    ax["D"].set_title(str(y_current_old.quantize(Decimal('.0001')))+"   ←   Current Capacitor   →   "+str(value_rc[-1].quantize(Decimal('.0001'))))
-    
-    ax["B"].plot([0,0],[0,y_voltage_old],'k--')
-    ax["D"].plot([0,0],[0,y_current_old],'k--')
-
-    for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
-        x = position
-        
-        y1_voltage = left_voltage
-        y2_voltage = right_voltage
-        
-        y1_current = left_current
-        y2_current = right_current
-        
-        ax["B"].plot([x_old,x], [y_voltage_old,y1_voltage],'k-')
-        ax["B"].plot([x,x] ,   [y1_voltage,y2_voltage])
-        
-        ax["D"].plot([x_old,x], [y_current_old,y1_current],'k-')
-        ax["D"].plot([x,x],    [y1_current,y2_current])
-        
-        x_old = x
-        
-        y_voltage_old = y2_voltage
-        y_current_old = y2_current
-        
-    
-    ax["B"].plot([termination_length,termination_length],[0,y_voltage_old],'k--')
-    ax["D"].plot([termination_length,termination_length],[0,y_current_old],'k--')
 
 def plot_diff(Y,X,ax,title_str :str = "Derivative"):
     dy = np.ediff1d(Y[1:])
@@ -1442,7 +1336,7 @@ def plot_3d_spatial(Time_Enquriey,data_output_merged,data_output_ordered,ax):
         is_Inductive =True
 
         # INDUCTOR
-        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey, data_output_merged,data_output_ordered,is_Inductive)
+        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, data_output_merged,data_output_ordered,is_Inductive)
         zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
 
         #arrays
@@ -1507,7 +1401,7 @@ def plot_3d_spatial(Time_Enquriey,data_output_merged,data_output_ordered,ax):
 
         is_first = True
 
-        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey, data_output_merged,data_output_ordered,not is_Inductive)
+        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, data_output_merged,data_output_ordered,not is_Inductive)
         zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
 
         for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
@@ -1545,26 +1439,25 @@ def plot_3d_spatial(Time_Enquriey,data_output_merged,data_output_ordered,ax):
 
         ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
 
-def plot_spatial_same_axis(Time_Enquriey,data_output_merged,data_output_ordered,ax_voltage,ax_current):
+def plot_spatial_same_axis(Time_Enquriey,Interface : Data_Interface_Storage,ax_voltage,ax_current):
+        ax_voltage.get_figure().suptitle("Spatial Waveforms at " + str(Time_Enquriey.quantize(Decimal('.0001'), rounding=ROUND_HALF_DOWN)) + "s")
         
         ax_voltage.set_title('Spatial Voltage')
         # ax_voltage.xaxis.set_major_formatter(matplotlib.ticker.EngFormatter('m'))
         ax_voltage.yaxis.set_major_formatter(EngFormatter('V'))
-        ax_voltage.set_xlabel('Capacitor <---- interconncect ----> Inductor ')
+        ax_voltage.set_xlabel('Capacitor    ←    interconncect    →    Inductor ')
         ax_voltage.set_ylabel('voltage')
         
         
         ax_current.set_title('Spatial Current')
         # ax_current.xaxis.set_major_formatter(matplotlib.ticker.EngFormatter('m'))
         ax_current.yaxis.set_major_formatter(EngFormatter('A'))
-        ax_current.set_xlabel('Capacitor <---- interconncect ----> Inductor ')
+        ax_current.set_xlabel('Capacitor    ←    interconncect    →    Inductor ')
         ax_current.set_ylabel('current')
 
-        
-        is_Inductive =True
 
         # INDUCTOR
-        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey, data_output_merged,data_output_ordered,is_Inductive)
+        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, Interface, True)
         zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
 
         first_y_voltage_inductor = 0
@@ -1639,7 +1532,7 @@ def plot_spatial_same_axis(Time_Enquriey,data_output_merged,data_output_ordered,
 
         is_first = True
 
-        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_zip(Time_Enquriey, data_output_merged,data_output_ordered,not is_Inductive)
+        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, Interface , False)
         zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
 
         for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
@@ -1713,37 +1606,29 @@ def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_
     ax_current.set_xlabel('time')
     ax_current.set_ylabel('current')
 
-# SAVE VIDEO
-
-def save_spatial_interconnect(interface_data : Interface_Data,**kwargs):
+def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
 
     #Default Values
     kwarg_options = dict([
-        ('start_time',Decimal('0')), ('end_time',interface_data.data_input.Simulation_Stop_Time), 
-        ('fps',Decimal('30')),('video_runtime',Decimal('60')),('dpi',300),
+        ('start_time','0'), ('end_time',Interface.data_input.Simulation_Stop_Time), 
+        ('fps','30'),('video_runtime','60'),('dpi','300'),
         ('fig_size',(14, 8)),
         ('meta_data',dict(title='Distributed Modelling', artist='Jonathan Meerholz')),
-        ('save_name',f'spatial_and_time_{interface_data.data_input.Inductor_Impedance}_{interface_data.data_input.Capacitor_Impedance}ohm_{interface_data.data_input.Inductor_Time}_{interface_data.data_input.Capacitor_Time}s')
+        ('save_name',f'spatial_and_time_{Interface.data_input.Inductor_Impedance}_{Interface.data_input.Capacitor_Impedance}ohm_{Interface.data_input.Inductor_Time*2}_{Interface.data_input.Capacitor_Time*2}s')
         ])
-    
-    #Set Kwargs
-    for key, item in kwargs.items():
-        if(kwarg_options.get(key) is None):
-            raise Exception(f"No setting found for {key}, here are the possible options: \n{kwarg_options}")
-        else:
-            kwarg_options[key] = item
-
+         
+    kwarg_options = handle_default_kwargs(kwargs,kwarg_options)
     
     fig_save_2d, ax_save_2d = plt.subplots(2,2,figsize=kwarg_options['fig_size'],constrained_layout = True)
 
     save_name = kwarg_options['save_name']
     save_name = save_name.replace('.',',')
 
-    start_time = kwarg_options['start_time']
-    end_time = kwarg_options['end_time']
+    start_time = Decimal(kwarg_options['start_time'])
+    end_time = Decimal(kwarg_options['end_time'])
 
-    fps = kwarg_options['fps']
-    video_runtime = kwarg_options['video_runtime']
+    fps = Decimal(kwarg_options['fps'])
+    video_runtime = Decimal(kwarg_options['video_runtime'])
     dpi = kwarg_options['dpi']
 
     number_frames =  video_runtime*fps
@@ -1756,9 +1641,9 @@ def save_spatial_interconnect(interface_data : Interface_Data,**kwargs):
     frame_counter = 0
     with writer.saving(fig_save_2d, (save_name+".mp4"), float(dpi)):
 
-        for i in range(0,int(number_frames)):
-            first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,interface_data.data_output_multiplicative,interface_data.data_output_ordered,ax_save_2d[0,0],ax_save_2d[1,0])
-            plot_time_interconnect_and_intercept(time,interface_data.data_output_ordered,ax_save_2d[0,1],ax_save_2d[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+        for i in tqdm(range(0,int(number_frames))):
+            first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,Interface,ax_save_2d[0,0],ax_save_2d[1,0])
+            plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_save_2d[0,1],ax_save_2d[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
             
             writer.grab_frame()
             
@@ -1769,126 +1654,11 @@ def save_spatial_interconnect(interface_data : Interface_Data,**kwargs):
             ax_save_2d[0,1].clear()
             ax_save_2d[1,0].clear()
             ax_save_2d[1,1].clear()
-
-# UI
-def spatial_investigator_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):
-    fig_s,ax_s = plt.subplot_mosaic(
-        """
-        AB
-        CD
-        """
-    )
-
-    increment_button = widgets.Button(description = "step forward", layout=widgets.Layout(width='auto'))
-    decrement_button = widgets.Button(description = "step backward", layout=widgets.Layout(width='auto'))
-    increment_text = widgets.FloatText(description = 'val', value=0.1)
-
-
-    time_slider = widgets.FloatSlider(value=0, min =0, max = data_input.Simulation_Stop_Time-1, layout=widgets.Layout(width='auto'))
-    output = widgets.Output()
-
-    def on_increment_click(b):
-        time_slider.value += increment_text.value
-        plot_spatial_at_time_4(Decimal(str(time_slider.value)),data_output_merged,data_output_ordered,fig_s,ax_s)
-        
-    def on_decrement_click(b):
-        time_slider.value -= increment_text.value
-        plot_spatial_at_time_4(Decimal(str(time_slider.value)),data_output_merged,data_output_ordered,fig_s,ax_s)
-        
-    def handle_slider_change(change):
-        if(isinstance(change.new,dict)):
-            if(len(change.new) > 0):
-                change_str = str(change.new['value'])
-                plot_spatial_at_time_4(Decimal(change_str),data_output_merged,data_output_ordered,fig_s,ax_s)
-
-    increment_button.on_click(on_increment_click)
-    decrement_button.on_click(on_decrement_click)
-    time_slider.observe(handle_slider_change)
-
-    increment_grid = widgets.GridspecLayout(1,3)
-    increment_grid[0,0] = decrement_button
-    increment_grid[0,1] = increment_button
-    increment_grid[0,2] = increment_text
-
-    display(increment_grid,time_slider)
-
-def video_save_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):
-    
-    fig_save,ax_save = plt.subplot_mosaic(
-        """
-        AB
-        CD
-        """
-    )
-    
-    save_title = widgets.Label('Video Saving Widget!!')
-    save_sub_title = widgets.Label('Max Simulation time = ' + str(data_input.Simulation_Stop_Time.quantize(Decimal('0.01'))))
-
-    fps_toggle = widgets.ToggleButtons(
-        options=['15', '30', '60'],
-        description='fps:',
-    )
-
-    start_input = widgets.FloatText(value=0)
-    end_input = widgets.FloatText(value=data_input.Simulation_Stop_Time)
-    video_length_input = widgets.FloatText(value=5)
-    dpi_input = widgets.FloatText(value=100)
-
-    duration_bar = widgets.HBox([
-        widgets.Label("Start time : "),
-        start_input,
-        widgets.Label("End time : "),
-        end_input,
-        widgets.Label("Video Length : "),
-        video_length_input,
-        widgets.Label("DPI : "),
-        dpi_input
-    ])
-
-    save_ext = widgets.Output(layout={})
-    save_ext.append_stdout('.mp4')
-
-
-    ProgressBar = widgets.IntProgress(min=0, max=int(100)) # instantiate the bar
-    ProgressBar_Label = widgets.Label("Ready when you are !  ")
-
-    save_name = widgets.Text(placeholder='Type Filename')
-    save_button = widgets.Button(description = "save video")
-
-    save_name_grid = widgets.HBox([save_name,save_ext,save_button])
-    
-    def on_save_click (b):
-        if(save_name.value==''):
-            raise Exception("Enter Valid File name")
-        else:
-            number_frames =  video_length_input.value*float(fps_toggle.value)
-            time_increment = (end_input.value - start_input.value)/number_frames
             
-            ProgressBar.max = number_frames
-            metadata = dict(title='Distributed Modelling', artist='Jonathan Meerholz')
-            writer = FFMpegWriter(fps=float(fps_toggle.value), metadata=metadata)
-            
-            time = start_input.value
-            frame_counter = 0
-            ProgressBar.value = 0
-            with writer.saving(fig_save, (save_name.value+".mp4"), float(dpi_input.value)):
-                
-                for _ in range(0,int(number_frames)):
-                    
-                    plot_spatial_at_time_4(Decimal(str(time)),data_output_merged,data_output_ordered,fig_save,ax_save)
-                    writer.grab_frame()
-                    time += time_increment
-                    frame_counter +=1
-                    ProgressBar.value =frame_counter
-                    ProgressBar_Label.value = "frame " + str(frame_counter) + " of " + str(number_frames) 
-                    
-            ProgressBar_Label.value += " Completed !"
-
-    save_button.on_click(on_save_click)
-
-    display(save_title,save_sub_title,fps_toggle,duration_bar,save_name_grid,widgets.HBox([ProgressBar_Label,ProgressBar]))
-    
-def spatial_interconnect_investigator_ui(data_input : Data_Input_Storage, data_output_merged : Data_Output_Storage, data_output_ordered: Data_Output_Storage_Ordered):
+    plt.close(fig_save_2d)
+    print(f"Spatial video generation completed, video saved as {save_name}.mp4")
+  
+def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage):
     fig_s,ax_s = plt.subplots(2,2,figsize=(14, 8))
     def clear_axes():
         ax_s[0,0].clear()
@@ -1901,31 +1671,31 @@ def spatial_interconnect_investigator_ui(data_input : Data_Input_Storage, data_o
     increment_text = widgets.FloatText(description = 'val', value=0.1)
 
 
-    time_slider = widgets.FloatSlider(value=0, min =0, max = data_input.Simulation_Stop_Time-1, layout=widgets.Layout(width='auto'))
+    time_slider = widgets.FloatSlider(value=0, min =0, max = Interface.data_input.Simulation_Stop_Time-1, layout=widgets.Layout(width='auto'))
     output = widgets.Output()
 
     def on_increment_click(b):
         time_slider.value += increment_text.value
         time = Decimal(str(time_slider.value))
         clear_axes()
-        first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,data_output_merged,data_output_ordered,ax_s[0,0],ax_s[1,0])
-        plot_time_interconnect_and_intercept(time,data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+        first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
+        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
         
         
     def on_decrement_click(b):
         time_slider.value -= increment_text.value
         time = Decimal(str(time_slider.value))
         clear_axes()
-        first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,data_output_merged,data_output_ordered,ax_s[0,0],ax_s[1,0])
-        plot_time_interconnect_and_intercept(time,data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+        first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
+        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
         
     def handle_slider_change(change):
         if(isinstance(change.new,dict)):
             if(len(change.new) > 0):
                 time = Decimal(str(change.new['value']))
                 clear_axes()
-                first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,data_output_merged,data_output_ordered,ax_s[0,0],ax_s[1,0])
-                plot_time_interconnect_and_intercept(time,data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+                first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
+                plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
                 
     increment_button.on_click(on_increment_click)
     decrement_button.on_click(on_decrement_click)

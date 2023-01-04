@@ -551,11 +551,12 @@ def Full_Cycle(**input_values):
     data_output_merged = Higher_Order_Merging(data_input,data_output_commutative)
     data_output_ordered = Order_Data_Output_Merged(data_input,data_output_merged)
     
-    return Interface_Data(data_input,data_output_commutative,data_output_merged,data_output_ordered)
+    return Data_Interface_Storage(data_input,data_output_commutative,data_output_merged,data_output_ordered)
 
-def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data_Output_Ordered : Data_Output_Storage_Ordered, is_Inductor : bool):
+def get_spatial_voltage_current_at_time(Time_Enquriey, Interface : Data_Interface_Storage , is_Inductor : bool):
     
-    termination_length = 1
+    Data_Output_Ordered = Interface.data_output_ordered
+    
     
     dc_voltage = Decimal('0')
     dc_current = Decimal('0')
@@ -582,11 +583,13 @@ def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data
         
         # Sending and returning wavefronts
         if(is_Inductor):
-            sending_wavefront = Data_Output_Merged.Wavefronts_Sending_Inductor[x,y]
-            returning_wavefront = Data_Output_Merged.Wavefronts_Returning_Inductor[x,y]
+            termination_length = Interface.data_input.Inductor_Length
+            sending_wavefront = Interface.data_output_multiplicative.Wavefronts_Sending_Inductor[x,y]
+            returning_wavefront = Interface.data_output_multiplicative.Wavefronts_Returning_Inductor[x,y]
         else:
-            sending_wavefront = Data_Output_Merged.Wavefronts_Sending_Capacitor[x,y]
-            returning_wavefront = Data_Output_Merged.Wavefronts_Returning_Capacitor[x,y]
+            termination_length = Interface.data_input.Capacitor_Length
+            sending_wavefront = Interface.data_output_multiplicative.Wavefronts_Sending_Capacitor[x,y]
+            returning_wavefront = Interface.data_output_multiplicative.Wavefronts_Returning_Capacitor[x,y]
         
         # x = time enquirey
         # -s-> = sending wavefront
@@ -709,7 +712,7 @@ def get_spatial_zip(Time_Enquriey, Data_Output_Merged : Data_Output_Storage,Data
     value_left_current.append(termination_value_current)
     value_right_current.append(termination_value_current)
 
-    # sort values
+    # sort values based on position
     zip_positions_voltage_current = sorted(zip(position_all,value_left_voltage,value_right_voltage,value_left_current,value_right_current))
     position_all, value_left_voltage, value_right_voltage, value_left_current, value_right_current = zip(*zip_positions_voltage_current)
         

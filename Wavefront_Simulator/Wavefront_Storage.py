@@ -31,6 +31,7 @@ def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
             default_kwargs[key] = item
             
     return default_kwargs
+
 def lcm_gcd_euclid(TL:Decimal,TC:Decimal):
     """Gets the LCM, GCD and two co-factors KL and KC for time delays TL and TC.
     
@@ -982,7 +983,7 @@ class Data_Output_Storage_Ordered(Data_Output_Storage):
     Indexes : np.ndarray
 
 @dataclass
-class Interface_Data:
+class Data_Interface_Storage:
     """A Dataclass that holds all simulation data for a praticular interface. Contains four data storage components: 
     
     :param data_input: input data and calcualted parameters of the interface
