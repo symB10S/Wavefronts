@@ -19,6 +19,7 @@ def clear_subplot(axs):
     for ax in axs:
         ax.cla()
 
+# Fanout Diagrams
 def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
     """the core function for plotting the fanout diagram of a 2D numpy array.
     Points are coloured using the 'seismic' colour map with red being positive and blue negative.
@@ -122,6 +123,7 @@ def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
         - **transpose** (*bool*) - makes x-axis the L-axis if true (default = True)
         - **show_ticks** (*bool*) - if axis ticks are shown (default = True)
         - **mask_zero** (*bool*) - if zeros values must be masked (default = True)
+        - **custom_colour_bar_limits** (*tuple or bool*) - pass a (max_value, min_value) tuple to customize colouring extent of the fanout(default = False)
         
     .. warning::
         a **wavefront storage array** must be in their magnitude forms, these arrays can be fetched using :py:meth:`Wavefront_Storage.Data_Output_Storage.get_sending_wavefronts_magnitudes` 
@@ -140,15 +142,20 @@ def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
         'origin' : 'lower',
         'transpose' : True,
         'show_ticks' : True,
-        'mask_zero' : True
+        'mask_zero' : True,
+        'custom_colour_bar_limits': False
     }
     default_kwargs = handle_default_kwargs(input_kwargs,default_kwargs)
     # convert Lists to image array if necessary 
     input_array = convert_to_image_array(input_array)
     
-    max_boundary = np.max(input_array.astype(float))  
-    min_boundary = np.min(input_array.astype(float))  
-    
+    if (default_kwargs['custom_colour_bar_limits']==False):
+        max_boundary = np.max(input_array.astype(float))  
+        min_boundary = np.min(input_array.astype(float))  
+        
+    else:
+        max_boundary, min_boundary = default_kwargs['custom_colour_bar_limits']
+        
     if default_kwargs['transpose'] :
         array_plot = np.pad(input_array.astype(float),(default_kwargs['padding'],default_kwargs['padding'])).transpose()
         ax.set_xlabel('L - axis ')
@@ -214,7 +221,6 @@ def plot_fanout_interconnect(data_output: Data_Output_Storage,ax, which_string :
     else:
             raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
         
-        
 def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :str, is_sending : bool = True, **kwargs):
     """A wrapper function for :py:func:`plot_fanout_magnitude` for plotting wavefront fanouts.
     Takes in a Data_Output_Storage object, a string and a bool are passed to plot and auto format the fanout.
@@ -260,23 +266,24 @@ def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :st
         plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Current Wavefronts in Capacitor",**kwargs)
     else:
             raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
-        
-def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str, show_colour_bar = True ,contrast : bool = False):
+
+def make_fanout_crossection(input_array : np.ndarray,  row_number : int, title : str, show_colour_bar = True ,contrast : bool = False):
     
-    clear_subplot(ax)
+    fig, ax = plt.subplot_mosaic(['A','B'],
+                                 [  'C'  ],)
     
-    plt.gcf().suptitle("Crossection of " + title+" Fanout at index " + str(row_number) )
     
-    row_a = arr[row_number,:]
-    row_b = arr[:,row_number]
+    fig.suptitle("Crossection of " + title+" Fanout at index " + str(row_number) )
+    
+    row_a = input_array[row_number,:]
+    row_b = input_array[:,row_number]
     
     ax[0].plot(row_a)
     ax[1].plot(row_b)
     
-    plot_fanout_magnitude(arr,ax[2],"Fanout",show_colour_bar,contrast,0)
-    ax[2].plot([row_number,row_number],[0,arr.shape[0]],'m--')
-    ax[2].plot([0,arr.shape[0]],[row_number,row_number],'c--')
-
+    plot_fanout_magnitude(input_array,ax[2],"Fanout",show_colour_bar,contrast,0)
+    ax[2].plot([row_number,row_number],[0,input_array.shape[0]],'m--')
+    ax[2].plot([0,input_array.shape[0]],[row_number,row_number],'c--')
 
 def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
     
@@ -288,7 +295,6 @@ def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
     plot_fanout_magnitude(data_output_merged.Current_Interconnect_Inductor,ax['D'],"Capacitor Current")
     
     return fig,ax
-
 
 def plot_fanout_wavefronts_all(data_output: Data_Output_Storage, is_sending : bool = True, data_str :str = ""):
     fig, ax = plt.subplot_mosaic([['A','B','C','D'],['E','F','G','H']])
@@ -306,7 +312,9 @@ def plot_fanout_wavefronts_all(data_output: Data_Output_Storage, is_sending : bo
     plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes("current capacitor"),ax['H'],"returning current capacitor")
         
     return fig, ax
-    
+
+
+
 def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = False): 
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
     
