@@ -6,6 +6,7 @@ Wavefront_Simulator
 
    LTSpice_Simulator
    Wavefront_Generation
+   Wavefront_Misc
    Wavefront_Plotting
    Wavefront_Storage
    dot_plots

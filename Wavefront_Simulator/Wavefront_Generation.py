@@ -325,8 +325,21 @@ def multiplicative_merge_single_cycle(input_array:np.ndarray,Inductor_LCM_Factor
     
     return array_merged
 
-def multiplicative_merging(input_array:np.ndarray,Inductor_LCM_Factor:int ,Capacitor_LCM_Factor:int ,number_of_layers:int):
-    number_merge_cycles:int = math.ceil(number_of_layers/Capacitor_LCM_Factor) + 1
+def multiplicative_merging(input_array:np.ndarray,Inductor_LCM_Factor:int ,Capacitor_LCM_Factor:int ,layer_number_limit:int):
+    """recursively apply the merging process on an input array until merged. 
+
+    :param input_array: array to be merged
+    :type input_array: np.ndarray
+    :param Inductor_LCM_Factor: Inductor LCM cofactor KL
+    :type Inductor_LCM_Factor: int
+    :param Capacitor_LCM_Factor: Capacitor LCM cofactor KC
+    :type Capacitor_LCM_Factor: int
+    :param layer_number_limit: up to what layer the array must be mrged to 
+    :type layer_number_limit: int
+    :return: merged array
+    :rtype: np.ndarray
+    """
+    number_merge_cycles:int = math.ceil(layer_number_limit/Capacitor_LCM_Factor) + 1
     
     for _ in range (0,number_merge_cycles):
         input_array:np.ndarray = multiplicative_merge_single_cycle(input_array,Inductor_LCM_Factor,Capacitor_LCM_Factor)
@@ -334,6 +347,15 @@ def multiplicative_merging(input_array:np.ndarray,Inductor_LCM_Factor:int ,Capac
     return input_array[:,0:Capacitor_LCM_Factor]
 
 def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Output_Storage):
+    """Multiplicatively merges all commutatively merged data if applicable. Produces a Data_Output_Storage object with merged data.
+
+    :param Data_Inputs: input data of interface
+    :type Data_Inputs: Data_Input_Storage
+    :param Data_Outputs: the commutatively merged data to be multiplicatively merged
+    :type Data_Outputs: Data_Output_Storage
+    :return: a merged Data_Output_Storage storage object, merged version of the supplied Data_Outputs parameter
+    :rtype: Data_Output_Storage
+    """
     Data_Outputs = copy.deepcopy(Data_Outputs)
     
     if(Data_Inputs.is_Higher_Merging):
@@ -380,41 +402,72 @@ def Higher_Order_Merging(Data_Inputs : Data_Input_Storage,Data_Outputs : Data_Ou
     )
 
 def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merged : Data_Output_Storage):
-    
+    """Order the merged wavefront data into single dimension chronologically occuring 'lists'. Uses a Breadth First Search type algorithm.
+
+    :param Data_Input: the input data of the interface
+    :type Data_Input: Data_Input_Storage
+    :param Data_Output_Merged: the merged data to be ordered
+    :type Data_Output_Merged: Data_Output_Storage
+    :raises warnings.warn: should be used on a merged data storage object, ekse results may be incorrect
+    :return: ordered merged data
+    :rtype: Data_Output_Storage_Ordered
+    """
     if (Data_Output_Merged.has_merged == False):
         raise warnings.warn("Provided Data_Output_Storage object to be ordered has not been merged yet. This can produce incorrect results if merging is not accounted for.")
     
     Data_Output_Merged = copy.deepcopy(Data_Output_Merged)
     
-    def store_options(input_arr,x,y,magnitude,indexes):
-        x_size,y_size = input_arr.shape
+    def store_options(merged_array,x,y,option_array,index_array):
+        """Store neighbouring cells as options and mark on grid.
+
+        :param merged_array: array being orderd
+        :type merged_array: np.ndarray
+        :param x: current x-index
+        :type x: int
+        :param y: current y-index
+        :type y: int
+        :param option_array: stores the value from the merged array as an option
+        :type option_array: list
+        :param index_array: stores the index of the option
+        :type index_array: list
+        """
+        # get shape to make sure not out of bounds
+        x_size,y_size = merged_array.shape
         
+        # if x+1 neighbour is not marked, store as an option and mark
         if(x+1 < x_size and Marked[x+1,y] == 0):
-            
-            option_a = input_arr[x+1,y]
-            magnitude.append(option_a)
-            indexes.append([x+1,y])
+            option_array.append(merged_array[x+1,y])
+            index_array.append([x+1,y])
             Marked[x+1,y] = 1
         
+        # if y+1 neighbour is not marked, store as an option and mark
         if(y+1 < y_size and Marked[x,y+1] == 0):
-            
-            option_b = input_arr[x,y+1]
-            magnitude.append(option_b)
-            indexes.append([x,y+1])
+            option_array.append(merged_array[x,y+1])
+            index_array.append([x,y+1])
             Marked[x,y+1] = 1
         
-    def get_best_option_value_index(opt_arr,opt_indexes):
-        opt_index_min = np.argmin(opt_arr)
+    def get_best_option_value_index(option_array,index_array):
+        """return the value and index of the option with the minimum value. 
+        delete best option from list.
+
+        :param option_array: possible options
+        :type option_array: List[Decimal]
+        :param index_array: possible options indexes
+        :type index_array: List[(int,int)]
+        :return: (value, index)
+        :rtype:  tuple ( Decimal, (int,int))
+        """
+        index_of_min_option = np.argmin(option_array)
         
-        value = opt_arr[opt_index_min]
-        del opt_arr[opt_index_min]
+        value = option_array[index_of_min_option]
+        del option_array[index_of_min_option]
         
-        index = opt_indexes[opt_index_min]
-        del opt_indexes[opt_index_min]
+        index = index_array[index_of_min_option]
+        del index_array[index_of_min_option]
         
         return value, index
     
-    # Orderded self Structure
+    # Storage Arrays
     out_time = []
 
     out_voltage_inductor = []
@@ -438,36 +491,34 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
 
     option_time = []
     option_indexes =[]
+    
+    # array marking options that have been explored.
     Marked = np.zeros(Data_Output_Merged.Time.shape, dtype=Data_Output_Merged.Time.dtype)
 
     # Store Initial Point
     out_time.append(Data_Output_Merged.Time[0,0])
     out_indexes.append([0,0])
-
     out_voltage_inductor.append(Data_Output_Merged.Voltage_Interconnect_Inductor[0,0])
     out_current_inductor.append(Data_Output_Merged.Current_Interconnect_Inductor[0,0])
-
     out_voltage_capacitor.append(Data_Output_Merged.Voltage_Interconnect_Capacitor[0,0])
     out_current_capacitor.append(Data_Output_Merged.Current_Interconnect_Capacitor[0,0])
-    
     out_wavefront_sending_inductor.append(Data_Output_Merged.Wavefronts_Sending_Inductor[0,0])
     out_wavefront_sending_capacitor.append(Data_Output_Merged.Wavefronts_Sending_Capacitor[0,0])
-    
     out_wavefront_returning_inductor.append(Data_Output_Merged.Wavefronts_Returning_Inductor[0,0])
     out_wavefront_returning_capacitor.append(Data_Output_Merged.Wavefronts_Returning_Capacitor[0,0])
 
+    # mark initial point
     Marked[0,0] = 1
 
     while latest_time < Data_Input.Simulation_Stop_Time:
-        
         # store options at location
         store_options(Data_Output_Merged.Time,x_index,y_index,option_time,option_indexes)
-        
         
         if(len(option_time) > 0):
             # get best option
             best_time, best_time_index = get_best_option_value_index(option_time,option_indexes)
             
+            # append the approriate vlaues using the index
             out_time.append(best_time)
             out_indexes.append(best_time_index)
             
@@ -488,6 +539,8 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
         latest_time = best_time
         x_index, y_index = best_time_index
     
+    # Crop merged to the maximum occuring index as it merged along this axis
+    # already cropped on the other axis
     if(Data_Input.is_Higher_Merging):
         
         max_index = np.max([x[0] for x in out_indexes])
@@ -523,7 +576,42 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
     )        
 
 def Full_Cycle(**input_values):
+    """Do full simualiton of the interface and produce a Data_Interface_Storage object with all the simualted data.
+    The simulation procedure is as follows: 
+    calcualte input vatiables -> generate wavefront with commutative merging -> multiplicatively merge these wavefronts -> chronologically order wavefronts. 
+
+    Is initialised using the same key-word arguments to intitalise Data_Input_Storage. All values with the provided keys are of type string. 
+    This each input variable is converterted to a Decimal value to be used for precision calculations.
+    The possible parameters to change and their defualt values are as follows, parameters are all optional
     
+    :param L_impedance: Characteristic impedance of the inductor, assigned to self.Inductor_Impedance (default:'100')
+    :type L_impedance: String
+    :keyword L_time: The time delay of the inductor in seconds, assigned to self.Inductor_Time (default:'1')
+    :type L_time: String
+    :keyword L_length: The length of the inductor in meters, assigned to self.Inductor_Length (default:'1')
+    :type L_length: String
+    :keyword C_impedance: Characteristic impedance of the capacitor, assigned to self.Capacitor_Impedance (default:'1')
+    :type C_impedance: String
+    :keyword C_time: The time delay of the capacitor in seconds, assigned to self.Capacitor_Time (default:'1')
+    :type C_time: String
+    :keyword C_length: The length of the capacitor in meters, assigned to self.Capacitor_Length (default:'1')
+    :type C_length: String
+    :keyword V_source: The magnitude of the initial voltage excitation in volts, assigned to self.Voltage_Souce_Magnitude (default:'1')
+    :type V_source: String
+    :keyword number_periods: The number of periods as according to Lumped-Element LC-Osscilator solution. 
+        Used to calculate the simulation stop time if provided. Overidden if 'Simulation_stop_time' is provided (default:'1')
+    :type number_periods: String
+    :keyword Load_impedance: The magnitude of the load resistance, if left inf the load is ignored and the interface takes form of an LC-Osscilator.
+        If a value is provided the load is considered and the self.Is_Buck flag is set to True (default:'inf')
+    :type Load_impedance: String
+    :keyword Simulation_stop_time: The time to which the interface will be simulated. If provided it will overwrite the 'number_periods' simulation stop time calculation (default:'0')
+    :type Simulation_stop_time: String
+    :keyword show_about: Indicates information about the calcualted variabels must be printed (default:True)
+    :type show_about: Boolean
+
+    :return: Interface Data object
+    :rtype: Data_Interface_Storage
+    """
     data_input = Data_Input_Storage(**input_values)
     data_output_commutative = Generate_Wavefronts_Commutatively(data_input)
     data_output_merged = Higher_Order_Merging(data_input,data_output_commutative)
@@ -531,8 +619,18 @@ def Full_Cycle(**input_values):
     
     return Data_Interface_Storage(data_input,data_output_commutative,data_output_merged,data_output_ordered)
 
-def get_spatial_voltage_current_at_time(Time_Enquriey, Interface : Data_Interface_Storage , is_Inductor : bool):
-    
+def get_spatial_voltage_current_at_time(Time_Enquriey : Decimal, Interface : Data_Interface_Storage , is_Inductor : bool):
+    """Calcualte the postions of wavefronts on a transmission line and get the spatial distribution of voltage and current on either sides og the points.
+
+    :param Time_Enquriey: The time at which spatial behaviour is investigated
+    :type Time_Enquriey: Decimal
+    :param Interface: The data stroage object of the interface 
+    :type Interface: Data_Interface_Storage
+    :param is_Inductor: if the transmission line investigate is the inductor or capacitor.
+    :type is_Inductor: bool
+    :return: [intercept_postiions, left_voltage, right_voltage, left_current, right_current] left means closer to the interface.
+    :rtype: tuple[list, list, list, list, list]
+    """
     
     # Exctract wavefront interceptions at a specific time
     # 1. get sending + returning wavefronts
@@ -555,22 +653,14 @@ def get_spatial_voltage_current_at_time(Time_Enquriey, Interface : Data_Interfac
     
     if(is_Inductor):
         termination_length = Interface.data_input.Inductor_Length
-        sending_wavefronts = Interface.data_output_multiplicative.Wavefronts_Sending_Inductor
-        returning_wavefronts = Interface.data_output_multiplicative.Wavefronts_Returning_Inductor
+        sending_wavefronts = Interface.data_output_ordered.Wavefronts_Sending_Inductor
+        returning_wavefronts = Interface.data_output_ordered.Wavefronts_Returning_Inductor
     else:
         termination_length = Interface.data_input.Capacitor_Length
-        sending_wavefronts = Interface.data_output_multiplicative.Wavefronts_Sending_Capacitor
-        returning_wavefronts = Interface.data_output_multiplicative.Wavefronts_Returning_Capacitor
+        sending_wavefronts = Interface.data_output_ordered.Wavefronts_Sending_Capacitor
+        returning_wavefronts = Interface.data_output_ordered.Wavefronts_Returning_Capacitor
 
-    for index in Interface.data_output_ordered.Indexes:
-        x = index[0]
-        y = index[1]
-        
-        # Get sending + returning wavefronts
-        sending_wavefront = sending_wavefronts[x,y]
-        returning_wavefront = returning_wavefronts[x,y]
-        
-        # get position intercepts and determine line DC values
+    for sending_wavefront,returning_wavefront in zip(sending_wavefronts,returning_wavefronts):
         
         # x = time enquirey
         # -s-> = sending wavefront
@@ -605,121 +695,113 @@ def get_spatial_voltage_current_at_time(Time_Enquriey, Interface : Data_Interfac
                 
         else:
             raise Exception("Somethings wrong, wavefront has to be intecepted/ stored or done")
-            
-    termination_value_voltage = dc_voltage
-    interconnect_value_voltage =  dc_voltage
-        
-    termination_value_current = dc_current
-    interconnect_value_current =  dc_current
+    
+    # setting dc values on the line 
+    termination_voltage = dc_voltage
+    interconnect_voltage =  dc_voltage
+    termination_current = dc_current
+    interconnect_current =  dc_current
 
-    position_all = []
-    value_left_voltage = []
-    value_right_voltage = []
-        
-    value_left_current = []
-    value_right_current = []
+    # combined intercept arrays
+    intercept_positions = []
+    intercept_voltage_left = []
+    intercept_voltage_right = []
+    intercept_current_left = []
+    intercept_current_right = []
 
-    # input sending values in output form, make all DC value, add to inerconnect value
+    # store sending intercept positions, 
+    # initialise these positons to start with DC values
     for i, pos in enumerate(sending_intercept_positions):
-        position_all.append(pos)
+        intercept_positions.append(pos)
             
-        value_left_voltage.append(dc_voltage)
-        value_right_voltage.append(dc_voltage)
-        interconnect_value_voltage += sending_intercept_voltages[i]
+        intercept_voltage_left.append(dc_voltage)
+        intercept_voltage_right.append(dc_voltage)
+        interconnect_voltage += sending_intercept_voltages[i]
             
-        value_left_current.append(dc_current)
-        value_right_current.append(dc_current)
-        interconnect_value_current += sending_intercept_currents[i]
+        intercept_current_left.append(dc_current)
+        intercept_current_right.append(dc_current)
+        interconnect_current += sending_intercept_currents[i]
             
-
-    # input returning values in output form, make all DC value
+    # Next, store returning intercept positions, 
+    # initialise these positons to start with DC values
     for i, pos in enumerate(returning_intercept_positions):
-        position_all.append(pos)
+        intercept_positions.append(pos)
             
-        value_left_voltage.append(dc_voltage)
-        value_right_voltage.append(dc_voltage)
-        termination_value_voltage += returning_intercept_voltages[i]
+        intercept_voltage_left.append(dc_voltage)
+        intercept_voltage_right.append(dc_voltage)
+        termination_voltage += returning_intercept_voltages[i]
             
-        value_left_current.append(dc_current)
-        value_right_current.append(dc_current)
-        termination_value_current += returning_intercept_currents[i]
+        intercept_current_left.append(dc_current)
+        intercept_current_right.append(dc_current)
+        termination_current += returning_intercept_currents[i]
             
-        if (pos ==0):
-            raise Exception("Returning wavefront at interconnect, problematic")
-
-    # add values left and right
-    for i,position in enumerate(position_all):
+    # for each intercept position account for sending and returning intercepts
+    for i,position in enumerate(intercept_positions):
         for j, send_pos in enumerate(sending_intercept_positions):
             if(send_pos> position):
-                value_left_voltage[i] += sending_intercept_voltages[j]
-                value_right_voltage[i] += sending_intercept_voltages[j]
+                intercept_voltage_left[i] += sending_intercept_voltages[j]
+                intercept_voltage_right[i] += sending_intercept_voltages[j]
                     
-                value_left_current[i] += sending_intercept_currents[j]
-                value_right_current[i] += sending_intercept_currents[j]
+                intercept_current_left[i] += sending_intercept_currents[j]
+                intercept_current_right[i] += sending_intercept_currents[j]
                     
             if (send_pos == position ):
-                value_left_voltage[i] += sending_intercept_voltages[j]
+                intercept_voltage_left[i] += sending_intercept_voltages[j]
                 
-                value_left_current[i] += sending_intercept_currents[j]
+                intercept_current_left[i] += sending_intercept_currents[j]
                 
         for j, return_pos in enumerate(returning_intercept_positions):
             if(return_pos< position):
-                value_left_voltage[i] += returning_intercept_voltages[j]
-                value_right_voltage[i] += returning_intercept_voltages[j]
+                intercept_voltage_left[i] += returning_intercept_voltages[j]
+                intercept_voltage_right[i] += returning_intercept_voltages[j]
                     
-                value_left_current[i] += returning_intercept_currents[j]
-                value_right_current[i] += returning_intercept_currents[j]
+                intercept_current_left[i] += returning_intercept_currents[j]
+                intercept_current_right[i] += returning_intercept_currents[j]
                     
             if (return_pos == position ):
-                value_right_voltage[i] += returning_intercept_voltages[j]
+                intercept_voltage_right[i] += returning_intercept_voltages[j]
                     
-                value_right_current[i] += returning_intercept_currents[j]
+                intercept_current_right[i] += returning_intercept_currents[j]
                     
-    # append interconnect
-    position_all.append(0)
-        
-    value_left_voltage.append(interconnect_value_voltage)
-    value_right_voltage.append(interconnect_value_voltage)
-        
-    value_left_current.append(interconnect_value_current)
-    value_right_current.append(interconnect_value_current)
+    # append interconnect values
+    intercept_positions.append(0)
+    intercept_voltage_left.append(interconnect_voltage)
+    intercept_voltage_right.append(interconnect_voltage)
+    intercept_current_left.append(interconnect_current)
+    intercept_current_right.append(interconnect_current)
 
-    # append termination
-    position_all.append(termination_length)
-            
-    value_left_voltage.append(termination_value_voltage)
-    value_right_voltage.append(termination_value_voltage)
-        
-    value_left_current.append(termination_value_current)
-    value_right_current.append(termination_value_current)
+    # append termination values
+    intercept_positions.append(termination_length)
+    intercept_voltage_left.append(termination_voltage)
+    intercept_voltage_right.append(termination_voltage)
+    intercept_current_left.append(termination_current)
+    intercept_current_right.append(termination_current)
 
-    # sort values based on position
-    zip_positions_voltage_current = sorted(zip(position_all,value_left_voltage,value_right_voltage,value_left_current,value_right_current))
-    position_all, value_left_voltage, value_right_voltage, value_left_current, value_right_current = zip(*zip_positions_voltage_current)
+    # sort values based on interconncet positions
+    zip_positions_voltage_current = sorted(zip(intercept_positions,intercept_voltage_left,intercept_voltage_right,intercept_current_left,intercept_current_right))
+    intercept_positions, intercept_voltage_left, intercept_voltage_right, intercept_current_left, intercept_current_right = zip(*zip_positions_voltage_current)
         
     # convert to lists
-    position_all = list(position_all)
-        
-    value_left_voltage = list(value_left_voltage)
-    value_right_voltage = list(value_right_voltage)
-        
-    value_left_current = list(value_left_current)
-    value_right_current = list(value_right_current)
+    intercept_positions = list(intercept_positions)
+    intercept_voltage_left = list(intercept_voltage_left)
+    intercept_voltage_right = list(intercept_voltage_right)
+    intercept_current_left = list(intercept_current_left)
+    intercept_current_right = list(intercept_current_right)
         
     # Merge neighbours
     found_duplicate = True
     while found_duplicate:
         found_duplicate = False
-        for index,position in enumerate(position_all):
-            if(index < len(position_all)-1):
+        for index,position in enumerate(intercept_positions):
+            if(index < len(intercept_positions)-1):
                 
-                if(position == position_all[index+1]):                  
-                    del position_all[index +1]
-                    del value_left_voltage[index +1]
-                    del value_right_voltage[index +1]
-                    del value_left_current[index +1]
-                    del value_right_current[index +1]
+                if(position == intercept_positions[index+1]):                  
+                    del intercept_positions[index +1]
+                    del intercept_voltage_left[index +1]
+                    del intercept_voltage_right[index +1]
+                    del intercept_current_left[index +1]
+                    del intercept_current_right[index +1]
 
                     found_duplicate = True
                         
-    return position_all,value_left_voltage,value_right_voltage,value_left_current,value_right_current
+    return intercept_positions,intercept_voltage_left,intercept_voltage_right,intercept_current_left,intercept_current_right
