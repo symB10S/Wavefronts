@@ -34,15 +34,15 @@ def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
         - **contrast** (*bool*) - if the orign node must be ignored for the colour mapping maximum value calculation (default = False)
         - **padding** (*int*) - the amount of padding around the array, thinner arrays are easier to navigate with padding (default = 0)
         - **units** (*str*) - the units of the colour bar (default = 'A')
-        - **origin_pos** (*str*) - either 'lower' or 'upper', sets the postion of the origin (default = 'lower')
+        - **origin** (*str*) - either 'lower' or 'upper', sets the postion of the origin (default = 'lower')
         - **transpose** (*bool*) - makes x-axis the L-axis if true (default = True)
         - **show_ticks** (*bool*) - if axis ticks are shown (default = True)
         - **custom_colour_bar_limits** (*tuple or bool*) - pass a (max_value, min_value) tuple to customize colouring extent of the fanout(default = False)
         
     .. warning::
-        a **wavefront storage array** must be in their magntidue forms, these arrays can be fetched using :py:meth:`Wavefront_Storage.Data_Output_Storage.get_sending_wavefronts_magnitudes` 
+        a **wavefront storage array** must be in their magnitude forms, these arrays can be fetched using :py:meth:`Wavefront_Storage.Data_Output_Storage.get_sending_wavefronts_magnitudes` 
         or :py:meth:`Wavefront_Storage.Data_Output_Storage.get_returning_wavefronts_magnitudes`. 
-        Alternatively magnitdues from a **wavefront array** can be manually extracted by passing as ann input parameter to 
+        Alternatively magnitdues from a **wavefront array** can be manually extracted by passing as an input parameter to 
         :py:func:`Wavefront_Misc.get_voltage_array` or :py:func:`Wavefront_Misc.get_current_array`
         
     :return: plots a magnitude fanout on the provided axis
@@ -53,7 +53,7 @@ def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
         'contrast' : False,
         'padding' : 0,
         'units' : 'A',
-        'origin_pos' : 'lower',
+        'origin' : 'lower',
         'transpose' : True,
         'show_ticks' : True,
         'custom_colour_bar_limits': False
@@ -92,12 +92,12 @@ def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
         ax.xaxis.set_major_formatter(plt.FuncFormatter(offset_formatter))
         ax.yaxis.set_major_formatter(plt.FuncFormatter(offset_formatter))
     else:
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
+        ax.set_xticks([])
+        ax.set_yticks([])
       
     ax.set_title(default_kwargs['title'])
     
-    c = ax.imshow(array_plot,cmap= mpl.cm.seismic,vmax =max_boundary, vmin = min_boundary,origin=default_kwargs['origin_pos'])
+    c = ax.imshow(array_plot,cmap= mpl.cm.seismic,vmax =max_boundary, vmin = min_boundary,origin=default_kwargs['origin'])
     
     if(default_kwargs['show_colour_bar']):
         cb = ax.get_figure().colorbar(c,ax=ax)
@@ -118,13 +118,13 @@ def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
         - **contrast** (*bool*) - if the orign node must be ignored for the colour mapping maximum value calculation (default = False)
         - **padding** (*int*) - the amount of padding around the array, thinner arrays are easier to navigate with padding (default = 0)
         - **units** (*str*) - the units of the colour bar (default = 's')
-        - **origin_pos** (*str*) - either 'lower' or 'upper', sets the postion of the origin (default = 'lower')
+        - **origin** (*str*) - either 'lower' or 'upper', sets the postion of the origin (default = 'lower')
         - **transpose** (*bool*) - makes x-axis the L-axis if true (default = True)
         - **show_ticks** (*bool*) - if axis ticks are shown (default = True)
         - **mask_zero** (*bool*) - if zeros values must be masked (default = True)
         
     .. warning::
-        a **wavefront storage array** must be in their magntidue forms, these arrays can be fetched using :py:meth:`Wavefront_Storage.Data_Output_Storage.get_sending_wavefronts_magnitudes` 
+        a **wavefront storage array** must be in their magnitude forms, these arrays can be fetched using :py:meth:`Wavefront_Storage.Data_Output_Storage.get_sending_wavefronts_magnitudes` 
         or :py:meth:`Wavefront_Storage.Data_Output_Storage.get_returning_wavefronts_magnitudes`. 
         Alternatively magnitdues from a **wavefront array** can be manually extracted by passing as an input parameter to 
         :py:func:`Wavefront_Misc.get_voltage_array` or :py:func:`Wavefront_Misc.get_current_array`
@@ -137,7 +137,7 @@ def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
         'contrast' : False,
         'padding' : 0,
         'units' : 's',
-        'origin_pos' : 'lower',
+        'origin' : 'lower',
         'transpose' : True,
         'show_ticks' : True,
         'mask_zero' : True
@@ -165,21 +165,102 @@ def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
         ax.xaxis.set_major_formatter(plt.FuncFormatter(offset_formatter))
         ax.yaxis.set_major_formatter(plt.FuncFormatter(offset_formatter))
     else:
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
-    
+        ax.set_xticks([])
+        ax.set_yticks([])
+        
     if(default_kwargs['mask_zero']):
         array_plot = np.ma.masked_where(array_plot == 0, array_plot)
         array_plot[0,0] = 0
       
     ax.set_title(default_kwargs['title'])
     
-    c = ax.imshow(array_plot,cmap= mpl.cm.jet,vmax =max_boundary, vmin = min_boundary,origin=default_kwargs['origin_pos'])
+    c = ax.imshow(array_plot,cmap= mpl.cm.jet,vmax =max_boundary, vmin = min_boundary,origin=default_kwargs['origin'])
     
     if(default_kwargs['show_colour_bar']):
         cb = ax.get_figure().colorbar(c,ax=ax)
         cb.ax.yaxis.set_major_formatter(EngFormatter(default_kwargs['units']))
             
+def plot_fanout_interconnect(data_output: Data_Output_Storage,ax, which_string :str, **kwargs):
+    """A wrapper function for :py:func:`plot_fanout_magnitude` for plotting interconnect fanouts.
+    Takes in a Data_Output_Storage object and a string to plot and auto format the fanout.
+    It will pass provided **kwargs to the underlying plot_fanout_magnitude fucntion.
+    
+    :param data_output: The data output object that contians the interconnect arrays. Could be commutative or multiplicative data. 
+    :type data_output: Data_Output_Storage
+    :param ax: the matplotlib axis to plot on
+    :type ax: matplotlib Axes object
+    :param which_string: determine which interconnect value to plot. Options are "voltage inductor", "current inductor", "voltage capacitor", "current capacitor"
+    :type which_string: str
+    :raises ValueError: if incorrect 'which_string' is not provided.
+    
+    .. warning::
+        When providing the ****kwargs**, you cannot specify 'title=' or 'units=' as these are auto assinged. Providing these values will result in an error. 
+    """
+    
+    if ('title' in kwargs):
+        raise ValueError("you cannot specifiy the title of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+    elif('units' in kwargs):
+        raise ValueError("you cannot specifiy the units of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+    
+    allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+    if(which_string.lower() == allowed_strings[0] ):
+        plot_fanout_magnitude( data_output.Voltage_Interconnect_Inductor,ax,title = "Inductor Voltage at Interconnect",units='V',**kwargs)
+    elif(which_string.lower() == allowed_strings[1] ):
+        plot_fanout_magnitude(data_output.Current_Interconnect_Inductor,ax,title = "Inductor Current at Interconnect",**kwargs)
+    elif(which_string.lower() == allowed_strings[2] ):
+        plot_fanout_magnitude(data_output.Voltage_Interconnect_Capacitor,ax,title = "Capacitor Voltage at Interconnect",units='V',**kwargs)
+    elif(which_string.lower() == allowed_strings[3] ):
+        plot_fanout_magnitude(data_output.Current_Interconnect_Capacitor,ax,title = "Capacitor Current at Interconnect",**kwargs)
+    else:
+            raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
+        
+        
+def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :str, is_sending : bool = True, **kwargs):
+    """A wrapper function for :py:func:`plot_fanout_magnitude` for plotting wavefront fanouts.
+    Takes in a Data_Output_Storage object, a string and a bool are passed to plot and auto format the fanout.
+    It will pass provided **kwargs to the underlying plot_fanout_magnitude fucntion.
+
+    :param data_output: The data output object that contians the interconnect arrays. Could be commutative or multiplicative data. 
+    :type data_output: Data_Output_Storage
+    :param ax: the matplotlib axis to plot on
+    :type ax: matplotlib Axes object
+    :param which_string: determine which interconnect value to plot. Options are "voltage inductor", "current inductor", "voltage capacitor", "current capacitor"
+    :type which_string: str
+    :raises ValueError: if incorrect 'which_string' is not provided.
+    :param is_sending: determines if sending or returning wavefronts must be plotted, defaults to True
+    :type is_sending: bool, optional
+    
+    .. warning::
+        When providing the ****kwargs**, you cannot specify 'title=' or 'units=' as these are auto assinged. Providing these values will result in an error. 
+    """
+    if ('title' in kwargs):
+        raise ValueError("you cannot specifiy the title of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+    elif('units' in kwargs):
+        raise ValueError("you cannot specifiy the units of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+    
+    allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+    
+    if(is_sending):
+        title_prefix = "Sending "
+        get_func = data_output.get_sending_wavefronts_magnitudes
+    else:
+        title_prefix = "Returning "
+        get_func = data_output.get_returning_wavefronts_magnitudes
+    
+    if(which_string.lower() == allowed_strings[0] ):
+        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Voltage Wavefronts in Inductor",units='V',**kwargs)
+        
+    elif(which_string.lower() == allowed_strings[1] ):
+        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Current Wavefronts in Inductor",**kwargs)
+        
+    elif(which_string.lower() == allowed_strings[2] ):
+        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Voltage Wavefronts in Capacitor",units='V',**kwargs)
+        
+    elif(which_string.lower() == allowed_strings[3] ):
+        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Current Wavefronts in Capacitor",**kwargs)
+    else:
+            raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
+        
 def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str, show_colour_bar = True ,contrast : bool = False):
     
     clear_subplot(ax)
@@ -196,19 +277,6 @@ def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str,
     ax[2].plot([row_number,row_number],[0,arr.shape[0]],'m--')
     ax[2].plot([0,arr.shape[0]],[row_number,row_number],'c--')
 
-def plot_fanout_interconnect(data_output_merged: Data_Output_Storage,ax, which_string :str, data_str : str = ""):
-    
-    allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
-    if(which_string.lower() == allowed_strings[0] ):
-        plot_fanout_magnitude( data_output_merged.Voltage_Interconnect_Inductor,ax,allowed_strings[0]+ data_str,True,True)
-    elif(which_string.lower() == allowed_strings[1] ):
-        plot_fanout_magnitude(data_output_merged.Current_Interconnect_Inductor,ax,allowed_strings[1]+ data_str)
-    elif(which_string.lower() == allowed_strings[2] ):
-        plot_fanout_magnitude(data_output_merged.Voltage_Interconnect_Capacitor,ax,allowed_strings[2]+ data_str,True,True)
-    elif(which_string.lower() == allowed_strings[3] ):
-        plot_fanout_magnitude(data_output_merged.Current_Interconnect_Capacitor,ax,allowed_strings[3]+ data_str)
-    else:
-            raise ValueError("Incorrect plotting choice")
 
 def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
     
@@ -221,11 +289,6 @@ def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
     
     return fig,ax
 
-def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :str, is_sending : bool = True):
-    if(is_sending):
-        plot_fanout_magnitude(data_output.get_sending_wavefronts_magnitudes(which_string),ax)
-    else:
-        plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes(which_string),ax)
 
 def plot_fanout_wavefronts_all(data_output: Data_Output_Storage, is_sending : bool = True, data_str :str = ""):
     fig, ax = plt.subplot_mosaic([['A','B','C','D'],['E','F','G','H']])

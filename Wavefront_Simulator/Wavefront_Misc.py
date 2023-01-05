@@ -307,7 +307,7 @@ def get_array_absolute_maximum(array : np.ndarray):
     return max(max_boundary, min_boundary)
 
 def get_voltage_from_wavefront(wavefront):
-    """get the voltage of a wavefront. Used as a dummy fucntion to be vectorized, see "get_voltage_array".
+    """get the voltage of a wavefront. Used as a dummy fucntion to be vectorized, see :py:func:`get_voltage_array`.
 
     :param wavefront: a wavefront
     :type wavefront: Wavefront
@@ -316,11 +316,11 @@ def get_voltage_from_wavefront(wavefront):
     """
     return wavefront.magnitude_voltage
 
-#: The vectorized function that extracts the voltages from an np.ndarray[Wavefronts] array.
+#: The vectorized function that extracts the voltages from an np.ndarray[Wavefronts] array and returns an np.ndarray[Decimal] voltage array.
 get_voltage_array = np.vectorize(get_voltage_from_wavefront)
 
 def get_current_from_wavefront(wavefront):
-    """get the voltage of a wavefront. Used as a dummy fucntion to be vectorized, see "get_current_array".
+    """get the voltage of a wavefront. Used as a dummy fucntion to be vectorized, see :py:func:`get_current_array`.
 
     :param wavefront: a wavefront
     :type wavefront: Wavefront
@@ -329,7 +329,7 @@ def get_current_from_wavefront(wavefront):
     """
     return wavefront.magnitude_current
 
-#: The vectorized function that extracts the currents from an np.ndarray[Wavefronts] array.
+#: The vectorized function that extracts the currents from an np.ndarray[Wavefronts] array and returns an np.ndarray[Decimal] current array.
 get_current_array = np.vectorize(get_current_from_wavefront)
 
 def convert_to_image_array(array):

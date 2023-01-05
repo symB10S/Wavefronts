@@ -367,7 +367,7 @@ def transform_merged_array_to_C_axis(data_input : Data_Input_Storage,merged_arra
     # get first meging region
     new_array = extract_merging_region(data_input,merged_array,0)
     # determine number of merging regions
-    number_of_KLs = int((data_input.Number_of_Layers+1)/data_input.Inductor_LCM_Factor)
+    number_of_KLs = int((merged_array.shape[0])/data_input.Inductor_LCM_Factor)
     for i in range(1,number_of_KLs):
         # rearrange and add merging regions allong the C-axis
         new_merging_region = extract_merging_region(data_input,merged_array,i)
@@ -444,7 +444,6 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
     if (Data_Output_Merged.has_merged == False):
         raise warnings.warn("Provided Data_Output_Storage object to be ordered has not been merged yet. This can produce incorrect results if merging is not accounted for.")
     
-    Data_Output_Merged = copy.deepcopy(Data_Output_Merged)
     
     def store_options(merged_array,x,y,option_array,index_array):
         """Store neighbouring cells as options and mark on grid.
@@ -572,22 +571,22 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
     # already cropped on the other axis
     if(Data_Input.is_Higher_Merging):
         
-        max_index = np.max([x[0] for x in out_indexes])
-        max_index += 1
+        max_x_index = np.max([x[0] for x in out_indexes])
+        max_x_index += 1
         
-        Data_Output_Merged.Time = Data_Output_Merged.Time[0:max_index,:]
+        Data_Output_Merged.Time = Data_Output_Merged.Time[0:max_x_index,:]
 
-        Data_Output_Merged.Voltage_Interconnect_Inductor =  Data_Output_Merged.Voltage_Interconnect_Inductor[0:max_index,:]
-        Data_Output_Merged.Current_Interconnect_Inductor = Data_Output_Merged.Current_Interconnect_Inductor[0:max_index,:]
+        Data_Output_Merged.Voltage_Interconnect_Inductor =  Data_Output_Merged.Voltage_Interconnect_Inductor[0:max_x_index,:]
+        Data_Output_Merged.Current_Interconnect_Inductor = Data_Output_Merged.Current_Interconnect_Inductor[0:max_x_index,:]
 
-        Data_Output_Merged.Voltage_Interconnect_Capacitor = Data_Output_Merged.Voltage_Interconnect_Capacitor[0:max_index,:]
-        Data_Output_Merged.Current_Interconnect_Capacitor = Data_Output_Merged.Current_Interconnect_Capacitor[0:max_index,:]
+        Data_Output_Merged.Voltage_Interconnect_Capacitor = Data_Output_Merged.Voltage_Interconnect_Capacitor[0:max_x_index,:]
+        Data_Output_Merged.Current_Interconnect_Capacitor = Data_Output_Merged.Current_Interconnect_Capacitor[0:max_x_index,:]
 
-        Data_Output_Merged.Wavefronts_Sending_Inductor = Data_Output_Merged.Wavefronts_Sending_Inductor[0:max_index,:]
-        Data_Output_Merged.Wavefronts_Sending_Capacitor = Data_Output_Merged.Wavefronts_Sending_Capacitor[0:max_index,:]
+        Data_Output_Merged.Wavefronts_Sending_Inductor = Data_Output_Merged.Wavefronts_Sending_Inductor[0:max_x_index,:]
+        Data_Output_Merged.Wavefronts_Sending_Capacitor = Data_Output_Merged.Wavefronts_Sending_Capacitor[0:max_x_index,:]
 
-        Data_Output_Merged.Wavefronts_Returning_Inductor = Data_Output_Merged.Wavefronts_Returning_Inductor[0:max_index,:]
-        Data_Output_Merged.Wavefronts_Returning_Capacitor = Data_Output_Merged.Wavefronts_Returning_Capacitor[0:max_index,:]
+        Data_Output_Merged.Wavefronts_Returning_Inductor = Data_Output_Merged.Wavefronts_Returning_Inductor[0:max_x_index,:]
+        Data_Output_Merged.Wavefronts_Returning_Capacitor = Data_Output_Merged.Wavefronts_Returning_Capacitor[0:max_x_index,:]
             
         
     return Data_Output_Storage_Ordered(
