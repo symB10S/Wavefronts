@@ -1460,9 +1460,9 @@ def plot_spatial_same_axis(Time_Enquriey,Interface : Data_Interface_Storage,ax_v
         pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, Interface, True)
         zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
 
-        first_y_voltage_inductor = 0
-        first_y_voltage_capacitor = 0
-        first_y_current = 0
+        interconncet_voltage_inductor = 0
+        interconncet_voltage_capacitor = 0
+        interconnect_current = 0
         
         #arrays
         x_position =[]
@@ -1499,8 +1499,8 @@ def plot_spatial_same_axis(Time_Enquriey,Interface : Data_Interface_Storage,ax_v
                         y_voltage_old = left_voltage
                         y_current_old = left_current
                         
-                        first_y_voltage_inductor = left_voltage
-                        first_y_current = left_current
+                        interconncet_voltage_inductor = left_voltage
+                        interconnect_current = left_current
                         
                         is_first = False
                 else:
@@ -1554,7 +1554,7 @@ def plot_spatial_same_axis(Time_Enquriey,Interface : Data_Interface_Storage,ax_v
                         y_voltage_old = left_voltage
                         y_current_old = left_current
                         
-                        first_y_voltage_capacitor = left_voltage
+                        interconncet_voltage_capacitor = left_voltage
                         
                         is_first = False
                 else:
@@ -1574,22 +1574,22 @@ def plot_spatial_same_axis(Time_Enquriey,Interface : Data_Interface_Storage,ax_v
         ax_voltage.bar(x_position, dz_voltage, dx_position, align = 'edge',edgecolor = 'k')
         ax_current.bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
         
-        return first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current
+        return interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current
 
-def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_current,first_y_voltage_capacitor=0, first_y_voltage_inductor=0, first_y_current=0):
+def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_current,interconncet_voltage_capacitor=0, interconncet_voltage_inductor=0, interconnect_current=0):
     ax_voltage.axvline(time,linestyle='--',c='gray')
 
     plot_time_interconnect(data_output_ordered,ax_voltage,'voltage inductor',True)
-    ax_voltage.axhline(first_y_voltage_inductor,linestyle='--',c='C0')
+    ax_voltage.axhline(interconncet_voltage_inductor,linestyle='--',c='C0')
     plot_time_interconnect(data_output_ordered,ax_voltage,'voltage capacitor',True)
-    ax_voltage.axhline(first_y_voltage_capacitor,linestyle='--',c='C1')
+    ax_voltage.axhline(interconncet_voltage_capacitor,linestyle='--',c='C1')
 
     plot_time_interconnect(data_output_ordered,ax_current,'current inductor',True)
     ax_current.get_lines()[0].set_color("black")
 
     y_limits = ax_current.get_ylim()
 
-    ax_current.axhline(first_y_current,linestyle='--',c='gray')
+    ax_current.axhline(interconnect_current,linestyle='--',c='gray')
     ax_current.axvline(time,linestyle='--',c='gray')
     ax_current.set_ylim(y_limits)
     
@@ -1642,8 +1642,8 @@ def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
     with writer.saving(fig_save_2d, (save_name+".mp4"), float(dpi)):
 
         for i in tqdm(range(0,int(number_frames))):
-            first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,Interface,ax_save_2d[0,0],ax_save_2d[1,0])
-            plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_save_2d[0,1],ax_save_2d[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+            interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current = plot_spatial_same_axis(time,Interface,ax_save_2d[0,0],ax_save_2d[1,0])
+            plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_save_2d[0,1],ax_save_2d[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current)
             
             writer.grab_frame()
             
@@ -1678,24 +1678,24 @@ def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage):
         time_slider.value += increment_text.value
         time = Decimal(str(time_slider.value))
         clear_axes()
-        first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
-        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+        interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
+        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current)
         
         
     def on_decrement_click(b):
         time_slider.value -= increment_text.value
         time = Decimal(str(time_slider.value))
         clear_axes()
-        first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
-        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+        interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
+        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current)
         
     def handle_slider_change(change):
         if(isinstance(change.new,dict)):
             if(len(change.new) > 0):
                 time = Decimal(str(change.new['value']))
                 clear_axes()
-                first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
-                plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],first_y_voltage_capacitor, first_y_voltage_inductor, first_y_current)
+                interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
+                plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current)
                 
     increment_button.on_click(on_increment_click)
     decrement_button.on_click(on_decrement_click)
