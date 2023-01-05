@@ -15,12 +15,11 @@ plt.rcParams['animation.ffmpeg_path'] = 'ffmpeg\\ffmpeg.exe'
 import ipywidgets as widgets
 from IPython.display import display
 
-## Plotting
 def clear_subplot(axs):
     for ax in axs:
         ax.cla()
 
-def plot_fanout_seismic(input_array : np.ndarray , ax, **input_kwargs):
+def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
     """the core function for plotting the fanout diagram of a 2D numpy array.
     Points are coloured using the 'seismic' colour map with red being positive and blue negative.
 
@@ -33,8 +32,8 @@ def plot_fanout_seismic(input_array : np.ndarray , ax, **input_kwargs):
         - **title** (*str*) - The title of the fanout (default = "Magnitude Fanout")
         - **show_colour_bar** (*bool*) - if colour bar must be shown (default = True)
         - **contrast** (*bool*) - if the orign node must be ignored for the colour mapping maximum value calculation (default = False)
-        - **padding** (*int*) - the amount of padding around the array, thinner arrays are easier to navigate with padding (default = 10)
-        - **units** (*str*) - the units of the fanout diagram (default = 'A')
+        - **padding** (*int*) - the amount of padding around the array, thinner arrays are easier to navigate with padding (default = 0)
+        - **units** (*str*) - the units of the colour bar (default = 'A')
         - **origin_pos** (*str*) - either 'lower' or 'upper', sets the postion of the origin (default = 'lower')
         - **transpose** (*bool*) - makes x-axis the L-axis if true (default = True)
         - **show_ticks** (*bool*) - if axis ticks are shown (default = True)
@@ -46,13 +45,13 @@ def plot_fanout_seismic(input_array : np.ndarray , ax, **input_kwargs):
         Alternatively magnitdues from a **wavefront array** can be manually extracted by passing as ann input parameter to 
         :py:func:`Wavefront_Misc.get_voltage_array` or :py:func:`Wavefront_Misc.get_current_array`
         
-    :return: plots an image on the provided axis
+    :return: plots a magnitude fanout on the provided axis
     """
     default_kwargs = {
         'title': "Magnitude Fanout",
         'show_colour_bar': True,
         'contrast' : False,
-        'padding' : 10,
+        'padding' : 0,
         'units' : 'A',
         'origin_pos' : 'lower',
         'transpose' : True,
@@ -104,17 +103,83 @@ def plot_fanout_seismic(input_array : np.ndarray , ax, **input_kwargs):
         cb = ax.get_figure().colorbar(c,ax=ax)
         cb.ax.yaxis.set_major_formatter(EngFormatter(default_kwargs['units']))
         
-def plot_fanout_colour(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False):
+def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
+    """Plot a time fanout of a provided input array. 
+    Coloured in a rainbow pattern from the minimum array value to the maximum array value.
+
+    :param input_array: The array to be plotted, can also accept lists of numerical data
+    :type input_array: np.ndarray or List
+    :param ax: a matplotlib Axe object to plot using 'imshow'
+    :type ax: matplotlib.Axe
     
-    max_boundary = np.max(arr.astype(float))  
-    min_boundary = np.min(arr.astype(float))  
-    
-    ax.set_title(title)
-    cb = ax.imshow(arr.astype(float),cmap=mpl.cm.jet,vmax =max_boundary, vmin =min_boundary)
-    
-    if(show_colour_bar):
-        ax.get_figure().colorbar(cb,ax=ax)
+    :**input_kwargs**:
+        - **title** (*str*) - The title of the fanout (default = "Time Fanout")
+        - **show_colour_bar** (*bool*) - if colour bar must be shown (default = True)
+        - **contrast** (*bool*) - if the orign node must be ignored for the colour mapping maximum value calculation (default = False)
+        - **padding** (*int*) - the amount of padding around the array, thinner arrays are easier to navigate with padding (default = 0)
+        - **units** (*str*) - the units of the colour bar (default = 's')
+        - **origin_pos** (*str*) - either 'lower' or 'upper', sets the postion of the origin (default = 'lower')
+        - **transpose** (*bool*) - makes x-axis the L-axis if true (default = True)
+        - **show_ticks** (*bool*) - if axis ticks are shown (default = True)
+        - **mask_zero** (*bool*) - if zeros values must be masked (default = True)
         
+    .. warning::
+        a **wavefront storage array** must be in their magntidue forms, these arrays can be fetched using :py:meth:`Wavefront_Storage.Data_Output_Storage.get_sending_wavefronts_magnitudes` 
+        or :py:meth:`Wavefront_Storage.Data_Output_Storage.get_returning_wavefronts_magnitudes`. 
+        Alternatively magnitdues from a **wavefront array** can be manually extracted by passing as an input parameter to 
+        :py:func:`Wavefront_Misc.get_voltage_array` or :py:func:`Wavefront_Misc.get_current_array`
+        
+    :return: plots a rainbow coloured image on the provided axis
+    """
+    default_kwargs = {
+        'title': "Time Fanout",
+        'show_colour_bar': True,
+        'contrast' : False,
+        'padding' : 0,
+        'units' : 's',
+        'origin_pos' : 'lower',
+        'transpose' : True,
+        'show_ticks' : True,
+        'mask_zero' : True
+    }
+    default_kwargs = handle_default_kwargs(input_kwargs,default_kwargs)
+    # convert Lists to image array if necessary 
+    input_array = convert_to_image_array(input_array)
+    
+    max_boundary = np.max(input_array.astype(float))  
+    min_boundary = np.min(input_array.astype(float))  
+    
+    if default_kwargs['transpose'] :
+        array_plot = np.pad(input_array.astype(float),(default_kwargs['padding'],default_kwargs['padding'])).transpose()
+        ax.set_xlabel('L - axis ')
+        ax.set_ylabel('C - axis ')
+    else:
+        array_plot = np.pad(input_array.astype(float),(default_kwargs['padding'],default_kwargs['padding']))
+        ax.set_ylabel('L - axis ')
+        ax.set_xlabel('C - axis ')
+    
+    def offset_formatter(x, pos):
+        return int(x - default_kwargs['padding'])
+
+    if(default_kwargs['show_ticks']):
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(offset_formatter))
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(offset_formatter))
+    else:
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+    
+    if(default_kwargs['mask_zero']):
+        array_plot = np.ma.masked_where(array_plot == 0, array_plot)
+        array_plot[0,0] = 0
+      
+    ax.set_title(default_kwargs['title'])
+    
+    c = ax.imshow(array_plot,cmap= mpl.cm.jet,vmax =max_boundary, vmin = min_boundary,origin=default_kwargs['origin_pos'])
+    
+    if(default_kwargs['show_colour_bar']):
+        cb = ax.get_figure().colorbar(c,ax=ax)
+        cb.ax.yaxis.set_major_formatter(EngFormatter(default_kwargs['units']))
+            
 def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str, show_colour_bar = True ,contrast : bool = False):
     
     clear_subplot(ax)
@@ -127,7 +192,7 @@ def plot_fanout_crossection(arr : np.ndarray, ax, row_number : int, title : str,
     ax[0].plot(row_a)
     ax[1].plot(row_b)
     
-    plot_fanout_seismic(arr,ax[2],"Fanout",show_colour_bar,contrast,0)
+    plot_fanout_magnitude(arr,ax[2],"Fanout",show_colour_bar,contrast,0)
     ax[2].plot([row_number,row_number],[0,arr.shape[0]],'m--')
     ax[2].plot([0,arr.shape[0]],[row_number,row_number],'c--')
 
@@ -135,13 +200,13 @@ def plot_fanout_interconnect(data_output_merged: Data_Output_Storage,ax, which_s
     
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
     if(which_string.lower() == allowed_strings[0] ):
-        plot_fanout_seismic( data_output_merged.Voltage_Interconnect_Inductor,ax,allowed_strings[0]+ data_str,True,True)
+        plot_fanout_magnitude( data_output_merged.Voltage_Interconnect_Inductor,ax,allowed_strings[0]+ data_str,True,True)
     elif(which_string.lower() == allowed_strings[1] ):
-        plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax,allowed_strings[1]+ data_str)
+        plot_fanout_magnitude(data_output_merged.Current_Interconnect_Inductor,ax,allowed_strings[1]+ data_str)
     elif(which_string.lower() == allowed_strings[2] ):
-        plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Capacitor,ax,allowed_strings[2]+ data_str,True,True)
+        plot_fanout_magnitude(data_output_merged.Voltage_Interconnect_Capacitor,ax,allowed_strings[2]+ data_str,True,True)
     elif(which_string.lower() == allowed_strings[3] ):
-        plot_fanout_seismic(data_output_merged.Current_Interconnect_Capacitor,ax,allowed_strings[3]+ data_str)
+        plot_fanout_magnitude(data_output_merged.Current_Interconnect_Capacitor,ax,allowed_strings[3]+ data_str)
     else:
             raise ValueError("Incorrect plotting choice")
 
@@ -149,33 +214,33 @@ def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
     
     fig, ax = plt.subplot_mosaic([['A','B'],['C','D']])
     
-    plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Inductor,ax['A'],"Inductor Voltage",True,True)
-    plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax['C'],"Inductor Current")
-    plot_fanout_seismic(data_output_merged.Voltage_Interconnect_Inductor,ax['B'],"Capacitor Voltage",True,True)
-    plot_fanout_seismic(data_output_merged.Current_Interconnect_Inductor,ax['D'],"Capacitor Current")
+    plot_fanout_magnitude(data_output_merged.Voltage_Interconnect_Inductor,ax['A'],"Inductor Voltage",True,True)
+    plot_fanout_magnitude(data_output_merged.Current_Interconnect_Inductor,ax['C'],"Inductor Current")
+    plot_fanout_magnitude(data_output_merged.Voltage_Interconnect_Inductor,ax['B'],"Capacitor Voltage",True,True)
+    plot_fanout_magnitude(data_output_merged.Current_Interconnect_Inductor,ax['D'],"Capacitor Current")
     
     return fig,ax
 
 def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :str, is_sending : bool = True):
     if(is_sending):
-        plot_fanout_seismic(data_output.get_sending_wavefronts_magnitudes(which_string),ax)
+        plot_fanout_magnitude(data_output.get_sending_wavefronts_magnitudes(which_string),ax)
     else:
-        plot_fanout_seismic(data_output.get_returning_wavefronts_magnitudes(which_string),ax)
+        plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes(which_string),ax)
 
 def plot_fanout_wavefronts_all(data_output: Data_Output_Storage, is_sending : bool = True, data_str :str = ""):
     fig, ax = plt.subplot_mosaic([['A','B','C','D'],['E','F','G','H']])
     
     fig.suptitle("Wavefront Fanouts " + data_str)
     
-    plot_fanout_seismic(data_output.get_sending_wavefronts_magnitudes("voltage inductor"),ax['A'],"sending voltage inductor")
-    plot_fanout_seismic(data_output.get_sending_wavefronts_magnitudes("current inductor"),ax['B'],"sending current inductor")
-    plot_fanout_seismic(data_output.get_sending_wavefronts_magnitudes("voltage capacitor"),ax['C'],"sending voltage capacitor")
-    plot_fanout_seismic(data_output.get_sending_wavefronts_magnitudes("current capacitor"),ax['D'],"sending current capacitor")
+    plot_fanout_magnitude(data_output.get_sending_wavefronts_magnitudes("voltage inductor"),ax['A'],"sending voltage inductor")
+    plot_fanout_magnitude(data_output.get_sending_wavefronts_magnitudes("current inductor"),ax['B'],"sending current inductor")
+    plot_fanout_magnitude(data_output.get_sending_wavefronts_magnitudes("voltage capacitor"),ax['C'],"sending voltage capacitor")
+    plot_fanout_magnitude(data_output.get_sending_wavefronts_magnitudes("current capacitor"),ax['D'],"sending current capacitor")
 
-    plot_fanout_seismic(data_output.get_returning_wavefronts_magnitudes("voltage inductor"),ax['E'],"returning voltage inductor")
-    plot_fanout_seismic(data_output.get_returning_wavefronts_magnitudes("current inductor"),ax['F'],"returning current inductor")
-    plot_fanout_seismic(data_output.get_returning_wavefronts_magnitudes("voltage capacitor"),ax['G'],"returning voltage capacitor")
-    plot_fanout_seismic(data_output.get_returning_wavefronts_magnitudes("current capacitor"),ax['H'],"returning current capacitor")
+    plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes("voltage inductor"),ax['E'],"returning voltage inductor")
+    plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes("current inductor"),ax['F'],"returning current inductor")
+    plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes("voltage capacitor"),ax['G'],"returning voltage capacitor")
+    plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes("current capacitor"),ax['H'],"returning current capacitor")
         
     return fig, ax
     
