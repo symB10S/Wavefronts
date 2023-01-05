@@ -3,35 +3,7 @@ import math
 from collections import deque
 import numpy as np
 from dataclasses import dataclass
-from Wavefront_Misc import lcm_gcd_euclid, get_voltage_array, get_current_array
-
-#: The default values used in the simulation if not specified otherwise
-default_input_values : dict = dict ([
-    ('L_impedance','100'),('L_time' ,'1'),('L_length','1'),
-    ('C_impedance','1'),  ('C_time' ,'1'),('C_length','1'),
-    ('V_source','1'),('number_periods','1'),('Load_impedance','inf'),
-    ('Simulation_stop_time','0'),('show_about',True)
-])
-
-def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
-    """handles default values for key-word arguments, changes defaults to given value.
-
-    :param input_kwargs: kwargs given by user.
-    :type input_kwargs: dict
-    :param default_kwargs: default values that kwargs must be one of.
-    :type default_kwargs: dict
-    :raises Exception: ValueError if a kwarg is provided that is not one of the default values.
-    :return: returns a modfied version of the default_kwargs that includes input changes
-    :rtype: dict
-    """
-    #Set Kwargs
-    for key, item in input_kwargs.items():
-        if(default_kwargs.get(key) is None):
-            raise ValueError(f"No setting found for {key}, here are the possible options: \n{default_kwargs}")
-        else:
-            default_kwargs[key] = item
-            
-    return default_kwargs
+from Wavefront_Misc import lcm_gcd_euclid, get_voltage_array, get_current_array, default_input_values ,handle_default_kwargs
 
 class Data_Input_Storage :
     """The storage object for the input varibles of a interface simulation. Calculates all the associated variables required for the simulaitons. 
@@ -831,7 +803,6 @@ class Wavefront_Inductive( Wavefront_Kintetic ):
         else :
             return Wavefront_Inductive(self.Data_Input,self,True)
 
-
 @dataclass
 class Data_Output_Storage:
     """Stores data of various types of fanout diagrams after simulation. 
@@ -957,6 +928,56 @@ class Data_Output_Storage_Ordered(Data_Output_Storage):
     :type Indexes: List[Lists]
     """
     Indexes : np.ndarray
+
+    def get_sending_wavefronts_magnitudes(self,which_string):
+        """A method for extracting voltage or current from *sending* wavefronts.
+
+        :param which_string: possible options: ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+        :type which_string: str
+        :raises ValueError: errors if incorrect string is given. 
+        :return: Sending wavefront's Current or Voltage magnitudes 
+        :rtype: np.ndarray[Decimal]
+        """
+        allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+        if(which_string.lower() == allowed_strings[0] ):
+            return  get_voltage_array(self.Wavefronts_Sending_Inductor)
+        
+        elif(which_string.lower() == allowed_strings[1] ):
+            return  get_current_array(self.Wavefronts_Sending_Inductor)
+        
+        elif(which_string.lower() == allowed_strings[2] ):
+            return  get_voltage_array(self.Wavefronts_Sending_Capacitor)
+        
+        elif(which_string.lower() == allowed_strings[3] ):
+            return  get_current_array(self.Wavefronts_Sending_Capacitor)
+        
+        else:
+            raise ValueError("Incorrect plotting choice,\'"+which_string+"\' is not an option. Options are : "+ str(allowed_strings))
+        
+    def get_returning_wavefronts_magnitudes(self,which_string):
+        """A method for extracting voltage or current from *returning* wavefronts.
+
+        :param which_string: possible options: ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+        :type which_string: str
+        :raises ValueError: errors if incorrect string is given. 
+        :return: Returning wavefront's Current or Voltage magnitudes 
+        :rtype: np.ndarray[Decimal]
+        """
+        allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+        if(which_string.lower() == allowed_strings[0] ):
+            return  get_voltage_array(self.Wavefronts_Returning_Inductor)
+        
+        elif(which_string.lower() == allowed_strings[1] ):
+            return  get_current_array(self.Wavefronts_Returning_Inductor)
+        
+        elif(which_string.lower() == allowed_strings[2] ):
+            return  get_voltage_array(self.Wavefronts_Returning_Capacitor)
+        
+        elif(which_string.lower() == allowed_strings[3] ):
+            return  get_current_array(self.Wavefronts_Returning_Capacitor)
+        
+        else:
+            raise ValueError("Incorrect plotting choice,\'"+which_string+"\' is not an option. Options are : "+ str(allowed_strings))
 
 @dataclass
 class Data_Interface_Storage:

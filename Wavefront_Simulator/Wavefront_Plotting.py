@@ -1,5 +1,6 @@
-from Wavefront_Generation import Data_Input_Storage, Data_Output_Storage, Data_Output_Storage_Ordered, Data_Interface_Storage, get_spatial_voltage_current_at_time, handle_default_kwargs
+from Wavefront_Generation import get_spatial_voltage_current_at_time
 from Wavefront_Storage import *
+from Wavefront_Misc import get_array_absolute_maximum, convert_to_image_array
 from decimal import Decimal, ROUND_HALF_DOWN
 import numpy as np
 import copy
@@ -19,29 +20,89 @@ def clear_subplot(axs):
     for ax in axs:
         ax.cla()
 
-def plot_fanout_seismic(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False, padwidth = 15):
+def plot_fanout_seismic(input_array : np.ndarray , ax, **input_kwargs):
+    """the core function for plotting the fanout diagram of a 2D numpy array.
+    Points are coloured using the 'seismic' colour map with red being positive and blue negative.
+
+    :param input_array: The array to be plotted, can also accept lists of numerical data
+    :type input_array: np.ndarray or List
+    :param ax: a matplotlib Axe object to plot using 'imshow'
+    :type ax: matplotlib.Axe
     
-    max_boundary= 0
-    if (contrast):
-        Contrast = copy.copy(arr.astype(float))
+    :**input_kwargs**:
+        - **title** (*str*) - The title of the fanout (default = "Magnitude Fanout")
+        - **show_colour_bar** (*bool*) - if colour bar must be shown (default = True)
+        - **contrast** (*bool*) - if the orign node must be ignored for the colour mapping maximum value calculation (default = False)
+        - **padding** (*int*) - the amount of padding around the array, thinner arrays are easier to navigate with padding (default = 10)
+        - **units** (*str*) - the units of the fanout diagram (default = 'A')
+        - **origin_pos** (*str*) - either 'lower' or 'upper', sets the postion of the origin (default = 'lower')
+        - **transpose** (*bool*) - makes x-axis the L-axis if true (default = True)
+        - **show_ticks** (*bool*) - if axis ticks are shown (default = True)
+        - **custom_colour_bar_limits** (*tuple or bool*) - pass a (max_value, min_value) tuple to customize colouring extent of the fanout(default = False)
+        
+    .. warning::
+        a **wavefront storage array** must be in their magntidue forms, these arrays can be fetched using :py:meth:`Wavefront_Storage.Data_Output_Storage.get_sending_wavefronts_magnitudes` 
+        or :py:meth:`Wavefront_Storage.Data_Output_Storage.get_returning_wavefronts_magnitudes`. 
+        Alternatively magnitdues from a **wavefront array** can be manually extracted by passing as ann input parameter to 
+        :py:func:`Wavefront_Misc.get_voltage_array` or :py:func:`Wavefront_Misc.get_current_array`
+        
+    :return: plots an image on the provided axis
+    """
+    default_kwargs = {
+        'title': "Magnitude Fanout",
+        'show_colour_bar': True,
+        'contrast' : False,
+        'padding' : 10,
+        'units' : 'A',
+        'origin_pos' : 'lower',
+        'transpose' : True,
+        'show_ticks' : True,
+        'custom_colour_bar_limits': False
+    }
+    
+    default_kwargs = handle_default_kwargs(input_kwargs,default_kwargs)
+    # convert Lists to image array if necessary 
+    input_array = convert_to_image_array(input_array)
+    
+    if(isinstance(default_kwargs['custom_colour_bar_limits'] ,tuple)):
+        max_boundary = default_kwargs['custom_colour_bar_limits'][0]
+        min_boundary = default_kwargs['custom_colour_bar_limits'][1]
+    elif (default_kwargs['contrast']): 
+        Contrast = copy.copy(input_array.astype(float))
         max_index = np.unravel_index(np.argmax(Contrast, axis=None), Contrast.shape)
         Contrast[max_index] = 0
-        
-        max_boundary = abs(np.max(Contrast))  
-        min_boundary = abs(np.min(Contrast))  
-        
-        max_boundary = max(max_boundary, min_boundary)
+        max_boundary = get_array_absolute_maximum(Contrast)
+        min_boundary = -max_boundary
     else:
-        max_boundary = abs(np.max(arr.astype(float)))
-        min_boundary = abs(np.min(arr.astype(float)))
-        
-        max_boundary = max(max_boundary, min_boundary)
+        max_boundary = get_array_absolute_maximum(input_array.astype(float))
+        min_boundary = -max_boundary
     
-    ax.set_title(title)
-    c = ax.imshow(np.pad(arr.astype(float),(padwidth,padwidth)),cmap= mpl.cm.seismic,vmax =max_boundary, vmin = - max_boundary,origin='lower')
+    if default_kwargs['transpose'] :
+        array_plot = np.pad(input_array.astype(float),(default_kwargs['padding'],default_kwargs['padding'])).transpose()
+        ax.set_xlabel('L - axis ')
+        ax.set_ylabel('C - axis ')
+    else:
+        array_plot = np.pad(input_array.astype(float),(default_kwargs['padding'],default_kwargs['padding']))
+        ax.set_ylabel('L - axis ')
+        ax.set_xlabel('C - axis ')
     
-    if(show_colour_bar):
+    def offset_formatter(x, pos):
+        return int(x - default_kwargs['padding'])
+
+    if(default_kwargs['show_ticks']):
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(offset_formatter))
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(offset_formatter))
+    else:
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+      
+    ax.set_title(default_kwargs['title'])
+    
+    c = ax.imshow(array_plot,cmap= mpl.cm.seismic,vmax =max_boundary, vmin = min_boundary,origin=default_kwargs['origin_pos'])
+    
+    if(default_kwargs['show_colour_bar']):
         cb = ax.get_figure().colorbar(c,ax=ax)
+        cb.ax.yaxis.set_major_formatter(EngFormatter(default_kwargs['units']))
         
 def plot_fanout_colour(arr : np.ndarray ,ax ,title = "Fanout Plot", show_colour_bar = True ,contrast = False):
     

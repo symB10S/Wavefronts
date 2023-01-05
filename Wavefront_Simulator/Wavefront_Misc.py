@@ -1,6 +1,34 @@
 import numpy as np
 from decimal import Decimal
-    
+
+#: The default values used in the simulation if not specified otherwise
+default_input_values : dict = dict ([
+    ('L_impedance','100'),('L_time' ,'1'),('L_length','1'),
+    ('C_impedance','1'),  ('C_time' ,'1'),('C_length','1'),
+    ('V_source','1'),('number_periods','1'),('Load_impedance','inf'),
+    ('Simulation_stop_time','0'),('show_about',True)
+])
+
+def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
+    """handles default values for key-word arguments, changes defaults to given value.
+
+    :param input_kwargs: kwargs given by user.
+    :type input_kwargs: dict
+    :param default_kwargs: default values that kwargs must be one of.
+    :type default_kwargs: dict
+    :raises Exception: ValueError if a kwarg is provided that is not one of the default values.
+    :return: returns a modfied version of the default_kwargs that includes input changes
+    :rtype: dict
+    """
+    #Set Kwargs
+    for key, item in input_kwargs.items():
+        if(default_kwargs.get(key) is None):
+            raise ValueError(f"No setting found for {key}, here are the possible options: \n{default_kwargs}")
+        else:
+            default_kwargs[key] = item
+            
+    return default_kwargs
+
 def split_and_translate_to_L_axis(input_array : np.ndarray ,C_value : int):
     """The first step in the recursive merging process.
     Seperates the input array into two arrays along the line C = C_value, this line is parallel to the L-axis.
@@ -304,17 +332,24 @@ def get_current_from_wavefront(wavefront):
 #: The vectorized function that extracts the currents from an np.ndarray[Wavefronts] array.
 get_current_array = np.vectorize(get_current_from_wavefront)
 
-def get_image_array(array):
-    """Turns an output-ordered 1-dimesional array into a format that can be displayed by matplotlib "imshow".
+def convert_to_image_array(array):
+    """Takes an input array, and if it is a 1-dimensional list, it will convert it into a suitable format
+    for matplotlib "imshow" used by fanout plotters.
 
-    :param array: a single dimension np.ndarray or List 
+    :param array: np.ndarray or List to be processed if neccessary
     :type array: np.ndarray or List
     :return: an output array that can be shown using "imshow"
     :rtype: np.ndarray 
     """
-    image_array = np.full((len(array),1),Decimal('0'))
-    
-    for i,val in enumerate(array):
-        image_array[i][0] = val
+    # if the array needs to be processed
+    if(len(np.shape(array)) ==1):
+        image_array = np.full((len(array),1),Decimal('0'))
         
-    return image_array
+        for i,val in enumerate(array):
+            image_array[i][0] = val
+            
+        return image_array
+    
+    return array
+        
+        
