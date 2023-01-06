@@ -1,20 +1,21 @@
 from Wavefront_Generation import Full_Cycle
-from Wavefront_Plotting import plot_time_interconnect
+from Wavefront_Plotting import plot_time_wavefronts
 import matplotlib.pyplot as plt
 
+# Example, comparing the sending and returning current wavefronts in the capacitor:
+# =================================================================================
+
 # simulate interface
-interface = Full_Cycle(L_time='0.34' , C_time='0.12', L_impedance = '700', C_impedance = '7')
-
-# Make axes 
-fig,ax = plt.subplots(2,1)
-
-# make a handle for ordered data (very optional)
+interface = Full_Cycle(L_time='3' , C_time='7', L_impedance = '700', C_impedance = '7')
 data = interface.data_output_ordered
 
-# plot accumulated data on ax[0]
-plot_time_interconnect(data,ax[0],'current capacitor',True)
+# Make axes 
+fig,ax = plt.subplots()
 
-# plot change data on ax[1]
-plot_time_interconnect(data,ax[1],'current capacitor',False)
+# plot sending wavefronts (not accumulated)
+plot_time_wavefronts(data,ax,'current capacitor',True,False)
+
+# plot returning wavefronts (not accumulated)
+plot_time_wavefronts(data,ax,'current capacitor',False,False)
 
 plt.show()

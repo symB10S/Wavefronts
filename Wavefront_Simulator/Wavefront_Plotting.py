@@ -568,7 +568,7 @@ def make_fanout_wavefronts_all(data_output: Data_Output_Storage,is_Inductor: boo
     if (make_kwargs['ax'] == False):
         return fig, ax
 
-def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool ): 
+def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = True ): 
     """Plots the time waveform of one of the interconncet metrics. 
     It must be noted that interconnect values stored in the :Data_Output_Storage_Ordered: object signify the 'change' in interface values due to wavefronts.
     To see the full time wavefrom, the changes must be accumulated. This function shows both change and accumulated quantities. 
@@ -579,7 +579,7 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
     :type ax: Matplotlib Axes object
     :param which_string: The interconnect value to be plotted, options are "voltage inductor", "current inductor", "voltage capacitor" and "current capacitor"
     :type which_string: str
-    :param is_integrated: If the wavefrom must represent the 'change' or 'accumulation of changes' of the data selected to be plotted.
+    :param is_integrated: If the wavefrom must represent the 'change' or 'accumulation of changes' of the data selected to be plotted, default is True
     :type is_integrated: bool
     :raises ValueError: if an incorrect which_string is provided.
     
@@ -654,7 +654,101 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
             ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Capacitor,where='post')
         else:
             raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
+
+
+def plot_time_wavefronts(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_sending :bool,is_integrated: bool = True ): 
+    """Plots the time waveform of one of the wavefront metrics. 
+    It must be noted that interconnect values stored in the :Data_Output_Storage_Ordered: object signify the 'change' in interface values due to wavefronts.
+    To see the full time wavefrom, the changes must be accumulated. This function shows both change and accumulated quantities. 
+
+    :param data_output_ordered: The data object containing 1D ordered simulation data
+    :type data_output_ordered: Data_Output_Storage_Ordered
+    :param ax: The axis on which the interconncet wavefrom will be plotted.
+    :type ax: Matplotlib Axes object
+    :param which_string: The wavefront value to be plotted, options are "voltage inductor", "current inductor", "voltage capacitor" and "current capacitor"
+    :type which_string: str
+    :param is_sending: If the the wavefront data shown must be for sending or returning wavefronts.
+    :type is_sending: bool
+    :param is_integrated: If the wavefrom must represent the 'change' or 'accumulation of changes' of the data selected to be plotted, default is True
+    :type is_integrated: bool
+    :raises ValueError: if an incorrect which_string is provided.
+    
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_time_wavefronts
+        import matplotlib.pyplot as plt
+
+        # Example, comparing the sending and returning current wavefronts in the capacitor:
+        # =================================================================================
+
+        # simulate interface
+        interface = Full_Cycle(L_time='3' , C_time='7', L_impedance = '700', C_impedance = '7')
+        data = interface.data_output_ordered
+
+        # Make axes 
+        fig,ax = plt.subplots()
+
+        # plot sending wavefronts (not accumulated)
+        plot_time_wavefronts(data,ax,'current capacitor',True,False)
+
+        # plot returning wavefronts (not accumulated)
+        plot_time_wavefronts(data,ax,'current capacitor',False,False)
+
+plt.show()
+
+    .. warning::
+    
+        This function accepts only :py:class:`Wavefront_Storage.Data_Output_Storage_Ordered` as an input. The data is required to be 1D and ordered.
+    
+    """
+    allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+    
+    if (is_sending):
+        title_prefix = "Sending "
+        get_func = data_output_ordered.get_sending_wavefronts_magnitudes
+    else:
+        title_prefix = "Returning "
+        get_func = data_output_ordered.get_returning_wavefronts_magnitudes
+    
+    
+    ax.xaxis.set_major_formatter(EngFormatter('s'))
+    
+    if(is_integrated):
+        if(which_string.lower() == allowed_strings[0] ):
+            ax.set_title(title_prefix + "voltage wavefronts\n accumulated in Inductor")
+            ax.yaxis.set_major_formatter(EngFormatter('V'))
+        elif(which_string.lower() == allowed_strings[1] ):
+            ax.set_title(title_prefix + "current wavefronts\n accumulated in Inductor")
+            ax.yaxis.set_major_formatter(EngFormatter('A'))
+        elif(which_string.lower() == allowed_strings[2] ):
+            ax.set_title(title_prefix + "voltage wavefronts\n accumulated in Capacitor")
+            ax.yaxis.set_major_formatter(EngFormatter('V'))
+        elif(which_string.lower() == allowed_strings[3] ):
+            ax.set_title(title_prefix + "current wavefronts\n accumulated in Capacitor")
+            ax.yaxis.set_major_formatter(EngFormatter('A'))
+        else:
+            raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
         
+        ax.step(data_output_ordered.Time,np.cumsum(get_func(which_string)),where='post')
+    else:
+        if(which_string.lower() == allowed_strings[0] ):
+            ax.set_title(title_prefix + "voltage wavefronts\n in Inductor")
+            ax.yaxis.set_major_formatter(EngFormatter('V'))
+        elif(which_string.lower() == allowed_strings[1] ):
+            ax.set_title(title_prefix + "current wavefronts\n in Inductor")
+            ax.yaxis.set_major_formatter(EngFormatter('A'))
+        elif(which_string.lower() == allowed_strings[2] ):
+            ax.set_title(title_prefix + "voltage wavefronts\n in Capacitor")
+            ax.yaxis.set_major_formatter(EngFormatter('V'))
+        elif(which_string.lower() == allowed_strings[3] ):
+            ax.set_title(title_prefix + "current wavefronts\n in Capacitor")
+            ax.yaxis.set_major_formatter(EngFormatter('A'))
+        else:
+            raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
+        
+        ax.step(data_output_ordered.Time,get_func(which_string),where='post')
+       
 def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_output_ordered : Data_Output_Storage_Ordered, which_string : str):
     
     padwidth = 15
