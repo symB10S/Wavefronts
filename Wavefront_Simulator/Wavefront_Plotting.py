@@ -833,7 +833,102 @@ def make_time_interconnect_all(data_output_ordered: Data_Output_Storage_Ordered,
     
     if (make_kwargs['ax'] == False):
         return fig,ax
+
+def make_time_wavefronts_all(data_output_ordered : Data_Output_Storage_Ordered, is_Inductor :bool,is_integrated: bool = True, **kwargs ):
+    """Plots the wavefront time beahviour of a particualr transmission line. 
+    Both sending and returning, current and voltage wavefront time behaviour is shown
+
+    :param data_output_ordered:  data to be plotted. Can be interface or ordered data.
+    :type data_output_ordered: Data_Output_Storage_Ordered or Data_Interface_Storage
+    :param is_Inductor: if the inductor or capacitor wavefronts must be plot.
+    :type is_Inductor: bool
+    :param is_integrated: if the individual wavefront value or an accumulation of these values msut be shown, defaults to True
+    :type is_integrated: bool, optional
+    :return: the matplotlib Figure and Axes objects created in this function (if created)
+    :rtype: tuple( fig , ax )
+    :**kwargs for figure creation**:
+        - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form.The labels for these axes must inculde: 
+            - 'VS' axis for sending voltage
+            - 'VR' axis for returning voltage
+            - 'IS' axis for sending current
+            - 'IR' axis for returning current
+        - **fig_size** (*tuple of ints*) - The size of the figure. Default is (10, 8).
         
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import make_time_wavefronts_all
+        import matplotlib.pyplot as plt
+
+        # Example: the accumulated wavefront behaviour over time between the capacitor and inductor
+        # ==========================================================================================
+
+        # simulate interface
+        interface = Full_Cycle(L_time='7' , C_time='3.4', L_impedance = '654', C_impedance = '2.5')
+
+        # plot accumulation wavefront activity for inductor
+        fig,ax = make_time_wavefronts_all(interface,True,True)
+
+        # plot the accumulation wavefront activity for capacitor
+        # here we just pass the ax object as a kwarg so that it is plotted on the same axes
+        make_time_wavefronts_all(interface,False,True,ax=ax)
+
+        # rename the auto generated suptitle
+        fig.suptitle('Comparison between accumulated wavefronts over time in each transmission line')
+
+        # use the key word to set titles of each axis independantly 
+        ax['VS'].set_title('Sending Voltage Wavefronts')
+        ax['VR'].set_title('Returning Voltage Wavefronts')
+        ax['IS'].set_title('Sending Current Wavefronts')
+        ax['IR'].set_title('Returning Current Wavefronts')
+
+        # plot a legend for all axes
+        for ax_i in ax.values(): 
+            ax_i.legend(['Inductor', 'Capacitor'])
+
+        plt.show()
+    """
+    
+    
+    data_output_ordered = handle_interface_to_ordered(data_output_ordered)
+
+    default_make_kwargs : dict = {'ax':False,
+                                  'fig_size':(12,10)}
+    
+    make_kwargs = handle_default_kwargs(kwargs, default_make_kwargs)
+    
+    if (make_kwargs['ax'] == False):
+        fig, ax = plt.subplot_mosaic([['VS','IS' ],
+                                      ['VR','IR']])
+    else:
+        ax = make_kwargs['ax']
+        fig = ax['VS'].get_figure()
+    
+    fig.set_size_inches(make_kwargs['fig_size'])
+    
+    if (is_Inductor):
+        title_prefix = 'Inductor'
+        plot_time_wavefronts(data_output_ordered,ax['VS'],"voltage inductor",True, is_integrated)
+        plot_time_wavefronts(data_output_ordered,ax['IS'],"current inductor",True, is_integrated)
+        plot_time_wavefronts(data_output_ordered,ax['VR'],"voltage inductor",False, is_integrated)
+        plot_time_wavefronts(data_output_ordered,ax['IR'],"current inductor",False, is_integrated)
+    else:
+        title_prefix = 'Capacitor'
+        plot_time_wavefronts(data_output_ordered,ax['VS'],"voltage capacitor",True, is_integrated)
+        plot_time_wavefronts(data_output_ordered,ax['IS'],"current capacitor",True, is_integrated)
+        plot_time_wavefronts(data_output_ordered,ax['VR'],"voltage capacitor",False, is_integrated)
+        plot_time_wavefronts(data_output_ordered,ax['IR'],"current capacitor",False, is_integrated)
+    
+    fig.suptitle(title_prefix + " Wavefronts Time Behaviour")
+    
+    if (make_kwargs['ax'] == False):
+        return (fig, ax)
+    
+    
+    
+    
+    
+
 def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_output_ordered : Data_Output_Storage_Ordered, which_string : str):
     
     padwidth = 15
@@ -857,6 +952,7 @@ def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_outp
             
     return fig, ax 
 
+    
 def plot_time_interconnect_3_both(data_output_merged : Data_Output_Storage
                                   , data_output_ordered : Data_Output_Storage_Ordered
                                   , data_output_merged_2 : Data_Output_Storage
