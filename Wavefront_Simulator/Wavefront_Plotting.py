@@ -286,6 +286,7 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
     
     input_array_shape = input_array.shape
     
+    # handle out of bounds
     if (L_intercept < 0):
         L_intercept = 0
     elif(L_intercept>input_array_shape[0]-1):
@@ -298,13 +299,14 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
         
     kwargs = handle_default_kwargs(kwargs,default_fanout_kwargs)
     fig, ax = plt.subplot_mosaic([['C','F'],
-                                  ['.','L']])
+                                  ['D','L']])
     
     
     fig.suptitle(f"Crossection of Fanout at index L = {L_intercept}, C = {C_intercept}")
     
     L_x = input_array[:,C_intercept]
     C_x = input_array[L_intercept,:]
+    D_x = np.diag(input_array)
     
     L_y = np.arange(0,len(L_x))
     C_y = np.arange(0,len(C_x))
@@ -317,9 +319,14 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
     ax['C'].set_ylabel('L-axis')
     ax['C'].plot(C_x,C_y)
     
+    ax['D'].set_xlabel('Diagonal-axis')
+    ax['D'].yaxis.set_major_formatter(EngFormatter(kwargs['units']))
+    ax['D'].plot(D_x)
+    
     plot_fanout_magnitude(input_array,ax['F'],**kwargs)
-    ax['F'].plot([0,input_array_shape[0]],[C_intercept,C_intercept],'c-')
-    ax['F'].plot([L_intercept,L_intercept],[0,input_array_shape[1]],'m-')
+    ax['F'].plot([0,input_array_shape[0]],[C_intercept,C_intercept],'k-')
+    ax['F'].plot([L_intercept,L_intercept],[0,input_array_shape[1]],'k-')
+    ax['F'].plot([0,input_array_shape[0]],[0,input_array_shape[1]],'k-')
 
 def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
     
