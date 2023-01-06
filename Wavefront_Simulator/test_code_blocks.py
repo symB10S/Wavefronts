@@ -1,19 +1,20 @@
 from Wavefront_Generation import Full_Cycle
-from Wavefront_Plotting import make_fanout_crossection
+from Wavefront_Plotting import make_fanout_interconnect_all
 import matplotlib.pyplot as plt
 
 # simulate interface
-interface = Full_Cycle(L_time='3' , C_time='3' , L_impedance='700')
+interface = Full_Cycle(L_time='12' , C_time='8')
 
-# make axes internally, intercept at L=25, C= 10
-data = interface.data_output_ordered.Voltage_Interconnect_Capacitor
-make_fanout_crossection(data, 25, 10, units='V')
+# make figure internally, plot commutative data
+fig1,ax1 = make_fanout_interconnect_all(interface.data_output_commutative)
+fig1.suptitle(f"commutative Fanouts") # customize title
 
-# make axes externally, intercept at L=25, C= 10
+# make figure externally, put currents left and voltages right
+fig2, ax2 = plt.subplot_mosaic([['IL','VL'],
+                                ['IC','VC']])
 
-fig, ax = plt.subplot_mosaic([['C','F'],
-                              ['D','L']])
-
-make_fanout_crossection(data, 25, 10, units='V', ax=ax)
+# pass ax2 to fucniton, also, show multiplicative data this time
+make_fanout_interconnect_all(interface.data_output_multiplicative, ax=ax2)
+fig2.suptitle(f"multiplicative Fanouts") # customize title
 
 plt.show()

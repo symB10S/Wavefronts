@@ -45,7 +45,7 @@ def split_outer_inner_default_kwargs(input_kwargs: dict,outer_defaults:dict, inn
     :type outer_defaults: dict
     :param inner_defaults: default kwargs for the inner function
     :type inner_defaults: dict
-    :param handle_kwargs: if :py:func:`handle_default_kwargs` must be called, defaults to True
+    :param handle_kwargs: if :py:func:`handle_default_kwargs` must be called, decides if default values must be populated for return dicts, defaults to True.
     :type handle_kwargs: bool, optional
     :param copy_default: if provided defaults must be coppeid or passed by reference, defaults to True
     :type copy_default: bool, optional

@@ -2,8 +2,10 @@ from Wavefront_Generation import get_spatial_voltage_current_at_time
 from Wavefront_Storage import *
 from Wavefront_Misc import get_array_absolute_maximum, convert_to_image_array, split_outer_inner_default_kwargs
 from decimal import Decimal, ROUND_HALF_DOWN
-import numpy as np
 import copy
+from warnings import warn
+
+import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, EngFormatter)
@@ -22,14 +24,14 @@ def clear_subplot(axs):
 # Fanout Diagrams
 
 default_fanout_kwargs = {
-    'title': "Time Fanout",
+    'title': "Magnitude Fanout",
     'show_colour_bar': True,
     'contrast' : False,
     'padding' : 0,
     'units' : 'A',
     'origin' : 'lower',
     'transpose' : True,
-    'show_ticks' : True,
+    'show_ticks' : False,
     'custom_colour_bar_limits': False
 }
 
@@ -50,7 +52,7 @@ def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
         - **units** (*str*) - the units of the colour bar (default = 'A')
         - **origin** (*str*) - either 'lower' or 'upper', sets the postion of the origin (default = 'lower')
         - **transpose** (*bool*) - makes x-axis the L-axis if true (default = True)
-        - **show_ticks** (*bool*) - if axis ticks are shown (default = True)
+        - **show_ticks** (*bool*) - if axis ticks are shown (default = False)
         - **custom_colour_bar_limits** (*tuple or bool*) - pass a (max_value, min_value) tuple to customize colouring extent of the fanout(default = False)
         
     .. warning::
@@ -61,19 +63,8 @@ def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
         
     :return: plots a magnitude fanout on the provided axis
     """
-    default_kwargs = {
-        'title': "Magnitude Fanout",
-        'show_colour_bar': True,
-        'contrast' : False,
-        'padding' : 0,
-        'units' : 'A',
-        'origin' : 'lower',
-        'transpose' : True,
-        'show_ticks' : True,
-        'custom_colour_bar_limits': False
-    }
     
-    default_kwargs = handle_default_kwargs(input_kwargs,default_kwargs)
+    default_kwargs = handle_default_kwargs(input_kwargs,default_fanout_kwargs)
     # convert Lists to image array if necessary 
     input_array = convert_to_image_array(input_array)
     
@@ -127,16 +118,8 @@ def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
     :type ax: matplotlib.Axe
     
     :**input_kwargs**:
-        - **title** (*str*) - The title of the fanout (default = "Time Fanout")
-        - **show_colour_bar** (*bool*) - if colour bar must be shown (default = True)
-        - **contrast** (*bool*) - if the orign node must be ignored for the colour mapping maximum value calculation (default = False)
-        - **padding** (*int*) - the amount of padding around the array, thinner arrays are easier to navigate with padding (default = 0)
-        - **units** (*str*) - the units of the colour bar (default = 's')
-        - **origin** (*str*) - either 'lower' or 'upper', sets the postion of the origin (default = 'lower')
-        - **transpose** (*bool*) - makes x-axis the L-axis if true (default = True)
-        - **show_ticks** (*bool*) - if axis ticks are shown (default = True)
+        - same input kwargs as :py:func:`plot_fanout_magnitude`
         - **mask_zero** (*bool*) - if zeros values must be masked (default = True)
-        - **custom_colour_bar_limits** (*tuple or bool*) - pass a (max_value, min_value) tuple to customize colouring extent of the fanout(default = False)
         
     .. warning::
         a **wavefront storage array** must be in their magnitude forms, these arrays can be fetched using :py:meth:`Wavefront_Storage.Data_Output_Storage.get_sending_wavefronts_magnitudes` 
@@ -146,18 +129,9 @@ def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
         
     :return: plots a rainbow coloured image on the provided axis
     """
-    default_kwargs = {
-        'title': "Time Fanout",
-        'show_colour_bar': True,
-        'contrast' : False,
-        'padding' : 0,
-        'units' : 's',
-        'origin' : 'lower',
-        'transpose' : True,
-        'show_ticks' : True,
-        'mask_zero' : True,
-        'custom_colour_bar_limits': False
-    }
+    default_kwargs = default_fanout_kwargs.copy()
+    default_kwargs['mask_zero']  = True
+    
     default_kwargs = handle_default_kwargs(input_kwargs,default_kwargs)
     # convert Lists to image array if necessary 
     input_array = convert_to_image_array(input_array)
@@ -200,7 +174,7 @@ def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
         cb = ax.get_figure().colorbar(c,ax=ax)
         cb.ax.yaxis.set_major_formatter(EngFormatter(default_kwargs['units']))
             
-def plot_fanout_interconnect(data_output: Data_Output_Storage,ax, which_string :str, **kwargs):
+def plot_fanout_interconnect(data_output: Data_Output_Storage,ax, which_string :str, contrast_voltage = True,**kwargs):
     """A wrapper function for :py:func:`plot_fanout_magnitude` for plotting interconnect fanouts.
     Takes in a Data_Output_Storage object and a string to plot and auto format the fanout.
     It will pass provided **kwargs to the underlying plot_fanout_magnitude fucntion.
@@ -211,24 +185,32 @@ def plot_fanout_interconnect(data_output: Data_Output_Storage,ax, which_string :
     :type ax: matplotlib Axes object
     :param which_string: determine which interconnect value to plot. Options are "voltage inductor", "current inductor", "voltage capacitor", "current capacitor"
     :type which_string: str
+    :param contrast_voltage: determine if voltage arrays must exclude the orign point for better contrast, default is True
+    :type contrast_voltage: bool
     :raises ValueError: if incorrect 'which_string' is not provided.
+    :raises warning: if 'title=', 'units=' or 'contrast=' keyword are included as they are auto assigned by this function
     
     .. warning::
-        When providing the ****kwargs**, you cannot specify 'title=' or 'units=' as these are auto assinged. Providing these values will result in an error. 
+        When providing the ****kwargs**, you cannot specify 'title=', 'units=' or ''contrast='  as these are auto assinged. Providing these values will result in an error. 
     """
     
     if ('title' in kwargs):
-        raise ValueError("you cannot specifiy the title of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+        warn("you cannot specifiy the title of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+        del kwargs['title']
     elif('units' in kwargs):
-        raise ValueError("you cannot specifiy the units of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+        warn("you cannot specifiy the units of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+        del kwargs['units']
+    elif('contrast' in kwargs):
+        warn("you cannot specifiy the contrast of these fanouts as they are automatically assigned. Use the third input parameter of this function to control contrast")
+        del kwargs['contrast']
     
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
     if(which_string.lower() == allowed_strings[0] ):
-        plot_fanout_magnitude( data_output.Voltage_Interconnect_Inductor,ax,title = "Inductor Voltage at Interconnect",units='V',**kwargs)
+        plot_fanout_magnitude( data_output.Voltage_Interconnect_Inductor,ax,title = "Inductor Voltage at Interconnect",units='V',contrast=contrast_voltage,**kwargs)
     elif(which_string.lower() == allowed_strings[1] ):
         plot_fanout_magnitude(data_output.Current_Interconnect_Inductor,ax,title = "Inductor Current at Interconnect",**kwargs)
     elif(which_string.lower() == allowed_strings[2] ):
-        plot_fanout_magnitude(data_output.Voltage_Interconnect_Capacitor,ax,title = "Capacitor Voltage at Interconnect",units='V',**kwargs)
+        plot_fanout_magnitude(data_output.Voltage_Interconnect_Capacitor,ax,title = "Capacitor Voltage at Interconnect",units='V',contrast=contrast_voltage,**kwargs)
     elif(which_string.lower() == allowed_strings[3] ):
         plot_fanout_magnitude(data_output.Current_Interconnect_Capacitor,ax,title = "Capacitor Current at Interconnect",**kwargs)
     else:
@@ -253,9 +235,11 @@ def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :st
         When providing the ****kwargs**, you cannot specify 'title=' or 'units=' as these are auto assinged. Providing these values will result in an error. 
     """
     if ('title' in kwargs):
-        raise ValueError("you cannot specifiy the title of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+        warn("you cannot specifiy the title of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+        del kwargs['title']
     elif('units' in kwargs):
-        raise ValueError("you cannot specifiy the units of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+        warn("you cannot specifiy the units of these fanouts as they are automatically assigned. Use plot_fanout_magnitude() instead")
+        del kwargs['units']
     
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
     
@@ -291,6 +275,8 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
     :type L_intercept: int
     :param C_intercept: The value on the C-axis to intercept
     :type C_intercept: int
+    :return: the matplotlib Figure and Axes objects created in this fucntion
+    :rtype: tuple( fig , ax )
     :**kwargs for crossection**:
         - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form.The labels for these axes must inculde: 
             - 'C' for C-plot/ L interception
@@ -321,15 +307,13 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
                                       
         make_fanout_crossection(data, 25, 10, units='V', ax=ax)
         
+        plt.show()
+        
         
     .. warning::
         if ax keyword is not provided, fucntion will make new subplot objects each time it is called.
         These plots will not be closed by default, so if multiple calls are needed it is suggested you provide
         the appropriate subplot_mosaic Axes object.
-        
-    .. warning::
-
-        
     """
     
     default_crossection_kwargs : dict = {'ax':False,
@@ -337,7 +321,11 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
                                          'Transpose_C_Plot':True,
                                          'Transpose_L_Plot':False}
     
-    crossection_kwargs, fanout_kwargs = split_outer_inner_default_kwargs(kwargs,default_crossection_kwargs,default_fanout_kwargs)
+    internal_fanout_kwargs = default_fanout_kwargs.copy()
+    internal_fanout_kwargs['show_ticks'] = True
+    
+    crossection_kwargs, fanout_kwargs = split_outer_inner_default_kwargs(kwargs,default_crossection_kwargs,internal_fanout_kwargs)
+    input_array = convert_to_image_array(input_array)# converts list to 2D numpy object
     
     if (crossection_kwargs['ax'] == False):
         # create fig and ax
@@ -348,8 +336,8 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
         fig = ax['C'].get_figure()
 
     fig.set_size_inches(crossection_kwargs['fig_size'])
+    fig.suptitle(f"Crossection of Fanout at index L = {L_intercept}, C = {C_intercept}")
     
-    input_array = convert_to_image_array(input_array)
     # handle out of bounds
     input_array_shape = input_array.shape
     if (L_intercept < 0):
@@ -362,9 +350,6 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
     elif(C_intercept>input_array_shape[1]-1):
         C_intercept = input_array_shape[1]-1
         
-    fig.suptitle(f"Crossection of Fanout at index L = {L_intercept}, C = {C_intercept}")
-    
-    
     L_y = input_array[:,C_intercept]
     C_y = input_array[L_intercept,:]
     D_y = np.diag(input_array)
@@ -407,17 +392,87 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
     ax['F'].plot([0,input_array_shape[0]],[C_intercept,C_intercept],'k-')
     ax['F'].plot([L_intercept,L_intercept],[0,input_array_shape[1]],'k-')
     ax['F'].plot([0,input_array_shape[0]],[0,input_array_shape[1]],'k-')
+    
+    # if figure created internally then return created handles 
+    if (crossection_kwargs['ax'] == False):
+        return fig,ax
 
-def make_fanout_interconnect_all(data_output_merged: Data_Output_Storage):
+def make_fanout_interconnect_all(data_output: Data_Output_Storage,contrast_voltage = True,**kwargs):
+    """plots all the interconnect magnitude fanouts for a particular Data_Output_Storage object. 
+    This is a 'make' type function which means that by default the function will internally create the plotting axes unless specified otherwise. 
+    The kwargs supplied are passed down to :py:func:`plot_fanout_magnitude`. 
+    Additonal key-value customiztion is included for the crossection plot below.
+
+    :param data_output: The data object to be plotted
+    :type data_output: Data_Output_Storage
+    :param contrast_voltage: if the voltage arrays must ignore the intial excitation point for better contrast, defaults to True
+    :type contrast_voltage: bool, optional
+    :return: the matplotlib Figure and Axes objects created in this fucntion
+    :rtype: tuple( fig , ax )
+    :**kwargs for figure creation**:
+        - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form.The labels for these axes must inculde: 
+            - 'VL' axis for inductor voltage
+            - 'VC' axis for capcitor voltage
+            - 'IL' axis for inductor current
+            - 'IC' axis for capacitor current
+        - **fig_size** (*tuple of ints*) - The size of the figure. Default is (10, 8).
+
+    .. code-block::
     
-    fig, ax = plt.subplot_mosaic([['A','B'],['C','D']])
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import make_fanout_interconnect_all
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface = Full_Cycle(L_time='12' , C_time='8')
+
+        # make figure internally, plot commutative data
+        fig1,ax1 = make_fanout_interconnect_all(interface.data_output_commutative)
+        fig1.suptitle(f"commutative Fanouts") # customize title
+
+        # make figure externally, put currents left and voltages right
+        fig2, ax2 = plt.subplot_mosaic([['IL','VL'],
+                                        ['IC','VC']])
+
+        # pass ax2 to fucniton, also, show multiplicative data this time
+        make_fanout_interconnect_all(interface.data_output_multiplicative, ax=ax2)
+        fig2.suptitle(f"multiplicative Fanouts") # customize title
+
+        plt.show()
+        
+    .. warning::
+        if ax keyword is not provided, fucntion will make new subplot objects each time it is called.
+        These plots will not be closed by default, so if multiple calls are needed it is suggested you provide
+        the appropriate subplot_mosaic Axes object.
+    """
+    default_make_kwargs : dict = {'ax':False,
+                                  'fig_size':(10,8)}
     
-    plot_fanout_magnitude(data_output_merged.Voltage_Interconnect_Inductor,ax['A'],"Inductor Voltage",True,True)
-    plot_fanout_magnitude(data_output_merged.Current_Interconnect_Inductor,ax['C'],"Inductor Current")
-    plot_fanout_magnitude(data_output_merged.Voltage_Interconnect_Inductor,ax['B'],"Capacitor Voltage",True,True)
-    plot_fanout_magnitude(data_output_merged.Current_Interconnect_Inductor,ax['D'],"Capacitor Current")
+    make_kwargs, fanout_kwargs = split_outer_inner_default_kwargs(kwargs,default_make_kwargs,default_fanout_kwargs)
     
-    return fig,ax
+    del fanout_kwargs['title']
+    del fanout_kwargs['units']
+    del fanout_kwargs['contrast']
+    
+    if (make_kwargs['ax'] == False):
+        fig, ax = plt.subplot_mosaic([['VL','VC'],
+                                    ['IL','IC']])
+    else:
+        ax = make_kwargs['ax']
+        fig = ax['VL'].get_figure()
+        
+    
+    fig.set_size_inches(make_kwargs['fig_size'])
+    fig.suptitle(f"Interconnect Fanouts")
+    
+    plot_fanout_interconnect(data_output,ax['VL'],"Voltage Inductor",contrast_voltage,**fanout_kwargs)
+    plot_fanout_interconnect(data_output,ax['IL'],"Current Inductor",**fanout_kwargs)
+    plot_fanout_interconnect(data_output,ax['VC'],"Voltage Capacitor",**fanout_kwargs)
+    plot_fanout_interconnect(data_output,ax['IC'],"Current Capacitor",**fanout_kwargs)
+    
+    # figure internally created, return figure and axes
+    if (make_kwargs['ax'] == False):
+        return fig,ax
 
 def plot_fanout_wavefronts_all(data_output: Data_Output_Storage, is_sending : bool = True, data_str :str = ""):
     fig, ax = plt.subplot_mosaic([['A','B','C','D'],['E','F','G','H']])
@@ -435,7 +490,6 @@ def plot_fanout_wavefronts_all(data_output: Data_Output_Storage, is_sending : bo
     plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes("current capacitor"),ax['H'],"returning current capacitor")
         
     return fig, ax
-
 
 
 def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = False): 
