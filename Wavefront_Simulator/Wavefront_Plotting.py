@@ -1,6 +1,6 @@
 from Wavefront_Generation import get_spatial_voltage_current_at_time
 from Wavefront_Storage import *
-from Wavefront_Misc import get_array_absolute_maximum, convert_to_image_array
+from Wavefront_Misc import get_array_absolute_maximum, convert_to_image_array, split_outer_inner_default_kwargs
 from decimal import Decimal, ROUND_HALF_DOWN
 import numpy as np
 import copy
@@ -32,8 +32,6 @@ default_fanout_kwargs = {
     'show_ticks' : True,
     'custom_colour_bar_limits': False
 }
-
-
 
 def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
     """the core function for plotting the fanout diagram of a 2D numpy array.
@@ -283,10 +281,77 @@ def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :st
             raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
 
 def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_intercept : int, **kwargs):
+    """Plots a magnitude fanout and corssection at a L and C intercept for a given input data array.
+    The kwargs supplied are passed down to :py:func:`plot_fanout_magnitude`. 
+    Additonal key-value customiztion is included for the crossection plot below.
+
+    :param input_array: The fanout data to be investigated
+    :type input_array: np.ndarray
+    :param L_intercept: The value on the L-axis to intercept
+    :type L_intercept: int
+    :param C_intercept: The value on the C-axis to intercept
+    :type C_intercept: int
+    :**kwargs for crossection**:
+        - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form.The labels for these axes must inculde: 
+            - 'C' for C-plot/ L interception
+            - 'L' for L-plot/ C interception
+            - 'D' for the Diagonal plot
+            - 'F' for Fanout magnitude plot
+        - **fig_size** (*tuple of ints*) - The size of the figure. Default is (10, 8).
+        - **Transpose_C_Plot** (*bool*) - Whether to transpose the C plot. Default is True.
+        - **Transpose_L_Plot** (*bool*) - Whether to transpose the L plot. Default is False
+        
+    .. code-block::
     
-    input_array_shape = input_array.shape
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import make_fanout_crossection
+        import matplotlib.pyplot as plt
+        
+        # simulate interface
+        interface = Full_Cycle(L_time='6.5' , C_time='3' , L_impedance='700')
+        
+        # make axes internally, intercept at L=25, C= 10
+        data = interface.data_output_commutative.Voltage_Interconnect_Capacitor
+        make_fanout_crossection(data, 25, 10, units='V')
+        
+        # make axes externally, intercept at L=25, C= 10
+        
+        fig, ax = plt.subplot_mosaic([['C','F'],
+                                      ['D','L']])
+                                      
+        make_fanout_crossection(data, 25, 10, units='V', ax=ax)
+        
+        
+    .. warning::
+        if ax keyword is not provided, fucntion will make new subplot objects each time it is called.
+        These plots will not be closed by default, so if multiple calls are needed it is suggested you provide
+        the appropriate subplot_mosaic Axes object.
+        
+    .. warning::
+
+        
+    """
     
+    default_crossection_kwargs : dict = {'ax':False,
+                                         'fig_size':(10,8),
+                                         'Transpose_C_Plot':True,
+                                         'Transpose_L_Plot':False}
+    
+    crossection_kwargs, fanout_kwargs = split_outer_inner_default_kwargs(kwargs,default_crossection_kwargs,default_fanout_kwargs)
+    
+    if (crossection_kwargs['ax'] == False):
+        # create fig and ax
+        fig, ax = plt.subplot_mosaic([['C','F'],
+                                      ['D','L']])
+    else :
+        ax = crossection_kwargs['ax']
+        fig = ax['C'].get_figure()
+
+    fig.set_size_inches(crossection_kwargs['fig_size'])
+    
+    input_array = convert_to_image_array(input_array)
     # handle out of bounds
+    input_array_shape = input_array.shape
     if (L_intercept < 0):
         L_intercept = 0
     elif(L_intercept>input_array_shape[0]-1):
@@ -297,38 +362,53 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
     elif(C_intercept>input_array_shape[1]-1):
         C_intercept = input_array_shape[1]-1
         
-    kwargs = handle_default_kwargs(kwargs,default_fanout_kwargs)
-    fig, ax = plt.subplot_mosaic([['C','F'],
-                                  ['D','L']])
-    
-    
     fig.suptitle(f"Crossection of Fanout at index L = {L_intercept}, C = {C_intercept}")
     
-    L_x = input_array[:,C_intercept]
-    C_x = input_array[L_intercept,:]
-    D_x = np.diag(input_array)
     
-    L_y = np.arange(0,len(L_x))
-    C_y = np.arange(0,len(C_x))
+    L_y = input_array[:,C_intercept]
+    C_y = input_array[L_intercept,:]
+    D_y = np.diag(input_array)
     
-    ax['L'].set_xlabel('L-axis')
-    ax['L'].yaxis.set_major_formatter(EngFormatter(kwargs['units']))
-    ax['L'].plot(L_y,L_x)
+    L_x = np.arange(0,len(L_y))
+    C_x = np.arange(0,len(C_y))
     
-    ax['C'].xaxis.set_major_formatter(EngFormatter(kwargs['units']))
-    ax['C'].set_ylabel('L-axis')
-    ax['C'].plot(C_x,C_y)
+    if (crossection_kwargs['Transpose_L_Plot']):
+        ax['L'].set_ylabel('L-axis')
+        ax['L'].set_ylim(0,input_array_shape[0])
+        ax['L'].xaxis.set_major_formatter(EngFormatter(kwargs['units']))
+        ax['L'].plot(L_y,L_x)
+        ax['L'].axvline(x=0,color='gray',linestyle= '--')
+    else:
+        ax['L'].set_xlabel('L-axis')
+        ax['L'].set_xlim(0,input_array_shape[0])
+        ax['L'].yaxis.set_major_formatter(EngFormatter(kwargs['units']))
+        ax['L'].plot(L_x,L_y)
+        ax['L'].axhline(y=0,color='gray',linestyle= '--')
     
+    if(crossection_kwargs['Transpose_C_Plot']):
+        ax['C'].set_ylabel('C-axis')
+        ax['C'].set_ylim(0,input_array_shape[1])
+        ax['C'].xaxis.set_major_formatter(EngFormatter(kwargs['units']))
+        ax['C'].plot(C_y,C_x)
+        ax['C'].axvline(x=0,color='gray',linestyle= '--')
+    else:
+        ax['C'].set_xlabel('L-axis')
+        ax['C'].set_xlim(0,input_array_shape[1])
+        ax['C'].yaxis.set_major_formatter(EngFormatter(kwargs['units']))
+        ax['C'].plot(C_x,C_y)
+        ax['C'].axhline(y=0,color='gray',linestyle= '--')
+        
     ax['D'].set_xlabel('Diagonal-axis')
     ax['D'].yaxis.set_major_formatter(EngFormatter(kwargs['units']))
-    ax['D'].plot(D_x)
+    ax['D'].plot(D_y)
+    ax['D'].set_xlim(0)
     
-    plot_fanout_magnitude(input_array,ax['F'],**kwargs)
+    plot_fanout_magnitude(input_array,ax['F'],**fanout_kwargs)
     ax['F'].plot([0,input_array_shape[0]],[C_intercept,C_intercept],'k-')
     ax['F'].plot([L_intercept,L_intercept],[0,input_array_shape[1]],'k-')
     ax['F'].plot([0,input_array_shape[0]],[0,input_array_shape[1]],'k-')
 
-def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
+def make_fanout_interconnect_all(data_output_merged: Data_Output_Storage):
     
     fig, ax = plt.subplot_mosaic([['A','B'],['C','D']])
     

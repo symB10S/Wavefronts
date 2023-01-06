@@ -9,25 +9,71 @@ default_input_values : dict = dict ([
     ('Simulation_stop_time','0'),('show_about',True)
 ])
 
-def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict):
-    """handles default values for key-word arguments, changes defaults to given value.
+def handle_default_kwargs(input_kwargs: dict,default_kwargs: dict, copy_default = True):
+    """handles default values for key-word arguments. 
+    Alters or creates a copy of the defualt_kwargs to represent the new values provided by the input. 
 
     :param input_kwargs: kwargs given by user.
     :type input_kwargs: dict
     :param default_kwargs: default values that kwargs must be one of.
     :type default_kwargs: dict
+    :param copy_default: determines if the the defaults array must be copied or not default is True
+    :type copy_default: bool
     :raises Exception: ValueError if a kwarg is provided that is not one of the default values.
     :return: returns a modfied version of the default_kwargs that includes input changes
     :rtype: dict
     """
+    
+    if(copy_default):
+        default_kwargs= default_kwargs.copy()
+    
     #Set Kwargs
     for key, item in input_kwargs.items():
         if(default_kwargs.get(key) is None):
-            raise ValueError(f"No setting found for {key}, here are the possible options: \n{default_kwargs}")
+            raise ValueError(f"No match setting found for {key}, here are the possible options: \n{default_kwargs}")
         else:
             default_kwargs[key] = item
             
     return default_kwargs
+
+def split_outer_inner_default_kwargs(input_kwargs: dict,outer_defaults:dict, inner_defaults:dict, handle_kwargs:bool = True, copy_default:bool = True):
+    """Splits input_kwargs into two seperate dictionaries, One for outer function kwargs and one for an inner function kwargs.
+
+    :param input_kwargs: kwargs passed to outer function
+    :type input_kwargs: dict
+    :param outer_defaults: default kwargs for the outer function
+    :type outer_defaults: dict
+    :param inner_defaults: default kwargs for the inner function
+    :type inner_defaults: dict
+    :param handle_kwargs: if :py:func:`handle_default_kwargs` must be called, defaults to True
+    :type handle_kwargs: bool, optional
+    :param copy_default: if provided defaults must be coppeid or passed by reference, defaults to True
+    :type copy_default: bool, optional
+    :raises ValueError: if keywords are not found in either of the defaults
+    :return: dictionaries for inner and outer functions (outer_function_dict, inner_function_dict)
+    :rtype: tuple( Dict , Dict )
+    """
+    
+    outer_return_dict :dict = {}
+    inner_return_dict :dict = {}
+    
+    for input_kwarg_key, input_kwarg_value in input_kwargs.items():
+        key_in_outer = False
+        if input_kwarg_key in outer_defaults :
+            key_in_outer = True
+            outer_return_dict[input_kwarg_key] = input_kwarg_value
+        if input_kwarg_key in inner_defaults:
+            inner_return_dict[input_kwarg_key] = input_kwarg_value
+        elif (key_in_outer == False):
+            raise ValueError(f"No match setting found for {input_kwarg_key}, here are the possible options: \n outer fucntion : {outer_defaults}, \n for inner function {inner_defaults}")
+    
+    if (handle_kwargs):
+        outer_return_dict = handle_default_kwargs(outer_return_dict,outer_defaults,copy_default)
+        inner_return_dict = handle_default_kwargs(inner_return_dict,inner_defaults,copy_default)
+        
+    return outer_return_dict,inner_return_dict
+            
+        
 
 def split_and_translate_to_L_axis(input_array : np.ndarray ,C_value : int):
     """The first step in the recursive merging process.
