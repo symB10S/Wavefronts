@@ -1,27 +1,20 @@
 from Wavefront_Generation import Full_Cycle
-from Wavefront_Plotting import make_fanout_wavefronts_all
+from Wavefront_Plotting import plot_time_interconnect
 import matplotlib.pyplot as plt
 
 # simulate interface
 interface = Full_Cycle(L_time='0.34' , C_time='0.12', L_impedance = '700', C_impedance = '7')
 
-# make figure internally, 
-# plot commutative inductive wavefronts
-fig_ind,ax_ind = make_fanout_wavefronts_all(interface.data_output_commutative,True)
+# Make axes 
+fig,ax = plt.subplots(2,1)
 
-# plot commutative capacitive wavefronts
-fig_cap,ax_cap = make_fanout_wavefronts_all(interface.data_output_commutative,False)
+# make a handle for ordered data (very optional)
+data = interface.data_output_ordered
 
-# make figure externally,
-# put sending wavefronts left and returning wavefronts right
-# show merged data
+# plot accumulated data on ax[0]
+plot_time_interconnect(data,ax[0],'current capacitor',True)
 
-fig2_ind, ax2_ind = plt.subplot_mosaic([['IS','IR'],
-                                        ['VS','VR']])
-make_fanout_wavefronts_all(interface.data_output_multiplicative,True, ax=ax2_ind)
-
-fig2_cap, ax2_cap = plt.subplot_mosaic([['IS','IR'],
-                                        ['VS','VR']])
-make_fanout_wavefronts_all(interface.data_output_multiplicative,False, ax=ax2_cap)
+# plot change data on ax[1]
+plot_time_interconnect(data,ax[1],'current capacitor',False)
 
 plt.show()

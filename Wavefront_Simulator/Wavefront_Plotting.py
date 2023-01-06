@@ -568,37 +568,89 @@ def make_fanout_wavefronts_all(data_output: Data_Output_Storage,is_Inductor: boo
     if (make_kwargs['ax'] == False):
         return fig, ax
 
+def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool ): 
+    """Plots the time waveform of one of the interconncet metrics. 
+    It must be noted that interconnect values stored in the :Data_Output_Storage_Ordered: object signify the 'change' in interface values due to wavefronts.
+    To see the full time wavefrom, the changes must be accumulated. This function shows both change and accumulated quantities. 
 
-def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = False): 
+    :param data_output_ordered: The data object containing 1D ordered simulation data
+    :type data_output_ordered: Data_Output_Storage_Ordered
+    :param ax: The axis on which the interconncet wavefrom will be plotted.
+    :type ax: Matplotlib Axes object
+    :param which_string: The interconnect value to be plotted, options are "voltage inductor", "current inductor", "voltage capacitor" and "current capacitor"
+    :type which_string: str
+    :param is_integrated: If the wavefrom must represent the 'change' or 'accumulation of changes' of the data selected to be plotted.
+    :type is_integrated: bool
+    :raises ValueError: if an incorrect which_string is provided.
+    
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_time_interconnect
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface = Full_Cycle(L_time='0.34' , C_time='0.12', L_impedance = '700', C_impedance = '7')
+
+        # Make axes 
+        fig,ax = plt.subplots(2,1)
+
+        # make a handle for ordered data (very optional)
+        data = interface.data_output_ordered
+
+        # plot accumulated data on ax[0]
+        plot_time_interconnect(data,ax[0],'current capacitor',True)
+
+        # plot change data on ax[1]
+        plot_time_interconnect(data,ax[1],'current capacitor',False)
+
+        plt.show()
+
+    .. warning::
+    
+        This function accepts only :py:class:`Wavefront_Storage.Data_Output_Storage_Ordered` as an input. The data is required to be 1D and ordered.
+    
+    """
+    
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+    
+    ax.xaxis.set_major_formatter(EngFormatter('s'))
     
     if(is_integrated):
         if(which_string.lower() == allowed_strings[0] ):
             ax.set_title("Inductor voltage at Interconnect")
+            ax.yaxis.set_major_formatter(EngFormatter('V'))
             ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Inductor),where='post')
         elif(which_string.lower() == allowed_strings[1] ):
             ax.set_title("Inductor current at Interconnect")
+            ax.yaxis.set_major_formatter(EngFormatter('A'))
             ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Inductor),where='post')
         elif(which_string.lower() == allowed_strings[2] ):
             ax.set_title("Capacitor voltage at Interconnect")
+            ax.yaxis.set_major_formatter(EngFormatter('V'))
             ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Capacitor),where='post')
         elif(which_string.lower() == allowed_strings[3] ):
             ax.set_title("Capacitor current at Interconnect")
+            ax.yaxis.set_major_formatter(EngFormatter('A'))
             ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Capacitor),where='post')
         else:
             raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
     else:
         if(which_string.lower() == allowed_strings[0] ):
             ax.set_title("Inductor voltage change at Interconnect")
+            ax.yaxis.set_major_formatter(EngFormatter('V'))
             ax.step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Inductor,where='post')
         elif(which_string.lower() == allowed_strings[1] ):
             ax.set_title("Inductor current change at Interconnect")
+            ax.yaxis.set_major_formatter(EngFormatter('A'))
             ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Inductor,where='post')
         elif(which_string.lower() == allowed_strings[2] ):
             ax.set_title("Capacitor voltage change at Interconnect")
+            ax.yaxis.set_major_formatter(EngFormatter('V'))
             ax.step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Capacitor,where='post')
         elif(which_string.lower() == allowed_strings[3] ):
             ax.set_title("Capacitor current change at Interconnect")
+            ax.yaxis.set_major_formatter(EngFormatter('A'))
             ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Capacitor,where='post')
         else:
             raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
