@@ -1,20 +1,27 @@
 from Wavefront_Generation import Full_Cycle
-from Wavefront_Plotting import make_fanout_interconnect_all
+from Wavefront_Plotting import make_fanout_wavefronts_all
 import matplotlib.pyplot as plt
 
 # simulate interface
-interface = Full_Cycle(L_time='12' , C_time='8')
+interface = Full_Cycle(L_time='0.34' , C_time='0.12', L_impedance = '700', C_impedance = '7')
 
-# make figure internally, plot commutative data
-fig1,ax1 = make_fanout_interconnect_all(interface.data_output_commutative)
-fig1.suptitle(f"commutative Fanouts") # customize title
+# make figure internally, 
+# plot commutative inductive wavefronts
+fig_ind,ax_ind = make_fanout_wavefronts_all(interface.data_output_commutative,True)
 
-# make figure externally, put currents left and voltages right
-fig2, ax2 = plt.subplot_mosaic([['IL','VL'],
-                                ['IC','VC']])
+# plot commutative capacitive wavefronts
+fig_cap,ax_cap = make_fanout_wavefronts_all(interface.data_output_commutative,False)
 
-# pass ax2 to fucniton, also, show multiplicative data this time
-make_fanout_interconnect_all(interface.data_output_multiplicative, ax=ax2)
-fig2.suptitle(f"multiplicative Fanouts") # customize title
+# make figure externally,
+# put sending wavefronts left and returning wavefronts right
+# show merged data
+
+fig2_ind, ax2_ind = plt.subplot_mosaic([['IS','IR'],
+                                        ['VS','VR']])
+make_fanout_wavefronts_all(interface.data_output_multiplicative,True, ax=ax2_ind)
+
+fig2_cap, ax2_cap = plt.subplot_mosaic([['IS','IR'],
+                                        ['VS','VR']])
+make_fanout_wavefronts_all(interface.data_output_multiplicative,False, ax=ax2_cap)
 
 plt.show()

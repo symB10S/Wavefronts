@@ -251,16 +251,16 @@ def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :st
         get_func = data_output.get_returning_wavefronts_magnitudes
     
     if(which_string.lower() == allowed_strings[0] ):
-        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Voltage Wavefronts in Inductor",units='V',**kwargs)
+        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Voltage Wavefronts\n in Inductor",units='V',**kwargs)
         
     elif(which_string.lower() == allowed_strings[1] ):
-        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Current Wavefronts in Inductor",**kwargs)
+        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Current Wavefronts\n in Inductor",**kwargs)
         
     elif(which_string.lower() == allowed_strings[2] ):
-        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Voltage Wavefronts in Capacitor",units='V',**kwargs)
+        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Voltage Wavefronts\n in Capacitor",units='V',**kwargs)
         
     elif(which_string.lower() == allowed_strings[3] ):
-        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Current Wavefronts in Capacitor",**kwargs)
+        plot_fanout_magnitude(get_func(which_string),ax,title = title_prefix + "Current Wavefronts\n in Capacitor",**kwargs)
     else:
             raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
 
@@ -399,8 +399,9 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
 
 def make_fanout_interconnect_all(data_output: Data_Output_Storage,contrast_voltage = True,**kwargs):
     """plots all the interconnect magnitude fanouts for a particular Data_Output_Storage object. 
+    A wrapper fucniton for :py:func:`plot_fanout_interconnect`.
     This is a 'make' type function which means that by default the function will internally create the plotting axes unless specified otherwise. 
-    The kwargs supplied are passed down to :py:func:`plot_fanout_magnitude`. 
+    The kwargs supplied are passed down to :py:func:`plot_fanout_interconnect`. 
     Additonal key-value customiztion is included for the crossection plot below.
 
     :param data_output: The data object to be plotted
@@ -474,22 +475,98 @@ def make_fanout_interconnect_all(data_output: Data_Output_Storage,contrast_volta
     if (make_kwargs['ax'] == False):
         return fig,ax
 
-def plot_fanout_wavefronts_all(data_output: Data_Output_Storage, is_sending : bool = True, data_str :str = ""):
-    fig, ax = plt.subplot_mosaic([['A','B','C','D'],['E','F','G','H']])
-    
-    fig.suptitle("Wavefront Fanouts " + data_str)
-    
-    plot_fanout_magnitude(data_output.get_sending_wavefronts_magnitudes("voltage inductor"),ax['A'],"sending voltage inductor")
-    plot_fanout_magnitude(data_output.get_sending_wavefronts_magnitudes("current inductor"),ax['B'],"sending current inductor")
-    plot_fanout_magnitude(data_output.get_sending_wavefronts_magnitudes("voltage capacitor"),ax['C'],"sending voltage capacitor")
-    plot_fanout_magnitude(data_output.get_sending_wavefronts_magnitudes("current capacitor"),ax['D'],"sending current capacitor")
+def make_fanout_wavefronts_all(data_output: Data_Output_Storage,is_Inductor: bool,**kwargs):
+    """plots all the sending and returning magnitude fanouts for a transmission line of a Data_Output_Storage object. 
+    A wrapper fucniton for :py:func:`plot_fanout_wavefronts`.
+    This is a 'make' type function which means that by default the function will internally create the plotting axes unless specified otherwise. 
+    The kwargs supplied are passed down to :py:func:`plot_fanout_wavefronts`. 
+    Additonal key-value customiztion is included for the crossection plot below.
 
-    plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes("voltage inductor"),ax['E'],"returning voltage inductor")
-    plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes("current inductor"),ax['F'],"returning current inductor")
-    plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes("voltage capacitor"),ax['G'],"returning voltage capacitor")
-    plot_fanout_magnitude(data_output.get_returning_wavefronts_magnitudes("current capacitor"),ax['H'],"returning current capacitor")
+    :param data_output: The data object to be plotted
+    :type data_output: Data_Output_Storage
+    :param is_Inductor: if the wavefronts shown are form the inductor or the capacitor.
+    :type is_Inductor: bool
+    :return: the matplotlib Figure and Axes objects created in this fucntion
+    :rtype: tuple( fig , ax )
+    :**kwargs for figure creation**:
+        - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form.The labels for these axes must inculde: 
+            - 'VS' axis for sending voltage
+            - 'VR' axis for returning voltage
+            - 'IS' axis for sending current
+            - 'IR' axis for returning current
+        - **fig_size** (*tuple of ints*) - The size of the figure. Default is (10, 8).
+
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import make_fanout_wavefronts_all
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface = Full_Cycle(L_time='0.34' , C_time='0.12', L_impedance = '700', C_impedance = '7')
+
+        # make figure internally, 
+        # plot commutative inductive wavefronts
+        fig_ind,ax_ind = make_fanout_wavefronts_all(interface.data_output_commutative,True)
+
+        # plot commutative capacitive wavefronts
+        fig_cap,ax_cap = make_fanout_wavefronts_all(interface.data_output_commutative,False)
+
+        # make figure externally,
+        # put sending wavefronts left and returning wavefronts right
+        # show merged data
+
+        fig2_ind, ax2_ind = plt.subplot_mosaic([['IS','IR'],
+                                                ['VS','VR']])
+        make_fanout_wavefronts_all(interface.data_output_multiplicative,True, ax=ax2_ind)
+
+        # put voltages in opposite corners (for fun)
+        fig2_cap, ax2_cap = plt.subplot_mosaic([['IS','VR'],
+                                                ['VS','IR']])
+        make_fanout_wavefronts_all(interface.data_output_multiplicative,False, ax=ax2_cap)
+
+        plt.show()
         
-    return fig, ax
+    .. warning::
+        if ax keyword is not provided, fucntion will make new subplot objects each time it is called.
+        These plots will not be closed by default, so if multiple calls are needed it is suggested you provide
+        the appropriate subplot_mosaic Axes object.
+    """   
+    default_make_kwargs : dict = {'ax':False,
+                                  'fig_size':(12,10)}
+    
+    make_kwargs, fanout_kwargs = split_outer_inner_default_kwargs(kwargs,default_make_kwargs,default_fanout_kwargs)
+    
+    del fanout_kwargs['title']
+    del fanout_kwargs['units']
+    # del fanout_kwargs['contrast']
+    
+    if (make_kwargs['ax'] == False):
+        fig, ax = plt.subplot_mosaic([['VS','IS' ],
+                                      ['VR','IR']])
+    else:
+        ax = make_kwargs['ax']
+        fig = ax['VS'].get_figure()
+    
+    fig.set_size_inches(make_kwargs['fig_size'])
+    
+    if (is_Inductor):
+    
+        fig.suptitle("Inductor Wavefront Fanouts")
+        plot_fanout_wavefronts(data_output,ax['VS'],"voltage inductor",True,**fanout_kwargs)
+        plot_fanout_wavefronts(data_output,ax['IS'],"current inductor",True,**fanout_kwargs)
+        plot_fanout_wavefronts(data_output,ax['VR'],"voltage inductor",False,**fanout_kwargs)
+        plot_fanout_wavefronts(data_output,ax['IR'],"current inductor",False,**fanout_kwargs)
+    else:
+        
+        fig.suptitle("Capacitor Wavefront Fanouts")
+        plot_fanout_wavefronts(data_output,ax['VS'],"voltage capacitor",True,**fanout_kwargs)
+        plot_fanout_wavefronts(data_output,ax['IS'],"current capacitor",True,**fanout_kwargs)
+        plot_fanout_wavefronts(data_output,ax['VR'],"voltage capacitor",False,**fanout_kwargs)
+        plot_fanout_wavefronts(data_output,ax['IR'],"current capacitor",False,**fanout_kwargs)
+    
+    if (make_kwargs['ax'] == False):
+        return fig, ax
 
 
 def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = False): 
