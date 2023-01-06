@@ -20,6 +20,21 @@ def clear_subplot(axs):
         ax.cla()
 
 # Fanout Diagrams
+
+default_fanout_kwargs = {
+    'title': "Time Fanout",
+    'show_colour_bar': True,
+    'contrast' : False,
+    'padding' : 0,
+    'units' : 'A',
+    'origin' : 'lower',
+    'transpose' : True,
+    'show_ticks' : True,
+    'custom_colour_bar_limits': False
+}
+
+
+
 def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
     """the core function for plotting the fanout diagram of a 2D numpy array.
     Points are coloured using the 'seismic' colour map with red being positive and blue negative.
@@ -267,23 +282,44 @@ def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :st
     else:
             raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
 
-def make_fanout_crossection(input_array : np.ndarray,  row_number : int, title : str, show_colour_bar = True ,contrast : bool = False):
+def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_intercept : int, **kwargs):
     
-    fig, ax = plt.subplot_mosaic(['A','B'],
-                                 [  'C'  ],)
+    input_array_shape = input_array.shape
+    
+    if (L_intercept < 0):
+        L_intercept = 0
+    elif(L_intercept>input_array_shape[0]-1):
+        L_intercept = input_array_shape[0]-1
+        
+    if (C_intercept < 0):
+        C_intercept = 0
+    elif(C_intercept>input_array_shape[1]-1):
+        C_intercept = input_array_shape[1]-1
+        
+    kwargs = handle_default_kwargs(kwargs,default_fanout_kwargs)
+    fig, ax = plt.subplot_mosaic([['C','F'],
+                                  ['.','L']])
     
     
-    fig.suptitle("Crossection of " + title+" Fanout at index " + str(row_number) )
+    fig.suptitle(f"Crossection of Fanout at index L = {L_intercept}, C = {C_intercept}")
     
-    row_a = input_array[row_number,:]
-    row_b = input_array[:,row_number]
+    L_x = input_array[:,C_intercept]
+    C_x = input_array[L_intercept,:]
     
-    ax[0].plot(row_a)
-    ax[1].plot(row_b)
+    L_y = np.arange(0,len(L_x))
+    C_y = np.arange(0,len(C_x))
     
-    plot_fanout_magnitude(input_array,ax[2],"Fanout",show_colour_bar,contrast,0)
-    ax[2].plot([row_number,row_number],[0,input_array.shape[0]],'m--')
-    ax[2].plot([0,input_array.shape[0]],[row_number,row_number],'c--')
+    ax['L'].set_xlabel('L-axis')
+    ax['L'].yaxis.set_major_formatter(EngFormatter(kwargs['units']))
+    ax['L'].plot(L_y,L_x)
+    
+    ax['C'].xaxis.set_major_formatter(EngFormatter(kwargs['units']))
+    ax['C'].set_ylabel('L-axis')
+    ax['C'].plot(C_x,C_y)
+    
+    plot_fanout_magnitude(input_array,ax['F'],**kwargs)
+    ax['F'].plot([0,input_array_shape[0]],[C_intercept,C_intercept],'c-')
+    ax['F'].plot([L_intercept,L_intercept],[0,input_array_shape[1]],'m-')
 
 def plot_fanout_interconnect_4(data_output_merged: Data_Output_Storage):
     
