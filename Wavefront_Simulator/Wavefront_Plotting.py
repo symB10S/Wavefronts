@@ -408,7 +408,7 @@ def make_fanout_interconnect_all(data_output: Data_Output_Storage,contrast_volta
     :type data_output: Data_Output_Storage
     :param contrast_voltage: if the voltage arrays must ignore the intial excitation point for better contrast, defaults to True
     :type contrast_voltage: bool, optional
-    :return: the matplotlib Figure and Axes objects created in this fucntion
+    :return: the matplotlib Figure and Axes objects created in this function (if created)
     :rtype: tuple( fig , ax )
     :**kwargs for figure creation**:
         - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form.The labels for these axes must inculde: 
@@ -446,6 +446,7 @@ def make_fanout_interconnect_all(data_output: Data_Output_Storage,contrast_volta
         These plots will not be closed by default, so if multiple calls are needed it is suggested you provide
         the appropriate subplot_mosaic Axes object.
     """
+
     default_make_kwargs : dict = {'ax':False,
                                   'fig_size':(10,8)}
     
@@ -486,7 +487,7 @@ def make_fanout_wavefronts_all(data_output: Data_Output_Storage,is_Inductor: boo
     :type data_output: Data_Output_Storage
     :param is_Inductor: if the wavefronts shown are form the inductor or the capacitor.
     :type is_Inductor: bool
-    :return: the matplotlib Figure and Axes objects created in this fucntion
+    :return: the matplotlib Figure and Axes objects created in this function (if created)
     :rtype: tuple( fig , ax )
     :**kwargs for figure creation**:
         - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form.The labels for these axes must inculde: 
@@ -568,13 +569,31 @@ def make_fanout_wavefronts_all(data_output: Data_Output_Storage,is_Inductor: boo
     if (make_kwargs['ax'] == False):
         return fig, ax
 
+def handle_interface_to_ordered(data) -> Data_Output_Storage_Ordered:
+    """ensures data is ordered, extracts it if it can, else raises an error.
+
+    :param data: input data to be checked
+    :type data: any
+    :raises TypeError: if ordered data cannot be extracted
+    :return: ordered data 
+    :rtype: Data_Output_Storage_Ordered
+    """
+    if isinstance(data, Data_Interface_Storage ):
+        data = data.data_output_ordered
+    elif isinstance(data, Data_Output_Storage_Ordered ):
+        pass
+    else:
+        raise TypeError(f"input data is of wrong type, must be Data_Output_Storage_Ordered. inputted {type(data)} instead.")
+    
+    return data
+
 def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = True ): 
     """Plots the time waveform of one of the interconncet metrics. 
     It must be noted that interconnect values stored in the :Data_Output_Storage_Ordered: object signify the 'change' in interface values due to wavefronts.
     To see the full time wavefrom, the changes must be accumulated. This function shows both change and accumulated quantities. 
 
     :param data_output_ordered: The data object containing 1D ordered simulation data
-    :type data_output_ordered: Data_Output_Storage_Ordered
+    :type data_output_ordered: Data_Output_Storage_Ordered or (Data_Interface_Storage)
     :param ax: The axis on which the interconncet wavefrom will be plotted.
     :type ax: Matplotlib Axes object
     :param which_string: The interconnect value to be plotted, options are "voltage inductor", "current inductor", "voltage capacitor" and "current capacitor"
@@ -611,6 +630,7 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
         This function accepts only :py:class:`Wavefront_Storage.Data_Output_Storage_Ordered` as an input. The data is required to be 1D and ordered.
     
     """
+    data_output_ordered = handle_interface_to_ordered(data_output_ordered)
     
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
     
@@ -655,14 +675,13 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
         else:
             raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
 
-
 def plot_time_wavefronts(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_sending :bool,is_integrated: bool = True ): 
     """Plots the time waveform of one of the wavefront metrics. 
     It must be noted that interconnect values stored in the :Data_Output_Storage_Ordered: object signify the 'change' in interface values due to wavefronts.
     To see the full time wavefrom, the changes must be accumulated. This function shows both change and accumulated quantities. 
 
-    :param data_output_ordered: The data object containing 1D ordered simulation data
-    :type data_output_ordered: Data_Output_Storage_Ordered
+    :param data_output_ordered: The data object containing 1D ordered simulation data, also accepts full interface data
+    :type data_output_ordered: Data_Output_Storage_Ordered or Data_Interface_Storage
     :param ax: The axis on which the interconncet wavefrom will be plotted.
     :type ax: Matplotlib Axes object
     :param which_string: The wavefront value to be plotted, options are "voltage inductor", "current inductor", "voltage capacitor" and "current capacitor"
@@ -702,6 +721,8 @@ plt.show()
         This function accepts only :py:class:`Wavefront_Storage.Data_Output_Storage_Ordered` as an input. The data is required to be 1D and ordered.
     
     """
+    data_output_ordered = handle_interface_to_ordered(data_output_ordered)
+    
     allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
     
     if (is_sending):
@@ -710,7 +731,6 @@ plt.show()
     else:
         title_prefix = "Returning "
         get_func = data_output_ordered.get_returning_wavefronts_magnitudes
-    
     
     ax.xaxis.set_major_formatter(EngFormatter('s'))
     
@@ -748,7 +768,72 @@ plt.show()
             raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
         
         ax.step(data_output_ordered.Time,get_func(which_string),where='post')
-       
+
+def make_time_interconnect_all(data_output_ordered: Data_Output_Storage_Ordered,is_integrated :bool = True,**kwargs):
+    """Plots all interconnect time waveforms of an interface/ orderd data.
+
+    :param data_output_ordered: data to be plotted. Can be interface or ordered data.
+    :type data_output_ordered: Data_Output_Storage_Ordered
+    :param is_integrated: If the wavefrom must represent the 'change' or 'accumulation of changes' of the data selected to be plotted, default is True
+    :type is_integrated: bool, optional
+    :return: the matplotlib Figure and Axes objects created in this function (if created)
+    :rtype: tuple( fig , ax )
+    :**kwargs for figure creation**:
+        - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form.The labels for these axes must inculde: 
+            - 'VL' axis for inductor voltage
+            - 'VC' axis for capcitor voltage
+            - 'IL' axis for inductor current
+            - 'IC' axis for capacitor current
+        - **fig_size** (*tuple of ints*) - The size of the figure. Default is (10, 8).
+        
+    .. code-block::
+
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import make_time_interconnect_all
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface = Full_Cycle(L_time='8' , C_time='7', L_impedance = '500', C_impedance = '2')
+
+        # plot all interconnect time waveforms
+        fig,ax = make_time_interconnect_all(interface)
+
+        # plot the 'change' in those waveforms
+        fig2,ax2 = make_time_interconnect_all(interface,False)
+
+        plt.show()
+        
+    """
+    
+    data_output_ordered = handle_interface_to_ordered(data_output_ordered)
+    
+    default_make_kwargs : dict = {'ax':False,
+                                  'fig_size':(10,8)}
+    
+    make_kwargs = handle_default_kwargs(kwargs,default_make_kwargs)
+    
+    if (make_kwargs['ax'] == False):
+        fig, ax = plt.subplot_mosaic([['VL','VC'],
+                                      ['IL','IC']])
+    else:
+        ax = make_kwargs['ax']
+        fig = ax['VL'].get_figure()
+        
+    fig.set_size_inches(make_kwargs['fig_size'])
+    
+    if (is_integrated):
+        fig.suptitle(f"Interconnect Time Waveforms")
+    else:
+        fig.suptitle(f"Interconnect Change Time Waveforms")
+
+    plot_time_interconnect(data_output_ordered,ax['VL'],"Voltage Inductor", is_integrated)
+    plot_time_interconnect(data_output_ordered,ax['IL'],"Current Inductor", is_integrated)
+    plot_time_interconnect(data_output_ordered,ax['VC'],"Voltage Capacitor", is_integrated)
+    plot_time_interconnect(data_output_ordered,ax['IC'],"Current Capacitor", is_integrated)
+    
+    if (make_kwargs['ax'] == False):
+        return fig,ax
+        
 def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_output_ordered : Data_Output_Storage_Ordered, which_string : str):
     
     padwidth = 15
@@ -943,15 +1028,6 @@ def plot_time_wavefronts_all_both(data_output : Data_Output_Storage, data_output
     
     return fig_sub, ax_sub
 
-def plot_diff(Y,X,ax,title_str :str = "Derivative"):
-    dy = np.ediff1d(Y[1:])
-    dx = np.ediff1d(X[1:])
-    
-    dydx = dy/dx
-    
-    ax.set_title(title_str)
-    ax.step(X[1:-1],dydx,where="post") 
-    
 def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, stop_time, ax, mutiple_ticks : bool = True,**input_kwargs):
     
     kwargs = dict([('saving_folder','plots/'),('is_saving',False),('face_colour','xkcd:grey'),
