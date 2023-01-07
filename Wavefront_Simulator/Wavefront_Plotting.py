@@ -1,6 +1,6 @@
 from Wavefront_Generation import get_spatial_voltage_current_at_time
 from Wavefront_Storage import *
-from Wavefront_Misc import get_array_absolute_maximum, convert_to_image_array, split_outer_inner_default_kwargs, closest_event_to_time
+from Wavefront_Misc import *
 from decimal import Decimal, ROUND_HALF_DOWN
 import copy
 from warnings import warn
@@ -987,113 +987,189 @@ def make_time_wavefronts_all(data_output_ordered : Data_Output_Storage_Ordered, 
     
     if (make_kwargs['ax'] == False):
         return (fig, ax)
+
+def plot_refelction_diagram(interface_data : Data_Interface_Storage, ax, is_voltage : bool, **kwargs):
+    """plots a coloured current or voltage reflection for the inductor and capacitor of a simulated interface.
+
+    :param interface_data: The interface to be plotted.
+    :type interface_data: Data_Interface_Storage
+    :param ax: axis to plot on
+    :type ax: Matplotlib Axes 
+    :param is_voltage: if the plot
+    :type is_voltage: bool
+    :raises TypeError: if supplied custom_colour_bar are not a tuple 
+    :**kwargs for figure creation**:
+        - **stop_time** (*float*) - The simulation stop time. Default is the value of `interface_data.data_input.Simulation_Stop_Time`.
+        - **custom_colour_bar_limits** (*tuple*) - supply a tuple in form of (Vmax,Vmin) for colourbar limits. Default is False, meaning it is calcuated of absolute maximum of wavefronts.
+        - **face_colour** (*str*) - The face color of the plot. Default is 'xkcd:grey'.
+        - **LS_colour** (*bool or str*) - if supplied overides colour map colouring, The color of the sending inductor wavefronts, matplotlib colour. Default is False.
+        - **LR_colour** (*bool or str*) - if supplied overides colour map colouring, The color of the returning inductor wavefronts, matplotlib colour. Default is False.
+        - **CS_colour** (*bool or str*) - if supplied overides colour map colouring, The color of the sending capacitor wavefronts, matplotlib colour. Default is False.
+        - **CR_colour** (*bool or str*) - if supplied overides colour map colouring, The color of the returning capacitor wavefronts, matplotlib colour. Default is False.
+        - **LS_style** (*str*) - The style of the sending inductor wavefronts, matplotlib linestyle. Default is '-'.
+        - **LR_style** (*str*) - The style of the returning inductor wavefronts, matplotlib linestyle. Default is '-'.
+        - **CS_style** (*str*) - The style of the sending capacitor wavefronts, matplotlib linestyle. Default is '-'.
+        - **CR_style** (*str*) - The style of the returning capacitor wavefronts, matplotlib linestyle. Default is '-'.
+        - **info_title** (*bool*) - Whether to include a title with input information about the plot. Default is True.
+
+    .. code-block::
+        :caption: Compare Voltage and Current wavefronts of the interface
+        
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_refelction_diagram
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface = Full_Cycle(L_time = '12',C_time = '11',Simulation_stop_time=100)
+
+        # create subplot
+        fig,ax = plt.subplots(1,2,figsize=(18,8))
+
+        # compare voltage and current 
+        plot_refelction_diagram(interface,ax[0],True)
+        plot_refelction_diagram(interface,ax[1],False)
+
+        plt.show()
+        
+    .. code-block::
+        :caption: Customizing plots to highlight sending wavefronts
+        
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_refelction_diagram
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface = Full_Cycle(L_time = '12',C_time = '11',Simulation_stop_time=100)
+
+        # create subplot
+        fig,ax = plt.subplots(1,2,figsize=(18,8))
+
+        # highlight sending wavefronts and make returning gray
+        c = 'dimgray'
+        plot_refelction_diagram(interface,ax[0],True, CR_colour=c, CR_style = '--', LR_colour=c, LR_style = '--')
+        plot_refelction_diagram(interface,ax[1],False, CR_colour=c, CR_style = '--', LR_colour=c, LR_style = '--')
+
+        plt.show()
+    """
     
-def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, stop_time, ax, mutiple_ticks : bool = True,**input_kwargs):
+    default_kwargs = {
+        'stop_time' : interface_data.data_input.Simulation_Stop_Time,
+        'custom_colour_bar_limits': False,
+        'face_colour':'xkcd:grey',
+        'LS_colour':False,
+        'LR_colour':False,
+        'CS_colour':False,
+        'CR_colour':False,
+        'LS_style':'-',
+        'LR_style':'-',
+        'CS_style':'-',
+        'CR_style':'-',
+        'info_title':True,
+        }
     
-    kwargs = dict([('saving_folder','plots/'),('is_saving',False),('face_colour','xkcd:grey'),
-                   ('cap_sending_style','r'),('cap_returning_style','r'),
-                   ('ind_sending_style','b'),('ind_returning_style','b')])
+    kwargs = handle_default_kwargs(kwargs,default_kwargs)
     
-    for key, item in input_kwargs.items():
-        if(kwargs.get(key) is None):
-            raise Exception(f"No setting found for {key}, here are the possible options: \n{kwargs}")
-        else:
-            kwargs[key] = item
+    inductor_sending = interface_data.data_output_ordered.Wavefronts_Sending_Inductor
+    inductor_returning = interface_data.data_output_ordered.Wavefronts_Returning_Inductor
+    capacitor_sending = interface_data.data_output_ordered.Wavefronts_Sending_Capacitor
+    capacitor_returning = interface_data.data_output_ordered.Wavefronts_Returning_Capacitor
+    
+    if (is_voltage):
+        title = 'Voltage Reflection Diagram'
+        get_func = get_voltage_array
+        get_val = get_voltage_from_wavefront
+        units = 'V'
+    else:
+        title = 'Current Reflection Diagram'
+        get_func = get_current_array
+        units = 'A'
+        get_val = get_current_from_wavefront
+        
+    inductor_sending_magnitude = get_func(inductor_sending)
+    inductor_returning_magnitude = get_func(inductor_returning)
+    capacitor_sending_magnitude = get_func(capacitor_sending)
+    capacitor_returning_magnitude = get_func(capacitor_returning)
+    
+    if (kwargs['custom_colour_bar_limits'] == False):
+        inductor_sending_max = get_array_absolute_maximum(inductor_sending_magnitude)
+        inductor_returning_max = get_array_absolute_maximum(inductor_returning_magnitude)
+        capacitor_sending_max = get_array_absolute_maximum(capacitor_sending_magnitude)
+        capacitor_returning_max = get_array_absolute_maximum(capacitor_returning_magnitude)
+        
+        colour_bar_boundary_max = float(max(inductor_sending_max,inductor_returning_max,capacitor_sending_max,capacitor_returning_max))
+        colour_bar_boundary_min = - colour_bar_boundary_max
+        
+    elif(isinstance(kwargs['custom_colour_bar_limits'],tuple)):
+        colour_bar_boundary_max = kwargs['custom_colour_bar_limits'][0]
+        colour_bar_boundary_min = kwargs['custom_colour_bar_limits'][1]
+    else:
+        raise TypeError(f"custom_colour_bar_limits must be of type tuple not {type(kwargs['custom_colour_bar_limits'])}")
+        
+    colour_map = mpl.cm.seismic
+    norm = mpl.colors.Normalize(vmin=colour_bar_boundary_min, vmax=colour_bar_boundary_max)
+    colour_mag_func = lambda x : colour_map(norm(float(get_val(x))))
+    
+    if(kwargs['LS_colour']==False):
+        LS_colour = colour_mag_func
+    else:
+        LS_colour = lambda x : kwargs['LS_colour']
+        
+    if(kwargs['LR_colour']==False):
+        LR_colour = colour_mag_func
+    else:
+        LR_colour = lambda x : kwargs['LR_colour']
+        
+    if(kwargs['CS_colour']==False):
+        CS_colour = colour_mag_func
+    else:
+        CS_colour = lambda x : kwargs['CS_colour']
+        
+    if(kwargs['CR_colour']==False):
+        CR_colour = colour_mag_func
+    else:
+        CR_colour = lambda x : kwargs['CR_colour']
+    
+    index_stop, stop_time_closest = closest_event_to_time(interface_data.data_output_ordered.Time,kwargs['stop_time'])
+    
+    for LS, LR, CS, CR in zip(inductor_sending[:index_stop],inductor_returning[:index_stop],capacitor_sending[:index_stop], capacitor_returning[:index_stop]):
+        
+        ax.plot([LS.position_start, LS.position_end],[LS.time_start,LS.time_end],c=LS_colour(LS), linestyle = kwargs['LS_style'])
+        ax.plot([LR.position_start, LR.position_end],[LR.time_start,LR.time_end],c=LR_colour(LR), linestyle = kwargs['LR_style'])
+
+        ax.plot([CS.position_start, -CS.position_end],[CS.time_start,CS.time_end],c=CS_colour(CS), linestyle = kwargs['CS_style'])
+        ax.plot([-CR.position_start, CR.position_end],[CR.time_start,CR.time_end],c=CR_colour(CR), linestyle = kwargs['CR_style'])
+        
+    
+    # Styling
+    L_l = float(interface_data.data_input.Inductor_Length)
+    C_l = float(interface_data.data_input.Capacitor_Length)
     
     ax.set_facecolor(kwargs['face_colour'])
-    ax.set_xlim([-1,1])
-    ax.set_xticks([-1,-0.5,0,0.5,1])
+    ax.set_xlim([-C_l,L_l])
+    ax.set_xticks([-1*C_l,-0.5*C_l,0,0.5*L_l,1*L_l])
     ax.set_xticklabels(["$\mathregular{\ell_C}$","Capacitor","Interface","Inductor","$\mathregular{\ell_L}$"],fontsize='large')
+    ax.axvline(0, color = 'k', linestyle = '--', linewidth=2)
     
-    C_Time = str(2*Data_Input.Capacitor_Time)
-    C_impedance = str(Data_Input.Capacitor_Impedance)
     
-    L_Time = str(2*Data_Input.Inductor_Time)
-    L_impedance = str(Data_Input.Inductor_Impedance)
-
-    ax.axhline(linewidth=1, color='k')
-    ax.axvline(linewidth=1, color='k')
+    ax.set_ylim([0,stop_time_closest])
+    ax.yaxis.set_major_formatter(EngFormatter('s'))
     
-    ax.plot([-1,-1],[0,stop_time],'k')
-    ax.plot([1,1],[0,stop_time],'k')
-    #ax.plot([-1,1],[stop_time,stop_time],'k')
+    fig = ax.get_figure()
     
-    #ax.get_xaxis().set_visible(False)
-    ax2 = ax.secondary_yaxis('right')
-    ax.set_xticks = ([])
-    ax2.set_xticks = ([])
-    ax.set_xticklabels = ('')
-    ax2.set_xticklabels = ('')
+    ZL = interface_data.data_input.Inductor_Impedance
+    TL = interface_data.data_input.Inductor_Time*2
     
-    ax.set_ylabel('Capacitor Time Delay = '+ C_Time, fontsize = 'large')
-    ax2.set_ylabel('Inductor Time Delay = '+ L_Time, fontsize = 'large')
-    #ax.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    #ax2.yaxis.set_ticks(np.arange(0, stop_time, 1))
+    ZC = interface_data.data_input.Capacitor_Impedance
+    TC = interface_data.data_input.Capacitor_Time*2
     
-    ax.set_title(f'Reflection Diagram for \n Capacitor Transit Time = {C_Time}s, Inductor Transit Time = {L_Time}s  ', fontsize = 'large')
-    # ax.set_xlabel('Relative distance down Transmission Line')
+    if(kwargs['info_title']):
+        title += f"\n ZC = {ZC}Ω TC = {TC}s, ZL = {ZL}Ω TL = {TL}s, "
+    ax.set_title(title)
     
-    if(mutiple_ticks):
-        ax.yaxis.set_major_locator(MultipleLocator(float(C_Time)))
-        ax2.yaxis.set_major_locator(MultipleLocator(float(L_Time)))
-        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
-
-        # For the minor ticks, use no labels; default NullFormatter.
-        ax.yaxis.set_minor_locator(MultipleLocator(float(C_Time)/2))
-        ax2.yaxis.set_minor_locator(MultipleLocator(float(L_Time)/2))
-    
-    ax.set_ylim(0,stop_time)
-
-
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],kwargs['cap_sending_style'])
-            
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],kwargs['cap_returning_style'])
-
-
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Inductor:
-
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],kwargs['ind_sending_style'])
-            
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Inductor:
-
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],kwargs['ind_returning_style'])
-            
-    plt.tight_layout()
-    file_name = kwargs['saving_folder']+f'Refelction_TL_{2*Data_Input.Inductor_Time}_TC_{2*Data_Input.Capacitor_Time}_stop_time_{stop_time}.png'
-    if kwargs['is_saving']:
-        plt.savefig(file_name)
+    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=colour_map), ax=ax)
+    cb.ax.yaxis.set_major_formatter(EngFormatter(units))
+        
+        
             
 def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, is_current, stop_time, ax, mutiple_ticks : bool = True):
     

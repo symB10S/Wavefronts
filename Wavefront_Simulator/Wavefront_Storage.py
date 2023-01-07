@@ -95,10 +95,11 @@ class Data_Input_Storage :
         
         # Make input dictionary compatible with SPICE simulation inputs
         self.SPICE_input_values = provided_input_values.copy()
-        if(self.SPICE_input_values.get('show_about') is None):
-            pass
-        else:
-            del self.SPICE_input_values['show_about']
+        
+        self.SPICE_input_values.pop('show_about',None)
+        self.SPICE_input_values.pop('L_lenght',None)
+        self.SPICE_input_values.pop('C_lenght',None)
+        
         
         # does the converter consider the load, or is it a LC osscilator.
         self.Is_Buck = True

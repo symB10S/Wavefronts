@@ -59,17 +59,60 @@ def get_Spice_Arrays(**new_Spice_values):
             "Capacitor_Current_Tx"  
         }
     
-    Example:
-    =======
-        only specify the default parameters you want to alter,
-            
+    .. code-block::
+        :caption: manual SPICE simulaiton
+        
+        from LTSpice_Simulator import get_Spice_Arrays
+        import matplotlib.pyplot as plt
+
+        # Do manual simulation
+                    
         # Change Impedances and simulaiton timestep
-        
-        LTSpice_Arrays = get_Spice_Arrays(L_impedance = '500',C_impedance = '20', Step_size='0.1'):
-        
+        LTSpice_Arrays = get_Spice_Arrays(L_impedance = '500',C_impedance = '20', Step_size='0.1')
+
         # Plot Inductor votlage using Lumped circuit elements
+        plt.plot(LTSpice_Arrays['time'],LTSpice_Arrays['Inductor_Voltage_Circuit'])
+        plt.show()
+
+
+    .. code-block::
+        :caption: Using SPICE to verify output
         
-        plt.plot(LTSpice_Arrays['time'],LTSpice_Arrays['Inductor_Voltage_Circuit']])
+        from LTSpice_Simulator import get_Spice_Arrays
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_time_interconnect
+        import matplotlib.pyplot as plt
+
+        interface = Full_Cycle(L_impedance = '500',C_impedance = '20')
+
+        # get spice kwarg array
+        spice_kwargs = interface.data_input.SPICE_input_values
+
+        # set step-size to be GCD/8 to be safe
+        step_size = interface.data_input.GCD/8
+
+        # get arrays
+        LTSpice_outputs = get_Spice_Arrays(**spice_kwargs,Step_size=str(step_size))
+
+        fig,ax = plt.subplots()
+
+        # plot lumped current
+        ax.plot(LTSpice_outputs['time'],LTSpice_outputs['Capacitor_Current_Tx'])
+
+        # plot distributed from LTSpice
+        ax.plot(LTSpice_outputs['time'],LTSpice_outputs['Capacitor_Current_Circuit'])
+
+        # plot distributed from simulator
+        plot_time_interconnect(interface.data_output_ordered,ax,'Current Capacitor',True)
+
+        ax.legend(['LT-lumped','LT-dist','Wavefronts'])
+
+        plt.show()
+        
+    .. warning::
+        does not account for the lengths of the capacitor and inductor. 
+        Also only wokrs for LC osscialtor configuration with no load.
+    
     """
 
     # read input SPICE file, replace paramters in file with provided values
