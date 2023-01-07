@@ -73,6 +73,73 @@ def split_outer_inner_default_kwargs(input_kwargs: dict,outer_defaults:dict, inn
         
     return outer_return_dict,inner_return_dict
             
+def closest_event_to_time(data_ordered_time : list, time_enquirey : Decimal, can_be_after_enquirey : bool = True):
+    """Finds the closest event and time to a praticular time enquirey.
+
+    :param data_ordered_time: time list, must be chronologically ordered. Typically from :py:class:`Wavefront_Storage:Data_Output_Storage_Ordered`
+    :type data_ordered_time: list[Decimal]
+    :param time_enquirey: The time to wich the returned event will be closest
+    :type time_enquirey: Decimal
+    :param can_be_after_enquirey: if the event is allowed to occur after the enquirey, defaults to True
+    :type can_be_after_enquirey: bool, optional
+    :return: the index in time list and the closest time retuned as a tuple
+    :rtype: tuple ( index[int] , time[Decimal])
+    
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Misc import closest_event_to_time
+        from decimal import Decimal
+
+        # simulate random interface
+        interface = Full_Cycle(L_time='7' , C_time='3.4',show_about = False)
+
+        # handle for ordered time list
+        Time_arr = interface.data_output_ordered.Time
+        time_enquirey = Decimal('10.3')
+
+        # find closest event, can be after enquirey
+        i_after, t_after = closest_event_to_time(Time_arr,time_enquirey,True)
+        # find closest event, event must be before enquirey
+        i_before, t_before = closest_event_to_time(Time_arr,time_enquirey,False)
+
+        # the two closest times are 10.4 and 10.2 and time enquirey is 10.3
+        # 10.2 <--- 10.3 -> 10.4
+        print(f" time enquirey is {time_enquirey}")
+        print(f" best time if can be after {t_after} ") # returns 10.4
+        print(f" best time if must be before {t_before} ") # returns 10.2
+
+        # We can get the [ L , C ] coordiante by refernecing the 'Indexes' array
+
+        coord_after  = interface.data_output_ordered.Indexes[ i_after ]
+        coord_before = interface.data_output_ordered.Indexes[ i_before ]
+
+        print(f" [L , C] after  {coord_after} ") #  returns [1, 1]
+        print(f" [L , C] before {coord_before} ") # returns [0, 3]
+        
+    .. warning::
+        time_enquirey must should be a Decimal number to be compatible with the storage array.
+        The enquirey will be auto converted into a decimal but can produce  errors.
+        
+    """
+    time_enquirey = Decimal(time_enquirey)
+    # if first event is closest
+    if(time_enquirey - data_ordered_time[0] <=0):
+        return (0, data_ordered_time[0] )
+
+    for i,time in enumerate(data_ordered_time):
+        
+        current_time_diff = time_enquirey - time
+        if (current_time_diff <= 0 ): # Just passed or equal to time
+            
+            previous_time_diff = time_enquirey - data_ordered_time[i-1]
+            
+            if(previous_time_diff >= current_time_diff and can_be_after_enquirey): 
+                return (i, time) # best time is after event
+            else: 
+                return (i-1, data_ordered_time[i-1]) # best time is before event
+        
+    return i, time # last time is best
         
 
 def split_and_translate_to_L_axis(input_array : np.ndarray ,C_value : int):

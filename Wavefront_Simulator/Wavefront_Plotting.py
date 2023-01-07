@@ -1,6 +1,6 @@
 from Wavefront_Generation import get_spatial_voltage_current_at_time
 from Wavefront_Storage import *
-from Wavefront_Misc import get_array_absolute_maximum, convert_to_image_array, split_outer_inner_default_kwargs
+from Wavefront_Misc import get_array_absolute_maximum, convert_to_image_array, split_outer_inner_default_kwargs, closest_event_to_time
 from decimal import Decimal, ROUND_HALF_DOWN
 import copy
 from warnings import warn
@@ -22,6 +22,24 @@ def clear_subplot(axs):
         ax.cla()
 
 # Fanout Diagrams
+
+def handle_interface_to_ordered(data) -> Data_Output_Storage_Ordered:
+    """ensures data is ordered, extracts it if it can, else raises an error.
+
+    :param data: input data to be checked
+    :type data: any
+    :raises TypeError: if ordered data cannot be extracted
+    :return: ordered data 
+    :rtype: Data_Output_Storage_Ordered
+    """
+    if isinstance(data, Data_Interface_Storage ):
+        data = data.data_output_ordered
+    elif isinstance(data, Data_Output_Storage_Ordered ):
+        pass
+    else:
+        raise TypeError(f"input data is of wrong type, must be Data_Output_Storage_Ordered. inputted {type(data)} instead.")
+    
+    return data
 
 default_fanout_kwargs = {
     'title': "Magnitude Fanout",
@@ -569,23 +587,69 @@ def make_fanout_wavefronts_all(data_output: Data_Output_Storage,is_Inductor: boo
     if (make_kwargs['ax'] == False):
         return fig, ax
 
-def handle_interface_to_ordered(data) -> Data_Output_Storage_Ordered:
-    """ensures data is ordered, extracts it if it can, else raises an error.
+def plot_trace_on_merged_fanout_axis(data_output_ordered : Data_Output_Storage_Ordered, ax, upto_time :Decimal = False,**kwargs):
+    """Plots a path of arrows on a merged fanout diagram.
 
-    :param data: input data to be checked
-    :type data: any
-    :raises TypeError: if ordered data cannot be extracted
-    :return: ordered data 
-    :rtype: Data_Output_Storage_Ordered
+    :param data_output_ordered: the ordered data array, can also be an interface objec
+    :type data_output_ordered: Data_Output_Storage_Ordered or Data_Interface_Storage
+    :param ax: the axis with a fanout diagram plotted on it
+    :type ax: Matplotlib Axes
+    :param upto_time: the time to which the path must be plotted, defaults to False
+    :type upto_time: Decimal, optional
+    :**kwargs**:
+        - **padding** (*int*) - The padding around the arrow. Default is 0.
+        - **length_includes_head** (*bool*) - Whether the head is included in the arrow length. Default is True.
+        - **head_width** (*float*) - The width of the arrow head. Default is 0.3.
+        - **head_length** (*float*) - The length of the arrow head. Default is 0.3.
+        - **width** (*float*) - The width of the arrow shaft. Default is 0.0005.
+        - **facecolor** (*str*) - The face color of the arrow. Default is 'gray'.
+        - **edgecolor** (*str*) - The edge color of the arrow. Default is 'black'.
     """
-    if isinstance(data, Data_Interface_Storage ):
-        data = data.data_output_ordered
-    elif isinstance(data, Data_Output_Storage_Ordered ):
-        pass
-    else:
-        raise TypeError(f"input data is of wrong type, must be Data_Output_Storage_Ordered. inputted {type(data)} instead.")
     
-    return data
+    trace_default_kwargs : dict= {
+        'padding' : 0,
+        'length_includes_head' : True,
+        'head_width' : 0.3,
+        'head_length': 0.3,
+        'width': 0.0005,
+        'facecolor':'gray',
+        'edgecolor':'black'
+        }
+    
+    kwargs = handle_default_kwargs(kwargs,trace_default_kwargs)
+    
+    # check it is an interface or data_ordered object
+    data_output_ordered = handle_interface_to_ordered(data_output_ordered)
+    
+    # set limit of indexes based on upto_time if supplied
+    if (upto_time == False):
+        Indexes = data_output_ordered.Indexes[1:]
+    else:
+        i,_ = closest_event_to_time(data_output_ordered.Time,upto_time,False)
+        Indexes = data_output_ordered.Indexes[1:i]
+    
+    get_xy = lambda index : (index[0] + kwargs['padding'], index[1] + kwargs['padding'])
+    
+    # plot arrow from last to next
+    for i,index in enumerate(Indexes):
+        
+        x1,y1 = get_xy(data_output_ordered.Indexes[i])
+        x2,y2 = get_xy(index)
+
+        dx = x2 - x1
+        dy = y2 - y1
+
+        # Draw the arrow using quiver
+        ax.arrow(x1,y1,dx, dy,
+                 length_includes_head=kwargs['length_includes_head'], 
+                 head_width=kwargs['head_width'], 
+                 head_length=kwargs['head_length'],
+                 width=kwargs['width'],
+                 facecolor = kwargs['facecolor'],
+                 edgecolor =kwargs['edgecolor'])
+
+
+
 
 def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = True ): 
     """Plots the time waveform of one of the interconncet metrics. 
@@ -924,206 +988,6 @@ def make_time_wavefronts_all(data_output_ordered : Data_Output_Storage_Ordered, 
     if (make_kwargs['ax'] == False):
         return (fig, ax)
     
-    
-    
-    
-    
-
-def plot_time_interconnect_3(data_output_merged : Data_Output_Storage, data_output_ordered : Data_Output_Storage_Ordered, which_string : str):
-    
-    padwidth = 15
-    
-    fig, ax = plt.subplot_mosaic([['A','C'],['B','C']])
-    
-    plot_time_interconnect(data_output_ordered,ax['A'],which_string)
-    plot_time_interconnect(data_output_ordered,ax['B'],which_string,True)
-    plot_fanout_interconnect(data_output_merged,ax['C'],which_string)
-
-    for i,index in enumerate(data_output_ordered.Indexes):
-        if(i  == 0):
-            pass
-        else:
-            x1 = data_output_ordered.Indexes[i-1][0]+ padwidth
-            y1 = data_output_ordered.Indexes[i-1][1]+ padwidth
-            
-            x2 = index[0]+ padwidth
-            y2 = index[1]+ padwidth
-            ax['C'].plot([y1,y2],[x1,x2],'black',marker='o')
-            
-    return fig, ax 
-
-    
-def plot_time_interconnect_3_both(data_output_merged : Data_Output_Storage
-                                  , data_output_ordered : Data_Output_Storage_Ordered
-                                  , data_output_merged_2 : Data_Output_Storage
-                                  , data_output_ordered_2 : Data_Output_Storage_Ordered
-                                  , which_string : str):
-    
-    padwidth = 15
-    
-    fig, ax = plt.subplot_mosaic([['A','C','D'],['B','C','D']])
-    
-    plot_time_interconnect(data_output_ordered,ax['A'],which_string)
-    plot_time_interconnect(data_output_ordered_2,ax['A'],which_string)
-    
-    plot_time_interconnect(data_output_ordered,ax['B'],which_string,True)
-    plot_time_interconnect(data_output_ordered_2,ax['B'],which_string,True)
-    
-    plot_fanout_interconnect(data_output_merged,ax['C'],which_string," self 1")
-    plot_fanout_interconnect(data_output_merged_2,ax['D'],which_string," self 2")
-
-    for i,index in enumerate(data_output_ordered.Indexes):
-        if(i  == 0):
-            pass
-        else:
-            x1 = data_output_ordered.Indexes[i-1][0]+ padwidth
-            y1 = data_output_ordered.Indexes[i-1][1]+ padwidth
-            
-            x2 = index[0]+ padwidth
-            y2 = index[1]+ padwidth
-            ax['C'].plot([y1,y2],[x1,x2],'black',marker='.')
-            
-    for i,index in enumerate(data_output_ordered_2.Indexes):
-        if(i  == 0):
-            pass
-        else:
-            x1 = data_output_ordered_2.Indexes[i-1][0]+ padwidth
-            y1 = data_output_ordered_2.Indexes[i-1][1]+ padwidth
-            
-            x2 = index[0]+ padwidth
-            y2 = index[1]+ padwidth
-            ax['D'].plot([y1,y2],[x1,x2],'black',marker='.')
-            
-    return fig, ax 
-
-def plot_time_interconnect_4(data_output_ordered: Data_Output_Storage_Ordered):
-    
-    fig, ax = plt.subplot_mosaic([['A','B'],['C','D']])
-    
-    ax['A'].set_title("Inductor voltage at Interconnect")
-    ax['A'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Inductor),where='post')
-    
-    ax['C'].set_title("Inductor current at Interconnect")
-    ax['C'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Inductor),where='post')
-    
-    ax['B'].set_title("Capacitor voltage at Interconnect")
-    ax['B'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Capacitor),where='post')
-    
-    ax['D'].set_title("Capacitor current at Interconnect")
-    ax['D'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Capacitor),where='post')
-    
-    return fig, ax
-
-def plot_time_interconnect_4_wavefronts(data_output_ordered: Data_Output_Storage_Ordered):
-    
-    fig, ax = plt.subplot_mosaic([['A','B'],['C','D']])
-    
-    ax['A'].set_title("Inductor voltage change at Interconnect")
-    ax['A'].step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Inductor,where='post')
-    
-    ax['C'].set_title("Inductor current change at Interconnect")
-    ax['C'].step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Inductor,where='post')
-    
-    ax['B'].set_title("Capacitor voltage change at Interconnect")
-    ax['B'].step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Capacitor,where='post')
-    
-    ax['D'].set_title("Capacitor current change at Interconnect")
-    ax['D'].step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Capacitor,where='post')
-    
-    return fig, ax
-
-def plot_time_interconnect_4_both(data_output_ordered: Data_Output_Storage_Ordered,data_output_ordered_2: Data_Output_Storage_Ordered):
-    
-    fig, ax = plt.subplot_mosaic([['A','B'],['C','D']])
-    
-    ax['A'].set_title("Inductor voltage at Interconnect")
-    ax['A'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Inductor),where='post')
-    ax['A'].step(data_output_ordered_2.Time,np.cumsum(data_output_ordered_2.Voltage_Interconnect_Inductor),where='post')
-    
-    ax['C'].set_title("Inductor current at Interconnect")
-    ax['C'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Inductor),where='post')
-    ax['C'].step(data_output_ordered_2.Time,np.cumsum(data_output_ordered_2.Current_Interconnect_Inductor),where='post')
-    
-    ax['B'].set_title("Capacitor voltage at Interconnect")
-    ax['B'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Capacitor),where='post')
-    ax['B'].step(data_output_ordered_2.Time,np.cumsum(data_output_ordered_2.Voltage_Interconnect_Capacitor),where='post')
-    
-    ax['D'].set_title("Capacitor current at Interconnect")
-    ax['D'].step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Capacitor),where='post')
-    ax['D'].step(data_output_ordered_2.Time,np.cumsum(data_output_ordered_2.Current_Interconnect_Capacitor),where='post')
-    
-    return fig, ax
-
-def plot_time_interconnect_4_wavefronts_both(data_output_ordered: Data_Output_Storage_Ordered, data_output_ordered_2: Data_Output_Storage_Ordered):
-    
-    fig, ax = plt.subplot_mosaic([['A','B'],['C','D']])
-    
-    ax['A'].set_title("Inductor voltage change at Interconnect")
-    ax['A'].step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Inductor,where='post')
-    ax['A'].step(data_output_ordered_2.Time,data_output_ordered_2.Voltage_Interconnect_Inductor,where='post')
-    
-    ax['C'].set_title("Inductor current change at Interconnect")
-    ax['C'].step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Inductor,where='post')
-    ax['C'].step(data_output_ordered_2.Time,data_output_ordered_2.Current_Interconnect_Inductor,where='post')
-    
-    ax['B'].set_title("Capacitor voltage change at Interconnect")
-    ax['B'].step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Capacitor,where='post')
-    ax['B'].step(data_output_ordered_2.Time,data_output_ordered_2.Voltage_Interconnect_Capacitor,where='post')
-    
-    ax['D'].set_title("Capacitor current change at Interconnect")
-    ax['D'].step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Capacitor,where='post')
-    ax['D'].step(data_output_ordered_2.Time,data_output_ordered_2.Current_Interconnect_Capacitor,where='post')
-    
-    return fig, ax
-
-def plot_time_wavefronts_all(data_output : Data_Output_Storage, what_to_plot : str):
-    fig_sub, ax_sub = plt.subplots(2,3)
-
-    fig_sub.suptitle("Wavefronts of the "+ what_to_plot)
-     
-    ax_sub[0,0].set_title("sending voltage")
-    ax_sub[0,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
-    ax_sub[0,1].set_title("returning voltage")
-    ax_sub[0,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
-    ax_sub[0,2].set_title("sending + returning voltage")
-    ax_sub[0,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)+data_output.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
-
-    ax_sub[1,0].set_title("sending current")
-    ax_sub[1,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
-    ax_sub[1,1].set_title("returning current")
-    ax_sub[1,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("current " + what_to_plot)),where='post')
-    ax_sub[1,2].set_title("sending + returning current")
-    ax_sub[1,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("current " + what_to_plot)+data_output.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
-    
-    return fig_sub, ax_sub
-
-def plot_time_wavefronts_all_both(data_output : Data_Output_Storage, data_output_2: Data_Output_Storage, what_to_plot : str):
-    fig_sub, ax_sub = plt.subplots(2,3)
-
-    fig_sub.suptitle("Wavefronts of the "+ what_to_plot)
-     
-    ax_sub[0,0].set_title("sending voltage")
-    ax_sub[0,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
-    ax_sub[0,0].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
-    ax_sub[0,1].set_title("returning voltage")
-    ax_sub[0,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
-    ax_sub[0,1].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
-    ax_sub[0,2].set_title("sending + returning voltage")
-    ax_sub[0,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)+data_output.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
-    ax_sub[0,2].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning_wavefronts_magnitudes("voltage "+ what_to_plot)+data_output_2.get_sending_wavefronts_magnitudes("voltage "+ what_to_plot)),where='post')
-
-    ax_sub[1,0].set_title("sending current")
-    ax_sub[1,0].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
-    ax_sub[1,0].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
-    ax_sub[1,1].set_title("returning current")
-    ax_sub[1,1].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("current " + what_to_plot)),where='post')
-    ax_sub[1,1].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning_wavefronts_magnitudes("current " + what_to_plot)),where='post')
-    ax_sub[1,2].set_title("sending + returning current")
-    ax_sub[1,2].step(np.ma.masked_where(data_output.Time == 0 ,data_output.Time), np.ma.masked_where(data_output.Time == 0 ,data_output.get_returning_wavefronts_magnitudes("current " + what_to_plot)+data_output.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
-    ax_sub[1,2].step(np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.Time), np.ma.masked_where(data_output_2.Time == 0 ,data_output_2.get_returning_wavefronts_magnitudes("current " + what_to_plot)+data_output_2.get_sending_wavefronts_magnitudes("current " + what_to_plot)),where='post')
-    
-    return fig_sub, ax_sub
-
 def plot_refelction_diagram(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, stop_time, ax, mutiple_ticks : bool = True,**input_kwargs):
     
     kwargs = dict([('saving_folder','plots/'),('is_saving',False),('face_colour','xkcd:grey'),
