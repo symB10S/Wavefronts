@@ -99,6 +99,7 @@ class Data_Input_Storage :
         self.SPICE_input_values.pop('show_about',None)
         self.SPICE_input_values.pop('L_lenght',None)
         self.SPICE_input_values.pop('C_lenght',None)
+        self.SPICE_input_values.pop('Load_impedance',None)
         
         
         # does the converter consider the load, or is it a LC osscilator.

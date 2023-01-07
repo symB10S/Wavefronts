@@ -3,7 +3,7 @@ from Wavefront_Plotting import plot_refelction_diagram
 import matplotlib.pyplot as plt
 
 # simulate interface
-interface = Full_Cycle(L_time = '12',C_time = '11',Simulation_stop_time=100)
+interface = Full_Cycle(L_time = '27',C_time = '32')
 
 # create subplot
 fig,ax = plt.subplots(1,2,figsize=(18,8))

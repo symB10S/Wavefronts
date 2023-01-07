@@ -649,8 +649,6 @@ def plot_trace_on_merged_fanout_axis(data_output_ordered : Data_Output_Storage_O
                  edgecolor =kwargs['edgecolor'])
 
 
-
-
 def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = True ): 
     """Plots the time waveform of one of the interconncet metrics. 
     It must be noted that interconnect values stored in the :Data_Output_Storage_Ordered: object signify the 'change' in interface values due to wavefronts.
@@ -1168,1138 +1166,182 @@ def plot_refelction_diagram(interface_data : Data_Interface_Storage, ax, is_volt
     
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=colour_map), ax=ax)
     cb.ax.yaxis.set_major_formatter(EngFormatter(units))
-        
-        
+
+
+# SPATIAL PLOTS NEW   
+
+def plot_spatial_voltage_and_current(Time_Enquriey : Decimal , Interface : Data_Interface_Storage, ax_voltage, ax_current,quantize : str ='0.001'):
+    """ Plots the spatial distribution of votlage and current in both the inductor and capacitor.
+
+    :param Time_Enquriey: the time at which spatial distrinution of energy is shown. 
+    :type Time_Enquriey: Decimal
+    :param Interface: the data storage object for the interface simulation
+    :type Interface: Data_Interface_Storage
+    :param ax_voltage: axis for voltage to be plotted
+    :type ax_voltage: matplotlib Axes
+    :param ax_current: axis for current to be plotted
+    :type ax_current: matplotlib Axes
+    :param quantize: the precision to round the input time for the title
+    :type quantize: str
+    :return: interconnect values of capacitor voltage, inductor voltage and interconnect current in that order
+    :rtype: tuple ( Decimal, Decimal, Decimal )
+    """
+
+    # Set title
+    ax_voltage.get_figure().suptitle("Spatial Waveforms at " + str(Time_Enquriey.quantize(Decimal(quantize), rounding=ROUND_HALF_DOWN)) + "s")
+    
+    # Set axes
+    L_l = float(Interface.data_input.Inductor_Length)
+    C_l = float(Interface.data_input.Capacitor_Length)
+    
+    ax_voltage.set_title('Spatial Voltage')
+    ax_voltage.yaxis.set_major_formatter(EngFormatter('V'))
+    ax_voltage.set_xlim([-C_l,L_l])
+    ax_voltage.set_xticks([-1*C_l,-0.5*C_l,0,0.5*L_l,1*L_l])
+    ax_voltage.set_xticklabels(["$\mathregular{\ell_C}$","Capacitor","Interface","Inductor","$\mathregular{\ell_L}$"],fontsize='large')
+    ax_voltage.set_ylabel('voltage')
+    
+    ax_current.set_title('Spatial Current')
+    ax_current.yaxis.set_major_formatter(EngFormatter('A'))
+    ax_current.set_xlim([-C_l,L_l])
+    ax_current.set_xticks([-1*C_l,-0.5*C_l,0,0.5*L_l,1*L_l])
+    ax_current.set_xticklabels(["$\mathregular{\ell_C}$","Capacitor","Interface","Inductor","$\mathregular{\ell_L}$"],fontsize='large')
+    ax_current.set_ylabel('current')
+
+    # Inductor
+    # Get spatial intercepts
+    pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, Interface, True)
+    zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
+
+    # set interconnect to zero
+    interconncet_voltage_inductor = 0
+    interconncet_voltage_capacitor = 0
+    interconnect_current_inductor = 0
+    interconnect_current_capacitor = 0
+    
+    #arrays
+    x_position =[]
+    y_current =[]
+    y_voltage =[]
+    
+    dx_position =[]
+    dy_current =[]
+    dy_voltage =[]
+
+    #initiate variables
+    x_old = 0
+    y_voltage_old = 0
+    y_current_old = 0
+
+    is_first = True
+
+    for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
             
-def plot_refelction_diagram_specific(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, is_current, stop_time, ax, mutiple_ticks : bool = True):
-    
-    C_Time = str(2*Data_Input.Capacitor_Time)
-    C_impedance = str(Data_Input.Capacitor_Impedance)
-    
-    L_Time = str(2*Data_Input.Inductor_Time)
-    L_impedance = str(Data_Input.Inductor_Impedance)
-    
-    ax.axhline(linewidth=1, color='k')
-    ax.axvline(linewidth=1, color='k')
-    
-    ax.plot([-1,-1],[0,stop_time],'k')
-    ax.plot([1,1],[0,stop_time],'k')
-    #ax.plot([-1,1],[stop_time,stop_time],'k')
-    
-    #ax.get_xaxis().set_visible(False)
-    ax2 = ax.secondary_yaxis('right')
-    ax.set_xticks = ([])
-    ax2.set_xticks = ([])
-    ax.set_xticklabels = ('')
-    ax2.set_xticklabels = ('')
-    
-    ax.set_ylabel('Capacitor Time Delay = '+ C_Time, fontsize = 'large')
-    ax2.set_ylabel('Inductor Time Delay = '+ L_Time, fontsize = 'large')
-    #ax.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    #ax2.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    
-    if(is_current):
-        ax.set_title('Current Reflection Diagarm \n Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
-    else:
-        ax.set_title('Votlage Reflection Diagarm \n Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
-        
-    # ax.set_xlabel('Relative distance down Transmission Line')
-    
-    if(mutiple_ticks):
-        ax.yaxis.set_major_locator(MultipleLocator(float(C_Time)))
-        ax2.yaxis.set_major_locator(MultipleLocator(float(L_Time)))
-        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
-
-        # For the minor ticks, use no labels; default NullFormatter.
-        ax.yaxis.set_minor_locator(MultipleLocator(float(C_Time)/2))
-        ax2.yaxis.set_minor_locator(MultipleLocator(float(L_Time)/2))
-    
-    ax.set_ylim(0,stop_time)
-    
-    # Setup Colour Map
-    max_cap_s = 0
-    min_cap_s = 0
-    max_ind_s = 0
-    min_ind_s = 0
-    
-    max_cap_r = 0
-    min_cap_r = 0
-    max_ind_r = 0
-    min_ind_r = 0
-    
-    boundary = 0 
-    
-    if(is_current):
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
-
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
-    else:
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
-
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
-        
-    boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
-    
-    colour_map = mpl.cm.seismic
-    norm = mpl.colors.Normalize(vmin=-boundary, vmax=boundary)
-    
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-        
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)))
-            # ax.plot([(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
+            x = float(position)
             
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-        
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)))
-            # ax.plot([-(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
-
-    # Inductor Wavefronts
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Inductor:
-
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)))
-            # ax.plot([(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
+            x_position.append(x)
+            y_current.append(0)
+            y_voltage.append(0)
             
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Inductor:
-
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)))
-            # ax.plot([-(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)      
-            
-def plot_refelction_diagram_sending(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, is_current, stop_time, ax, mutiple_ticks : bool = True):
-    
-        
-    non_active_wavefront_colour = 'xkcd:dark grey'
-    
-    C_Time = str(2*Data_Input.Capacitor_Time)
-    C_impedance = str(Data_Input.Capacitor_Impedance)
-    
-    L_Time = str(2*Data_Input.Inductor_Time)
-    L_impedance = str(Data_Input.Inductor_Impedance)
-    
-    ax.axhline(linewidth=1, color='k')
-    ax.axvline(linewidth=1, color='k')
-    
-    ax.plot([-1,-1],[0,stop_time],'k')
-    ax.plot([1,1],[0,stop_time],'k')
-    #ax.plot([-1,1],[stop_time,stop_time],'k')
-    
-    #ax.get_xaxis().set_visible(False)
-    ax2 = ax.secondary_yaxis('right')
-    ax.set_xticks = ([])
-    ax2.set_xticks = ([])
-    ax.set_xticklabels = ('')
-    ax2.set_xticklabels = ('')
-    
-    ax.set_ylabel('Capacitor Time Delay = '+ C_Time, fontsize = 'large')
-    ax2.set_ylabel('Inductor Time Delay = '+ L_Time, fontsize = 'large')
-    #ax.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    #ax2.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    
-    if(is_current):
-        ax.set_title('Sending Current Reflection Diagarm \n Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
-    else:
-        ax.set_title('Sending Votlage Reflection Diagarm \n Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
-        
-    # ax.set_xlabel('Relative distance down Transmission Line')
-    
-    if(mutiple_ticks):
-        ax.yaxis.set_major_locator(MultipleLocator(float(C_Time)))
-        ax2.yaxis.set_major_locator(MultipleLocator(float(L_Time)))
-        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
-
-        # For the minor ticks, use no labels; default NullFormatter.
-        ax.yaxis.set_minor_locator(MultipleLocator(float(C_Time)/2))
-        ax2.yaxis.set_minor_locator(MultipleLocator(float(L_Time)/2))
-    
-    ax.set_ylim(0,stop_time)
-    
-    # Setup Colour Map
-    max_cap_s = 0
-    min_cap_s = 0
-    max_ind_s = 0
-    min_ind_s = 0
-    
-    max_cap_r = 0
-    min_cap_r = 0
-    max_ind_r = 0
-    min_ind_r = 0
-    
-    boundary = 0 
-    
-    if(is_current):
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
-
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
-    else:
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
-
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
-        
-    boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
-    
-    colour_map = mpl.cm.seismic
-    norm = mpl.colors.Normalize(vmin=-boundary, vmax=boundary)
-    
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-        
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)
-            # ax.plot([(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
-            
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-        
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
-            # ax.plot([-(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
-
-    # Inductor Wavefronts
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Inductor:
-
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)
-            # ax.plot([(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
-            
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Inductor:
-
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
-            # ax.plot([-(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)      
-
-def plot_refelction_diagram_returning(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, is_current, stop_time, ax, mutiple_ticks : bool = True):
-    
-        
-    non_active_wavefront_colour = 'xkcd:dark grey'
-    
-    C_Time = str(2*Data_Input.Capacitor_Time)
-    C_impedance = str(Data_Input.Capacitor_Impedance)
-    
-    L_Time = str(2*Data_Input.Inductor_Time)
-    L_impedance = str(Data_Input.Inductor_Impedance)
-    
-    ax.axhline(linewidth=1, color='k')
-    ax.axvline(linewidth=1, color='k')
-    
-    ax.plot([-1,-1],[0,stop_time],'k')
-    ax.plot([1,1],[0,stop_time],'k')
-    #ax.plot([-1,1],[stop_time,stop_time],'k')
-    
-    #ax.get_xaxis().set_visible(False)
-    ax2 = ax.secondary_yaxis('right')
-    ax.set_xticks = ([])
-    ax2.set_xticks = ([])
-    ax.set_xticklabels = ('')
-    ax2.set_xticklabels = ('')
-    
-    ax.set_ylabel('Capacitor Time Delay = '+ C_Time, fontsize = 'large')
-    ax2.set_ylabel('Inductor Time Delay = '+ L_Time, fontsize = 'large')
-    #ax.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    #ax2.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    
-    if(is_current):
-        ax.set_title('Returning Current Reflection Diagarm \n Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
-    else:
-        ax.set_title('Returning Votlage Reflection Diagarm \n Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
-        
-    # ax.set_xlabel('Relative distance down Transmission Line')
-    
-    if(mutiple_ticks):
-        ax.yaxis.set_major_locator(MultipleLocator(float(C_Time)))
-        ax2.yaxis.set_major_locator(MultipleLocator(float(L_Time)))
-        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
-
-        # For the minor ticks, use no labels; default NullFormatter.
-        ax.yaxis.set_minor_locator(MultipleLocator(float(C_Time)/2))
-        ax2.yaxis.set_minor_locator(MultipleLocator(float(L_Time)/2))
-    
-    ax.set_ylim(0,stop_time)
-    
-    # Setup Colour Map
-    max_cap_s = 0
-    min_cap_s = 0
-    max_ind_s = 0
-    min_ind_s = 0
-    
-    max_cap_r = 0
-    min_cap_r = 0
-    max_ind_r = 0
-    min_ind_r = 0
-    
-    boundary = 0 
-    
-    if(is_current):
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
-
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
-    else:
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
-
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
-        
-    boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
-    
-    colour_map = mpl.cm.seismic
-    norm = mpl.colors.Normalize(vmin=-boundary, vmax=boundary)
-    
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-        
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)
-            # ax.plot([(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
-            
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-        
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
-            # ax.plot([-(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
-
-    # Inductor Wavefronts
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Inductor:
-
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)
-            # ax.plot([(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
-            
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Inductor:
-
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
-            # ax.plot([-(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)    
-
-def plot_refelction_diagram_one_tx_s_and_r(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, is_capacitor,is_current, stop_time, ax, mutiple_ticks : bool = True):
-    
-        
-    non_active_wavefront_colour = 'xkcd:dark grey'
-    
-    C_Time = str(2*Data_Input.Capacitor_Time)
-    C_impedance = str(Data_Input.Capacitor_Impedance)
-    
-    L_Time = str(2*Data_Input.Inductor_Time)
-    L_impedance = str(Data_Input.Inductor_Impedance)
-    
-    ax.axhline(linewidth=1, color='k')
-    ax.axvline(linewidth=1, color='k')
-    
-    ax.plot([-1,-1],[0,stop_time],'k')
-    ax.plot([1,1],[0,stop_time],'k')
-    #ax.plot([-1,1],[stop_time,stop_time],'k')
-    
-    #ax.get_xaxis().set_visible(False)
-    ax2 = ax.secondary_yaxis('right')
-    ax.set_xticks = ([])
-    ax2.set_xticks = ([])
-    ax.set_xticklabels = ('')
-    ax2.set_xticklabels = ('')
-    
-    ax.set_ylabel('Capacitor Time Delay = '+ C_Time, fontsize = 'large')
-    ax2.set_ylabel('Inductor Time Delay = '+ L_Time, fontsize = 'large')
-    #ax.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    #ax2.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    
-    title_str =""
-    
-    if(is_capacitor):
-        title_str += "Capacitor "
-    else:
-        title_str += "Inductor "
-        
-    if(is_current):
-        title_str += "Current "
-    else:
-        title_str += "Voltage "
-    
-    
-    ax.set_title(title_str+'Reflection Diagarm \n Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
-        
-    # ax.set_xlabel('Relative distance down Transmission Line')
-    
-    if(mutiple_ticks):
-        ax.yaxis.set_major_locator(MultipleLocator(float(C_Time)))
-        ax2.yaxis.set_major_locator(MultipleLocator(float(L_Time)))
-        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
-
-        # For the minor ticks, use no labels; default NullFormatter.
-        ax.yaxis.set_minor_locator(MultipleLocator(float(C_Time)/2))
-        ax2.yaxis.set_minor_locator(MultipleLocator(float(L_Time)/2))
-    
-    ax.set_ylim(0,stop_time)
-    
-    # Setup Colour Map
-    max_cap_s = 0
-    min_cap_s = 0
-    max_ind_s = 0
-    min_ind_s = 0
-    
-    max_cap_r = 0
-    min_cap_r = 0
-    max_ind_r = 0
-    min_ind_r = 0
-    
-    boundary = 0 
-    
-    if(is_current):
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
-
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
-    else:
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
-
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
-        
-    boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
-    
-    colour_map = mpl.cm.seismic
-    norm = mpl.colors.Normalize(vmin=-boundary, vmax=boundary)
-    
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-        
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            if(is_capacitor):
-                ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)
+            if(is_first):
+                    x_old = position
+                    y_voltage_old = left_voltage
+                    y_current_old = left_current
+                    interconncet_voltage_inductor = left_voltage
+                    interconnect_current_inductor = left_current
+                    is_first = False
             else:
-                ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
+                    dx_position.append(x - x_old)
+                    dy_current.append(y_current_old)
+                    dy_voltage.append(y_voltage_old)
+                    
+            x_old = x
+            y_voltage_old = right_voltage
+            y_current_old = right_current
             
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Capacitor:
 
-        x1 = -wave.position_start
-        x2 = -wave.position_end
+    x_position.pop()
+    y_current.pop()
+    y_voltage.pop()
+    
+    # Spatially plot the inductor current and voltage
+    ax_voltage.bar(x_position, dy_voltage, dx_position, align = 'edge',edgecolor = 'k')
+    ax_current.bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
+    
+    # Now the capacitor
+    # reset arrays 
+    x_position =[]
+    y_current =[]
+    y_voltage =[]
 
-        y1 = wave.time_start
-        y2 = wave.time_end
-        
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
+    dx_position =[]
+    dy_current =[]
+    dy_voltage =[]
 
-        if(wave.time_start <=stop_time):
-            if(is_capacitor):
-                ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)
-            else:
-                ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
+    is_first = True
 
-    # Inductor Wavefronts
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Inductor:
+    # get spatial interconnects
+    pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, Interface , False)
+    zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
 
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            if(not is_capacitor):
-                ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)
-            else:
-                ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
-            # ax.plot([(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
+    for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
             
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Inductor:
+            x = -float(position)
 
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            if(not is_capacitor):
-                ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)  
-            else:
-                ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
+            x_position.append(x)
+            y_current.append(0)
+            y_voltage.append(0)
             
-def plot_refelction_diagram_one_tx_s_or_r(Data_Input: Data_Input_Storage, Data_Output_Ordered : Data_Output_Storage_Ordered, is_capacitor,is_sending,is_current, stop_time, ax, mutiple_ticks : bool = True):
-    
-        
-    non_active_wavefront_colour = 'xkcd:dark grey'
-    
-    C_Time = str(2*Data_Input.Capacitor_Time)
-    C_impedance = str(Data_Input.Capacitor_Impedance)
-    
-    L_Time = str(2*Data_Input.Inductor_Time)
-    L_impedance = str(Data_Input.Inductor_Impedance)
-    
-    ax.axhline(linewidth=1, color='k')
-    ax.axvline(linewidth=1, color='k')
-    
-    ax.plot([-1,-1],[0,stop_time],'k')
-    ax.plot([1,1],[0,stop_time],'k')
-    #ax.plot([-1,1],[stop_time,stop_time],'k')
-    
-    #ax.get_xaxis().set_visible(False)
-    ax2 = ax.secondary_yaxis('right')
-    ax.set_xticks = ([])
-    ax2.set_xticks = ([])
-    ax.set_xticklabels = ('')
-    ax2.set_xticklabels = ('')
-    
-    ax.set_ylabel('Capacitor Time Delay = '+ C_Time, fontsize = 'large')
-    ax2.set_ylabel('Inductor Time Delay = '+ L_Time, fontsize = 'large')
-    #ax.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    #ax2.yaxis.set_ticks(np.arange(0, stop_time, 1))
-    
-    title_str =""
-    
-    if(is_capacitor):
-        title_str += "Capacitor "
-    else:
-        title_str += "Inductor "
-        
-    if(is_sending):
-        title_str += "Sending "
-    else:
-        title_str += "Returning "
-        
-    if(is_current):
-        title_str += "Current "
-    else:
-        title_str += "Voltage "
-    
-    
-    ax.set_title(title_str+'Reflection Diagarm \n Capacitor Impedance = '+ C_impedance +'Ω, Inductor Impedance = ' + L_impedance+ 'Ω', fontsize = 'large')
-        
-    # ax.set_xlabel('Relative distance down Transmission Line')
-    
-    if(mutiple_ticks):
-        ax.yaxis.set_major_locator(MultipleLocator(float(C_Time)))
-        ax2.yaxis.set_major_locator(MultipleLocator(float(L_Time)))
-        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
-
-        # For the minor ticks, use no labels; default NullFormatter.
-        ax.yaxis.set_minor_locator(MultipleLocator(float(C_Time)/2))
-        ax2.yaxis.set_minor_locator(MultipleLocator(float(L_Time)/2))
-    
-    ax.set_ylim(0,stop_time)
-    
-    # Setup Colour Map
-    max_cap_s = 0
-    min_cap_s = 0
-    max_ind_s = 0
-    min_ind_s = 0
-    
-    max_cap_r = 0
-    min_cap_r = 0
-    max_ind_r = 0
-    min_ind_r = 0
-    
-    boundary = 0 
-    
-    if(is_current):
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("current inductor")))
-
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("current inductor")))
-    else:
-        max_cap_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
-        min_cap_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage capacitor")))
-        max_ind_s = abs(np.max(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
-        min_ind_s = abs(np.min(Data_Output_Ordered.get_sending_wavefronts_magnitudes("voltage inductor")))
-
-        max_cap_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
-        min_cap_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage capacitor")))
-        max_ind_r = abs(np.max(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
-        min_ind_r = abs(np.min(Data_Output_Ordered.get_returning_wavefronts_magnitudes("voltage inductor")))
-        
-    boundary = max(max_cap_s,min_cap_s,max_ind_s,min_ind_s,max_cap_r,min_cap_r,max_ind_r,min_ind_r)
-    
-    colour_map = mpl.cm.seismic
-    norm = mpl.colors.Normalize(vmin=-boundary, vmax=boundary)
-    
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-        
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            if(is_capacitor and not is_sending):
-                ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)
+            if(is_first):
+                    x_old = position
+                    y_voltage_old = left_voltage
+                    y_current_old = left_current
+                    interconncet_voltage_capacitor = left_voltage
+                    interconnect_current_capacitor = left_current
+                    is_first = False
             else:
-                ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
+                    dx_position.append(x - x_old)
+                    dy_current.append(y_current_old)
+                    dy_voltage.append(y_voltage_old)
             
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Capacitor:
-
-        x1 = -wave.position_start
-        x2 = -wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-        
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            if(is_capacitor and is_sending):
-                ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)
-            else:
-                ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
-
-    # Inductor Wavefronts
-    for wave in Data_Output_Ordered.Wavefronts_Returning_Inductor:
-
-        x1 = wave.position_start
-        x2 = wave.position_end
-
-        y1 = wave.time_start
-        y2 = wave.time_end
-
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            if(not is_capacitor and not is_sending):
-                ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)
-            else:
-                ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
-            # ax.plot([(x2-x1)/2],[y1 + (y2-y1)/2], marker ='o',c=colour_map(norm(mag)),markersize=15)
+            x_old = x
             
-    for wave in Data_Output_Ordered.Wavefronts_Sending_Inductor:
+            y_voltage_old = right_voltage
+            y_current_old = right_current
 
-        x1 = wave.position_start
-        x2 = wave.position_end
+    x_position.pop()
+    y_current.pop()
+    y_voltage.pop()
+    
+    # plot capacitor voltages and currents
+    ax_voltage.bar(x_position, dy_voltage, dx_position, align = 'edge',edgecolor = 'k')
+    ax_current.bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
+    
+    # return interconnect values
+    return interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor
 
-        y1 = wave.time_start
-        y2 = wave.time_end
+def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_current,interconncet_voltage_capacitor=0, interconncet_voltage_inductor=0, interconnect_current_capacitor=0, interconnect_curent_inductor=0):
 
-        mag = 0
-        
-        if(is_current):
-            mag = float(wave.magnitude_current)
-        else:
-            mag = float(wave.magnitude_voltage)
-
-        if(wave.time_start <=stop_time):
-            if(not is_capacitor and is_sending):
-                ax.plot([x1,x2],[y1,y2],c=colour_map(norm(mag)),zorder=2)  
-            else:
-                ax.plot([x1,x2],[y1,y2],c=non_active_wavefront_colour,linestyle='dashed',zorder=1)
-
-# SPATIAL PLOTS NEW
-def plot_3d_spatial(Time_Enquriey,data_output_merged,data_output_ordered,ax):
-        
-        ax.xaxis.set_major_formatter(EngFormatter('m'))
-        ax.yaxis.set_major_formatter(EngFormatter('A'))
-        ax.zaxis.set_major_formatter(EngFormatter('V'))
-                
-        ax.set_xlabel('position')
-        ax.set_ylabel('current')
-        ax.set_zlabel('voltage')
-        
-        is_Inductive =True
-
-        # INDUCTOR
-        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, data_output_merged,data_output_ordered,is_Inductive)
-        zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
-
-        #arrays
-        x_position =[]
-        y_current =[]
-        z_voltage =[]
-
-        dx_position =[]
-        dy_current =[]
-        dz_voltage =[]
-
-        #initiate variables
-        x_old = 0
-        y_voltage_old = 0
-        y_current_old = 0
-
-        is_first = True
-
-        for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
-                
-                x = position
-                
-                y1_voltage = left_voltage
-                y2_voltage = right_voltage
-                
-                y1_current = left_current
-                y2_current = right_current
-                
-                x_position.append(x)
-                y_current.append(0)
-                z_voltage.append(0)
-                
-                if(is_first):
-                        x_old = position
-                        y_voltage_old = left_voltage
-                        y_current_old = left_current
-                        is_first = False
-                else:
-                        dx_position.append(x - x_old)
-                        dy_current.append(y_current_old)
-                        dz_voltage.append(y_voltage_old)
-                        
-                x_old = x
-                
-                y_voltage_old = y2_voltage
-                y_current_old = y2_current
-                
-
-        x_position.pop()
-        y_current.pop()
-        z_voltage.pop()
-        
-        ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
-        
-        x_position =[]
-        y_current =[]
-        z_voltage =[]
-
-        dx_position =[]
-        dy_current =[]
-        dz_voltage =[]
-
-        is_first = True
-
-        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, data_output_merged,data_output_ordered,not is_Inductive)
-        zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
-
-        for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
-                
-                x = -position
-                
-                y1_voltage = left_voltage
-                y2_voltage = right_voltage
-                
-                y1_current = left_current
-                y2_current = right_current
-                
-                x_position.append(x)
-                y_current.append(0)
-                z_voltage.append(0)
-                
-                if(is_first):
-                        x_old = position
-                        y_voltage_old = left_voltage
-                        y_current_old = left_current
-                        is_first = False
-                else:
-                        dx_position.append(x - x_old)
-                        dy_current.append(y_current_old)
-                        dz_voltage.append(y_voltage_old)
-                
-                x_old = x
-                
-                y_voltage_old = y2_voltage
-                y_current_old = y2_current
-
-        x_position.pop()
-        y_current.pop()
-        z_voltage.pop()
-
-        ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
-
-def plot_spatial_same_axis(Time_Enquriey,Interface : Data_Interface_Storage,ax_voltage,ax_current):
-        ax_voltage.get_figure().suptitle("Spatial Waveforms at " + str(Time_Enquriey.quantize(Decimal('.0001'), rounding=ROUND_HALF_DOWN)) + "s")
-        
-        ax_voltage.set_title('Spatial Voltage')
-        # ax_voltage.xaxis.set_major_formatter(matplotlib.ticker.EngFormatter('m'))
-        ax_voltage.yaxis.set_major_formatter(EngFormatter('V'))
-        ax_voltage.set_xlabel('Capacitor    ←    interconncect    →    Inductor ')
-        ax_voltage.set_ylabel('voltage')
-        
-        
-        ax_current.set_title('Spatial Current')
-        # ax_current.xaxis.set_major_formatter(matplotlib.ticker.EngFormatter('m'))
-        ax_current.yaxis.set_major_formatter(EngFormatter('A'))
-        ax_current.set_xlabel('Capacitor    ←    interconncect    →    Inductor ')
-        ax_current.set_ylabel('current')
-
-
-        # INDUCTOR
-        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, Interface, True)
-        zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
-
-        interconncet_voltage_inductor = 0
-        interconncet_voltage_capacitor = 0
-        interconnect_current = 0
-        
-        #arrays
-        x_position =[]
-        y_current =[]
-        z_voltage =[]
-        
-        dx_position =[]
-        dy_current =[]
-        dz_voltage =[]
-
-        #initiate variables
-        x_old = 0
-        y_voltage_old = 0
-        y_current_old = 0
-
-        is_first = True
-
-        for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
-                
-                x = float(position)
-                
-                y1_voltage = left_voltage
-                y2_voltage = right_voltage
-                
-                y1_current = left_current
-                y2_current = right_current
-                
-                x_position.append(x)
-                y_current.append(0)
-                z_voltage.append(0)
-                
-                if(is_first):
-                        x_old = position
-                        y_voltage_old = left_voltage
-                        y_current_old = left_current
-                        
-                        interconncet_voltage_inductor = left_voltage
-                        interconnect_current = left_current
-                        
-                        is_first = False
-                else:
-                        dx_position.append(x - x_old)
-                        dy_current.append(y_current_old)
-                        dz_voltage.append(y_voltage_old)
-                        
-                x_old = x
-                
-                y_voltage_old = y2_voltage
-                y_current_old = y2_current
-                
-
-        x_position.pop()
-        y_current.pop()
-        z_voltage.pop()
-        
-        # ( x , width , height)
-        ax_voltage.bar(x_position, dz_voltage, dx_position, align = 'edge',edgecolor = 'k')
-        ax_current.bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
-        
-        x_position =[]
-        y_current =[]
-        z_voltage =[]
-
-        dx_position =[]
-        dy_current =[]
-        dz_voltage =[]
-
-        is_first = True
-
-        pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, Interface , False)
-        zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
-
-        for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
-                
-                x = -float(position)
-                
-                y1_voltage = left_voltage
-                y2_voltage = right_voltage
-                
-                y1_current = left_current
-                y2_current = right_current
-                
-                x_position.append(x)
-                y_current.append(0)
-                z_voltage.append(0)
-                
-                if(is_first):
-                        x_old = position
-                        y_voltage_old = left_voltage
-                        y_current_old = left_current
-                        
-                        interconncet_voltage_capacitor = left_voltage
-                        
-                        is_first = False
-                else:
-                        dx_position.append(x - x_old)
-                        dy_current.append(y_current_old)
-                        dz_voltage.append(y_voltage_old)
-                
-                x_old = x
-                
-                y_voltage_old = y2_voltage
-                y_current_old = y2_current
-
-        x_position.pop()
-        y_current.pop()
-        z_voltage.pop()
-        
-        ax_voltage.bar(x_position, dz_voltage, dx_position, align = 'edge',edgecolor = 'k')
-        ax_current.bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
-        
-        return interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current
-
-def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_current,interconncet_voltage_capacitor=0, interconncet_voltage_inductor=0, interconnect_current=0):
-    ax_voltage.axvline(time,linestyle='--',c='gray')
-
+    # Voltage
     plot_time_interconnect(data_output_ordered,ax_voltage,'voltage inductor',True)
-    ax_voltage.axhline(interconncet_voltage_inductor,linestyle='--',c='C0')
     plot_time_interconnect(data_output_ordered,ax_voltage,'voltage capacitor',True)
+    ax_voltage.legend(['Inductor','Capacitor'],loc='upper right')
+    ax_voltage.axhline(interconncet_voltage_inductor,linestyle='--',c='C0')
     ax_voltage.axhline(interconncet_voltage_capacitor,linestyle='--',c='C1')
-
+    ax_voltage.axvline(time,linestyle='--',c='gray')
+    
+    # Current
     plot_time_interconnect(data_output_ordered,ax_current,'current inductor',True)
-    ax_current.get_lines()[0].set_color("black")
-
-    y_limits = ax_current.get_ylim()
-
-    ax_current.axhline(interconnect_current,linestyle='--',c='gray')
+    plot_time_interconnect(data_output_ordered,ax_current,'current capacitor',True)
+    ax_current.legend(['Inductor','Capacitor'],loc='upper right')
+    ax_current.axhline(interconnect_curent_inductor,linestyle='--',c='C0')
+    ax_current.axhline(interconnect_current_capacitor,linestyle='--',c='C1')
     ax_current.axvline(time,linestyle='--',c='gray')
+    
+    
+    y_limits = ax_current.get_ylim()
+    # ax_current.get_lines()[0].set_color("black")
+
     ax_current.set_ylim(y_limits)
     
     ax_voltage.set_title('Voltage at Interconnect')
@@ -2307,7 +1349,6 @@ def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_
     ax_voltage.yaxis.set_major_formatter(EngFormatter('V'))
     ax_voltage.set_xlabel('time')
     ax_voltage.set_ylabel('voltage')
-    
     
     ax_current.set_title('Current at Interconnect')
     ax_current.xaxis.set_major_formatter(EngFormatter('s'))
@@ -2351,8 +1392,8 @@ def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
     with writer.saving(fig_save_2d, (save_name+".mp4"), float(dpi)):
 
         for i in tqdm(range(0,int(number_frames))):
-            interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current = plot_spatial_same_axis(time,Interface,ax_save_2d[0,0],ax_save_2d[1,0])
-            plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_save_2d[0,1],ax_save_2d[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current)
+            interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor = plot_spatial_voltage_and_current(time,Interface,ax_save_2d[0,0],ax_save_2d[1,0])
+            plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_save_2d[0,1],ax_save_2d[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor)
             
             writer.grab_frame()
             
@@ -2366,8 +1407,119 @@ def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
             
     plt.close(fig_save_2d)
     print(f"Spatial video generation completed, video saved as {save_name}.mp4")
-  
-def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage):
+
+def plot_3d_spatial(Time_Enquriey,interface,ax):
+    
+    ax.xaxis.set_major_formatter(EngFormatter('m'))
+    ax.yaxis.set_major_formatter(EngFormatter('A'))
+    ax.zaxis.set_major_formatter(EngFormatter('V'))
+            
+    ax.set_xlabel('position')
+    ax.set_ylabel('current')
+    ax.set_zlabel('voltage')
+    
+    is_Inductive =True
+
+    # INDUCTOR
+    pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, interface,is_Inductive)
+    zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
+
+    #arrays
+    x_position =[]
+    y_current =[]
+    z_voltage =[]
+
+    dx_position =[]
+    dy_current =[]
+    dz_voltage =[]
+
+    #initiate variables
+    x_old = 0
+    y_voltage_old = 0
+    y_current_old = 0
+
+    is_first = True
+
+    for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
+            
+            x = position
+                   
+            x_position.append(x)
+            y_current.append(0)
+            z_voltage.append(0)
+            
+            if(is_first):
+                    x_old = position
+                    y_voltage_old = left_voltage
+                    y_current_old = left_current
+                    is_first = False
+            else:
+                    dx_position.append(x - x_old)
+                    dy_current.append(y_current_old)
+                    dz_voltage.append(y_voltage_old)
+                    
+            x_old = x
+            
+            y_voltage_old = right_voltage
+            y_current_old = right_current
+            
+
+    x_position.pop()
+    y_current.pop()
+    z_voltage.pop()
+    
+    # plot inductor current and voltage
+    ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
+    
+    
+    # The capacitor
+    # setup arrays
+    x_position =[]
+    y_current =[]
+    z_voltage =[]
+
+    dx_position =[]
+    dy_current =[]
+    dz_voltage =[]
+
+    is_first = True
+
+    # get positions of voltages and currents
+    pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, interface,not is_Inductive)
+    zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
+
+    for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
+            
+            x = -position
+            
+            x_position.append(x)
+            y_current.append(0)
+            z_voltage.append(0)
+            
+            if(is_first):
+                    x_old = position
+                    y_voltage_old = left_voltage
+                    y_current_old = left_current
+                    is_first = False
+            else:
+                    dx_position.append(x - x_old)
+                    dy_current.append(y_current_old)
+                    dz_voltage.append(y_voltage_old)
+            
+            x_old = x
+            
+            y_voltage_old = right_voltage
+            y_current_old = right_current
+
+    x_position.pop()
+    y_current.pop()
+    z_voltage.pop()
+
+    # plot capacitor currents and voltages
+    ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
+    
+def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage, slider_step_size:float = 0.1):
+    
     fig_s,ax_s = plt.subplots(2,2,figsize=(14, 8))
     def clear_axes():
         ax_s[0,0].clear()
@@ -2377,34 +1529,34 @@ def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage):
 
     increment_button = widgets.Button(description = "step forward", layout=widgets.Layout(width='auto'))
     decrement_button = widgets.Button(description = "step backward", layout=widgets.Layout(width='auto'))
-    increment_text = widgets.FloatText(description = 'val', value=0.1)
+    increment_text = widgets.FloatText(description = 'increment', value=0.1)
 
 
-    time_slider = widgets.FloatSlider(value=0, min =0, max = Interface.data_input.Simulation_Stop_Time-1, layout=widgets.Layout(width='auto'))
+    time_slider = widgets.FloatSlider(value=0, min =0, max = Interface.data_input.Simulation_Stop_Time-1, step = slider_step_size, layout=widgets.Layout(width='auto'))
     output = widgets.Output()
 
     def on_increment_click(b):
         time_slider.value += increment_text.value
         time = Decimal(str(time_slider.value))
         clear_axes()
-        interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
-        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current)
+        interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor = plot_spatial_voltage_and_current(time,Interface,ax_s[0,0],ax_s[1,0])
+        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor)
         
         
     def on_decrement_click(b):
         time_slider.value -= increment_text.value
         time = Decimal(str(time_slider.value))
         clear_axes()
-        interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
-        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current)
+        interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor = plot_spatial_voltage_and_current(time,Interface,ax_s[0,0],ax_s[1,0])
+        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor)
         
     def handle_slider_change(change):
         if(isinstance(change.new,dict)):
             if(len(change.new) > 0):
                 time = Decimal(str(change.new['value']))
                 clear_axes()
-                interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current = plot_spatial_same_axis(time,Interface,ax_s[0,0],ax_s[1,0])
-                plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current)
+                interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor = plot_spatial_voltage_and_current(time,Interface,ax_s[0,0],ax_s[1,0])
+                plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor)
                 
     increment_button.on_click(on_increment_click)
     decrement_button.on_click(on_decrement_click)
