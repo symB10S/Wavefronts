@@ -569,24 +569,27 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
     
     # Crop merged to the maximum occuring index as it merged along this axis
     # already cropped on the other axis
-    if(Data_Input.is_Higher_Merging):
-        
-        max_x_index = np.max([x[0] for x in out_indexes])
-        max_x_index += 1
-        
-        Data_Output_Merged.Time = Data_Output_Merged.Time[0:max_x_index,:]
+    # if(Data_Input.is_Higher_Merging):
+    
+    max_x_index = np.max([x[0] for x in out_indexes])
+    max_x_index += 1
+    
+    max_y_index = np.max([y[1] for y in out_indexes])
+    max_y_index += 1
+    
+    Data_Output_Merged.Time = Data_Output_Merged.Time[0:max_x_index,0:max_x_index]
 
-        Data_Output_Merged.Voltage_Interconnect_Inductor =  Data_Output_Merged.Voltage_Interconnect_Inductor[0:max_x_index,:]
-        Data_Output_Merged.Current_Interconnect_Inductor = Data_Output_Merged.Current_Interconnect_Inductor[0:max_x_index,:]
+    Data_Output_Merged.Voltage_Interconnect_Inductor =  Data_Output_Merged.Voltage_Interconnect_Inductor[0:max_x_index,0:max_y_index]
+    Data_Output_Merged.Current_Interconnect_Inductor = Data_Output_Merged.Current_Interconnect_Inductor[0:max_x_index,0:max_y_index]
 
-        Data_Output_Merged.Voltage_Interconnect_Capacitor = Data_Output_Merged.Voltage_Interconnect_Capacitor[0:max_x_index,:]
-        Data_Output_Merged.Current_Interconnect_Capacitor = Data_Output_Merged.Current_Interconnect_Capacitor[0:max_x_index,:]
+    Data_Output_Merged.Voltage_Interconnect_Capacitor = Data_Output_Merged.Voltage_Interconnect_Capacitor[0:max_x_index,0:max_y_index]
+    Data_Output_Merged.Current_Interconnect_Capacitor = Data_Output_Merged.Current_Interconnect_Capacitor[0:max_x_index,0:max_y_index]
 
-        Data_Output_Merged.Wavefronts_Sending_Inductor = Data_Output_Merged.Wavefronts_Sending_Inductor[0:max_x_index,:]
-        Data_Output_Merged.Wavefronts_Sending_Capacitor = Data_Output_Merged.Wavefronts_Sending_Capacitor[0:max_x_index,:]
+    Data_Output_Merged.Wavefronts_Sending_Inductor = Data_Output_Merged.Wavefronts_Sending_Inductor[0:max_x_index,0:max_y_index]
+    Data_Output_Merged.Wavefronts_Sending_Capacitor = Data_Output_Merged.Wavefronts_Sending_Capacitor[0:max_x_index,0:max_y_index]
 
-        Data_Output_Merged.Wavefronts_Returning_Inductor = Data_Output_Merged.Wavefronts_Returning_Inductor[0:max_x_index,:]
-        Data_Output_Merged.Wavefronts_Returning_Capacitor = Data_Output_Merged.Wavefronts_Returning_Capacitor[0:max_x_index,:]
+    Data_Output_Merged.Wavefronts_Returning_Inductor = Data_Output_Merged.Wavefronts_Returning_Inductor[0:max_x_index,0:max_y_index]
+    Data_Output_Merged.Wavefronts_Returning_Capacitor = Data_Output_Merged.Wavefronts_Returning_Capacitor[0:max_x_index,0:max_y_index]
             
         
     return Data_Output_Storage_Ordered(
