@@ -1160,7 +1160,7 @@ def plot_refelction_diagram(interface_data : Data_Interface_Storage, ax, is_volt
     cb.ax.yaxis.set_major_formatter(EngFormatter(units))
 
 def make_spatial_voltage_and_current(Time_Enquriey : Decimal , Interface : Data_Interface_Storage, **kwargs):
-    """ Plots the spatial distribution of votlage and current in both the inductor and capacitor.
+    """ Plots the spatial distribution of voltage and current in both the inductor and capacitor.
 
     :param Time_Enquriey: the time at which spatial distrinution of energy is shown. 
     :type Time_Enquriey: Decimal
@@ -1363,51 +1363,52 @@ def make_spatial_voltage_and_current(Time_Enquriey : Decimal , Interface : Data_
     if(kwargs['return_data']) :
         return interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor
 
-def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_current):
+def plot_time_interconnect_and_intercepts_at_time(Time_Enquriey : Decimal, data_output_ordered,ax_voltage,ax_current):
 
     # get closest index to event passed
-    index_closest,_ = closest_event_to_time(data_output_ordered.Time, time,False)
+    index_closest,_ = closest_event_to_time(data_output_ordered.Time, Time_Enquriey,False)
     
     # Voltage
+    # plot inductor voltage and get intercept value
     data_VL = plot_time_interconnect(data_output_ordered,ax_voltage,'voltage inductor',True,return_data = True)
     interconncet_voltage_inductor = data_VL[index_closest]
     
+    # plot capacitor voltage on same axes and get intercept value
     data_VC = plot_time_interconnect(data_output_ordered,ax_voltage,'voltage capacitor',True,return_data = True)
     interconncet_voltage_capacitor = data_VC[index_closest]
     
+    # label voltage axis
+    ax_voltage.set_title('Voltage at Interconnect')
     ax_voltage.legend(['Inductor','Capacitor'],loc='upper right')
     ax_voltage.axhline(interconncet_voltage_inductor,linestyle='--',c='C0')
     ax_voltage.axhline(interconncet_voltage_capacitor,linestyle='--',c='C1')
-    ax_voltage.axvline(time,linestyle='--',c='gray')
-    
-    # Current
-    data_IL = plot_time_interconnect(data_output_ordered,ax_current,'current inductor',True,return_data = True)
-    interconncet_current_inductor = data_IL[index_closest]
-    data_IC = plot_time_interconnect(data_output_ordered,ax_current,'current capacitor',True,return_data = True)
-    interconnect_current_capacitor = data_IC[index_closest]
-    
-    ax_current.legend(['Inductor','Capacitor'],loc='upper right')
-    ax_current.axhline(interconncet_current_inductor,linestyle='--',c='C0')
-    ax_current.axhline(interconnect_current_capacitor,linestyle='--',c='C1')
-    ax_current.axvline(time,linestyle='--',c='gray')
-    
-    
-    y_limits = ax_current.get_ylim()
-    # ax_current.get_lines()[0].set_color("black")
-
-    ax_current.set_ylim(y_limits)
-    
-    ax_voltage.set_title('Voltage at Interconnect')
+    ax_voltage.axvline(Time_Enquriey,linestyle='--',c='gray')
     ax_voltage.xaxis.set_major_formatter(EngFormatter('s'))
     ax_voltage.yaxis.set_major_formatter(EngFormatter('V'))
     ax_voltage.set_xlabel('time')
     ax_voltage.set_ylabel('voltage')
     
+    # Current
+    # plot inductor current and get intercept value
+    data_IL = plot_time_interconnect(data_output_ordered,ax_current,'current inductor',True,return_data = True)
+    interconncet_current_inductor = data_IL[index_closest]
+    
+    # plot capacitor current  on samw current axis, get intercept value
+    data_IC = plot_time_interconnect(data_output_ordered,ax_current,'current capacitor',True,return_data = True)
+    interconnect_current_capacitor = data_IC[index_closest]
+    
+    # label current axis
     ax_current.set_title('Current at Interconnect')
+    ax_current.legend(['Inductor','Capacitor'],loc='upper right')
+    ax_current.axhline(interconncet_current_inductor,linestyle='--',c='C0')
+    ax_current.axhline(interconnect_current_capacitor,linestyle='--',c='C1')
+    ax_current.axvline(Time_Enquriey,linestyle='--',c='gray')
     ax_current.xaxis.set_major_formatter(EngFormatter('s'))
     ax_current.yaxis.set_major_formatter(EngFormatter('A'))
     ax_current.set_xlabel('time')
     ax_current.set_ylabel('current')
+    
+    
 
 def plot_3d_spatial(Time_Enquriey,interface,ax):
     
@@ -1559,7 +1560,7 @@ def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
 
         for i in tqdm(range(0,int(number_frames))):
             make_spatial_voltage_and_current(time,Interface,ax=ax_save_2d)
-            plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_save_2d['inter-V'],ax_save_2d['inter-I'])
+            plot_time_interconnect_and_intercepts_at_time(time,Interface.data_output_ordered,ax_save_2d['inter-V'],ax_save_2d['inter-I'])
             
             writer.grab_frame()
             
@@ -1573,22 +1574,29 @@ def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
 
 def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage, slider_step_size:float = 0.1):
     
-    # fig_s,ax_s = plt.subplot_mosaic(2,2,figsize=(14, 8))
+    # define widgets
+    increment_button = widgets.Button(description = "step forward", layout=widgets.Layout(width='auto'))
+    decrement_button = widgets.Button(description = "step backward", layout=widgets.Layout(width='auto'))
+    increment_text = widgets.FloatText(description = 'increment', value=0.1)
+    auto_zoom_toggle = widgets.ToggleButton(value=False,description='Click me',disabled=False, button_style='',tooltip='Description',icon='check')
+    time_slider = widgets.FloatSlider(value=0, min =0, max = Interface.data_input.Simulation_Stop_Time-1, step = slider_step_size, layout=widgets.Layout(width='auto'))
+    # output = widgets.Output()
+    
     fig_s,ax_s = plt.subplot_mosaic([['V','inter-V'],
                                      ['I','inter-I']],figsize=(14, 8))
+    
+    is_zoomed = False
     
     def handle_input(t:Decimal):
         clear_subplot(ax_s.values())
         make_spatial_voltage_and_current(t,Interface,ax=ax_s,fig_size=(14, 8))
-        plot_time_interconnect_and_intercept(t,Interface.data_output_ordered,ax_s['inter-V'],ax_s['inter-I'])
+        plot_time_interconnect_and_intercepts_at_time(t,Interface.data_output_ordered,ax_s['inter-V'],ax_s['inter-I'])
+        if(is_zoomed == False):
+            ax_s['V'].set_ylim(ax_s['inter-V'].get_ylim())
+            ax_s['I'].set_ylim(ax_s['inter-I'].get_ylim())
+    
+    handle_input(Decimal('0'))
 
-    increment_button = widgets.Button(description = "step forward", layout=widgets.Layout(width='auto'))
-    decrement_button = widgets.Button(description = "step backward", layout=widgets.Layout(width='auto'))
-    increment_text = widgets.FloatText(description = 'increment', value=0.1)
-
-
-    time_slider = widgets.FloatSlider(value=0, min =0, max = Interface.data_input.Simulation_Stop_Time-1, step = slider_step_size, layout=widgets.Layout(width='auto'))
-    output = widgets.Output()
 
     def on_increment_click(b):
         time_slider.value += increment_text.value
@@ -1606,14 +1614,20 @@ def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage, sli
                 time = Decimal(str(change.new['value']))
                 handle_input(time)
                 
+    def update(b):
+        time = Decimal(str(time_slider.value))
+        handle_input(time)
+                
                 
     increment_button.on_click(on_increment_click)
     decrement_button.on_click(on_decrement_click)
     time_slider.observe(handle_slider_change)
+    # auto_zoom_toggle.observe(update)
 
     increment_grid = widgets.GridspecLayout(1,3)
     increment_grid[0,0] = decrement_button
     increment_grid[0,1] = increment_button
     increment_grid[0,2] = increment_text
+    # increment_grid[0,3] = auto_zoom_toggle
 
-    display(increment_grid,time_slider)
+    display(increment_grid,time_slider,auto_zoom_toggle)

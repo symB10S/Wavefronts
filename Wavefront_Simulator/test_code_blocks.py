@@ -1,22 +1,22 @@
 from Wavefront_Generation import Full_Cycle
-from Wavefront_Plotting import save_spatial_interconnect
+from Wavefront_Plotting import make_fanout_interconnect_all,plot_trace_on_merged_fanout_axis
 import matplotlib.pyplot as plt
 
 # simulate interface
-interface = Full_Cycle(L_time='0.34' , C_time='0.12', L_impedance = '700', C_impedance = '7')
+interface = Full_Cycle(L_time='12' , C_time='8')
 
-# Make axes 
-fig,ax = plt.subplots(2,1,figsize=(8,8))
+# make figure internally, plot commutative data
+fig1,ax1 = make_fanout_interconnect_all(interface.data_output_commutative)
+fig1.suptitle(f"commutative Fanouts") # customize title
 
-# # make a handle for ordered data (very optional)
-# data = interface.data_output_ordered
+# make figure externally, put currents left and voltages right
+fig2, ax2 = plt.subplot_mosaic([['IL','VL'],
+                                ['IC','VC']])
 
-# # plot accumulated data on ax[0]
-# plot_time_interconnect(data,ax[0],'current capacitor',True)
+# pass ax2 to fucniton, also, show multiplicative data this time
+make_fanout_interconnect_all(interface.data_output_multiplicative, ax=ax2)
+plot_trace_on_merged_fanout_axis(interface,ax2['VL'])
 
-# # plot change data on ax[1], use 'interface' instead of 'data' (for fun)
-# plot_time_interconnect(interface,ax[1],'current capacitor',False)
+fig2.suptitle(f"multiplicative Fanouts") # customize title
 
-# plt.show()
-
-save_spatial_interconnect(interface,video_runtime='1')
+plt.show()
