@@ -558,7 +558,6 @@ def make_fanout_wavefronts_all(data_output: Data_Output_Storage,is_Inductor: boo
     
     del fanout_kwargs['title']
     del fanout_kwargs['units']
-    # del fanout_kwargs['contrast']
     
     if (make_kwargs['ax'] == False):
         fig, ax = plt.subplot_mosaic([['VS','IS' ],
@@ -648,8 +647,7 @@ def plot_trace_on_merged_fanout_axis(data_output_ordered : Data_Output_Storage_O
                  facecolor = kwargs['facecolor'],
                  edgecolor =kwargs['edgecolor'])
 
-
-def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = True ): 
+def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = True,**kwarg): 
     """Plots the time waveform of one of the interconncet metrics. 
     It must be noted that interconnect values stored in the :Data_Output_Storage_Ordered: object signify the 'change' in interface values due to wavefronts.
     To see the full time wavefrom, the changes must be accumulated. This function shows both change and accumulated quantities. 
@@ -663,6 +661,8 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
     :param is_integrated: If the wavefrom must represent the 'change' or 'accumulation of changes' of the data selected to be plotted, default is True
     :type is_integrated: bool
     :raises ValueError: if an incorrect which_string is provided.
+    :return: (optional) if key word 'return_data = True' is passed, will return the plotted array, default is False
+    :rtype: np.ndarray[Decimal]
     
     .. code-block::
     
@@ -674,7 +674,7 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
         interface = Full_Cycle(L_time='0.34' , C_time='0.12', L_impedance = '700', C_impedance = '7')
 
         # Make axes 
-        fig,ax = plt.subplots(2,1)
+        fig,ax = plt.subplots(2,1,figsize=(8,8))
 
         # make a handle for ordered data (very optional)
         data = interface.data_output_ordered
@@ -682,8 +682,8 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
         # plot accumulated data on ax[0]
         plot_time_interconnect(data,ax[0],'current capacitor',True)
 
-        # plot change data on ax[1]
-        plot_time_interconnect(data,ax[1],'current capacitor',False)
+        # plot change data on ax[1], use 'interface' instead of 'data' (for fun)
+        plot_time_interconnect(interface,ax[1],'current capacitor',False)
 
         plt.show()
 
@@ -692,50 +692,42 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
         This function accepts only :py:class:`Wavefront_Storage.Data_Output_Storage_Ordered` as an input. The data is required to be 1D and ordered.
     
     """
+    default_kwarg = {'return_data' : False}
+    kwarg = handle_default_kwargs(kwarg, default_kwarg)
+    
+    # make interface_data -> ordered_data
     data_output_ordered = handle_interface_to_ordered(data_output_ordered)
     
-    allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+    # get data
+    data_to_plot = data_output_ordered.get_interconnect_array(which_string)
     
+    # Format axes
+    allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+    if(which_string.lower() == allowed_strings[0] or which_string.lower() == allowed_strings[1]):
+        transmisson_line_str = 'Inductor '
+    else:
+        transmisson_line_str = 'Capacitor '
+        
+    if(which_string.lower() == allowed_strings[1] or which_string.lower() == allowed_strings[3]):
+        magnitude_str = 'voltage '
+        ax.yaxis.set_major_formatter(EngFormatter('V'))
+    else:
+        magnitude_str = 'current '
+        ax.yaxis.set_major_formatter(EngFormatter('A'))
+        
+    if(is_integrated):
+        data_to_plot = np.cumsum(data_to_plot)
+        operation_str = ''
+    else:
+        operation_str = 'change'
+    
+    ax.set_title(transmisson_line_str + magnitude_str + operation_str + ' at Interconnect')
     ax.xaxis.set_major_formatter(EngFormatter('s'))
     
-    if(is_integrated):
-        if(which_string.lower() == allowed_strings[0] ):
-            ax.set_title("Inductor voltage at Interconnect")
-            ax.yaxis.set_major_formatter(EngFormatter('V'))
-            ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Inductor),where='post')
-        elif(which_string.lower() == allowed_strings[1] ):
-            ax.set_title("Inductor current at Interconnect")
-            ax.yaxis.set_major_formatter(EngFormatter('A'))
-            ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Inductor),where='post')
-        elif(which_string.lower() == allowed_strings[2] ):
-            ax.set_title("Capacitor voltage at Interconnect")
-            ax.yaxis.set_major_formatter(EngFormatter('V'))
-            ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Voltage_Interconnect_Capacitor),where='post')
-        elif(which_string.lower() == allowed_strings[3] ):
-            ax.set_title("Capacitor current at Interconnect")
-            ax.yaxis.set_major_formatter(EngFormatter('A'))
-            ax.step(data_output_ordered.Time,np.cumsum(data_output_ordered.Current_Interconnect_Capacitor),where='post')
-        else:
-            raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
-    else:
-        if(which_string.lower() == allowed_strings[0] ):
-            ax.set_title("Inductor voltage change at Interconnect")
-            ax.yaxis.set_major_formatter(EngFormatter('V'))
-            ax.step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Inductor,where='post')
-        elif(which_string.lower() == allowed_strings[1] ):
-            ax.set_title("Inductor current change at Interconnect")
-            ax.yaxis.set_major_formatter(EngFormatter('A'))
-            ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Inductor,where='post')
-        elif(which_string.lower() == allowed_strings[2] ):
-            ax.set_title("Capacitor voltage change at Interconnect")
-            ax.yaxis.set_major_formatter(EngFormatter('V'))
-            ax.step(data_output_ordered.Time,data_output_ordered.Voltage_Interconnect_Capacitor,where='post')
-        elif(which_string.lower() == allowed_strings[3] ):
-            ax.set_title("Capacitor current change at Interconnect")
-            ax.yaxis.set_major_formatter(EngFormatter('A'))
-            ax.step(data_output_ordered.Time,data_output_ordered.Current_Interconnect_Capacitor,where='post')
-        else:
-            raise ValueError(f"Incorrect plotting choice /, {which_string} is not a valid option. Optiond are: \n {allowed_strings}")
+    ax.step(data_output_ordered.Time,data_to_plot,where='post')
+    
+    if(kwarg['return_data']):
+        return data_to_plot
 
 def plot_time_wavefronts(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_sending :bool,is_integrated: bool = True ): 
     """Plots the time waveform of one of the wavefront metrics. 
@@ -1167,49 +1159,99 @@ def plot_refelction_diagram(interface_data : Data_Interface_Storage, ax, is_volt
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=colour_map), ax=ax)
     cb.ax.yaxis.set_major_formatter(EngFormatter(units))
 
-
-# SPATIAL PLOTS NEW   
-
-def plot_spatial_voltage_and_current(Time_Enquriey : Decimal , Interface : Data_Interface_Storage, ax_voltage, ax_current,quantize : str ='0.001'):
+def make_spatial_voltage_and_current(Time_Enquriey : Decimal , Interface : Data_Interface_Storage, **kwargs):
     """ Plots the spatial distribution of votlage and current in both the inductor and capacitor.
 
     :param Time_Enquriey: the time at which spatial distrinution of energy is shown. 
     :type Time_Enquriey: Decimal
     :param Interface: the data storage object for the interface simulation
     :type Interface: Data_Interface_Storage
-    :param ax_voltage: axis for voltage to be plotted
-    :type ax_voltage: matplotlib Axes
-    :param ax_current: axis for current to be plotted
-    :type ax_current: matplotlib Axes
-    :param quantize: the precision to round the input time for the title
-    :type quantize: str
-    :return: interconnect values of capacitor voltage, inductor voltage and interconnect current in that order
-    :rtype: tuple ( Decimal, Decimal, Decimal )
-    """
+    :return: interconnect values of voltage for capacitor and inductor and current for capacitor and inductor in that order if 'return-data' keyword set to True.
+    :rtype: tuple ( Decimal[VC], Decimal[VL], Decimal[IC], Decimal[IL] )
+    :**kwargs for figure creation**:
+        - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form or a 1D np.ndarray of two items. The first will be assigned voltage and the other current.The labels for these axes must inculde: 
+            - 'V' axis for voltage spatial plot
+            - 'I' axis for current spatial plot
+        - **fig_size** (*tuple of ints*) - The size of the figure. Default is (12,10).
+        - **quantize** (*str or Decimal*) - the precision to round the input time shown in the title
+        - **return_data** (*bool*) - if the interconnect values must be returned or not, default is False
+    
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import make_spatial_voltage_and_current
+        import matplotlib.pyplot as plt
+        from decimal import Decimal
 
+        # simulate an interface
+        interface_data = Full_Cycle(L_time = '2.07',C_time = '3.2')
+
+        # investgate the spatial waveforms a t = 30.573
+        make_spatial_voltage_and_current(Decimal('30.573'),interface_data)
+
+        # this time we will pass an axes dict, put current at the top:
+        # notice the correct formatting of ['V'] and ['I']
+        fig,ax = plt.subplot_mosaic([['I'],
+                                    ['V']])
+
+        # investgate the spatial waveforms a t = 30.7
+        make_spatial_voltage_and_current(Decimal('30.7'),interface_data,ax=ax)
+
+        plt.show()
+        
+    .. warning::
+
+        if you do not pass an axes object the function will make a new suplot at each call. 
+        This means that if you plan to run the function such that it called multiple timea, like a loop, 
+        it is advised to pass axes object to avoid uneccassary creation of supblots each interation.
+    """
+    
+    default_make_kwargs : dict = {'ax':False,
+                                  'fig_size':(12,10),
+                                  'quantize':'0.001',
+                                  'return_data':False}
+    
+    kwargs = handle_default_kwargs(kwargs,default_make_kwargs)
+    
+    if (isinstance(kwargs['ax'],bool)): # not provided make axes
+        fig, ax = plt.subplot_mosaic([[  'V'  ],
+                                      [  'I'  ]])
+    elif isinstance(kwargs['ax'],dict): # if mosaic use
+        ax = kwargs['ax']
+        fig = ax[ 'V' ].get_figure()
+    elif isinstance(kwargs['ax'],np.ndarray): # else make dict
+        ax = {}
+        ax['V'] = kwargs['ax'][0]
+        ax['I'] = kwargs['ax'][1]
+        fig = ax[ 'V' ].get_figure()
+    else:
+        raise TypeError(f"axes object provided is not of type dict or numpy.ndarray, was instead of type {type(kwargs['ax'])}")
+    
+    fig.set_size_inches(kwargs['fig_size'])
+    
     # Set title
-    ax_voltage.get_figure().suptitle("Spatial Waveforms at " + str(Time_Enquriey.quantize(Decimal(quantize), rounding=ROUND_HALF_DOWN)) + "s")
+    ax['V'].get_figure().suptitle("Spatial Waveforms at " + str(Time_Enquriey.quantize(Decimal(kwargs['quantize']), rounding=ROUND_HALF_DOWN)) + "s")
     
     # Set axes
     L_l = float(Interface.data_input.Inductor_Length)
     C_l = float(Interface.data_input.Capacitor_Length)
     
-    ax_voltage.set_title('Spatial Voltage')
-    ax_voltage.yaxis.set_major_formatter(EngFormatter('V'))
-    ax_voltage.set_xlim([-C_l,L_l])
-    ax_voltage.set_xticks([-1*C_l,-0.5*C_l,0,0.5*L_l,1*L_l])
-    ax_voltage.set_xticklabels(["$\mathregular{\ell_C}$","Capacitor","Interface","Inductor","$\mathregular{\ell_L}$"],fontsize='large')
-    ax_voltage.set_ylabel('voltage')
+    ax['V'].set_title('Spatial Voltage')
+    ax['V'].yaxis.set_major_formatter(EngFormatter('V'))
+    ax['V'].set_xlim([-C_l,L_l])
+    ax['V'].set_xticks([-1*C_l,-0.5*C_l,0,0.5*L_l,1*L_l])
+    ax['V'].set_xticklabels(["$\mathregular{\ell_C}$","Capacitor","Interface","Inductor","$\mathregular{\ell_L}$"],fontsize='large')
+    ax['V'].set_ylabel('voltage')
     
-    ax_current.set_title('Spatial Current')
-    ax_current.yaxis.set_major_formatter(EngFormatter('A'))
-    ax_current.set_xlim([-C_l,L_l])
-    ax_current.set_xticks([-1*C_l,-0.5*C_l,0,0.5*L_l,1*L_l])
-    ax_current.set_xticklabels(["$\mathregular{\ell_C}$","Capacitor","Interface","Inductor","$\mathregular{\ell_L}$"],fontsize='large')
-    ax_current.set_ylabel('current')
+    ax['I'].set_title('Spatial Current')
+    ax['I'].yaxis.set_major_formatter(EngFormatter('A'))
+    ax['I'].set_xlim([-C_l,L_l])
+    ax['I'].set_xticks([-1*C_l,-0.5*C_l,0,0.5*L_l,1*L_l])
+    ax['I'].set_xticklabels(["$\mathregular{\ell_C}$","Capacitor","Interface","Inductor","$\mathregular{\ell_L}$"],fontsize='large')
+    ax['I'].set_ylabel('current')
 
     # Inductor
-    # Get spatial intercepts
+    # Get spatial intercepts for inductor
     pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, Interface, True)
     zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
 
@@ -1265,8 +1307,8 @@ def plot_spatial_voltage_and_current(Time_Enquriey : Decimal , Interface : Data_
     y_voltage.pop()
     
     # Spatially plot the inductor current and voltage
-    ax_voltage.bar(x_position, dy_voltage, dx_position, align = 'edge',edgecolor = 'k')
-    ax_current.bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
+    ax['V'].bar(x_position, dy_voltage, dx_position, align = 'edge',edgecolor = 'k')
+    ax['I'].bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
     
     # Now the capacitor
     # reset arrays 
@@ -1280,10 +1322,10 @@ def plot_spatial_voltage_and_current(Time_Enquriey : Decimal , Interface : Data_
 
     is_first = True
 
-    # get spatial interconnects
+    # get spatial interconnects for capacitor
     pos_all, value_lv, value_rv, value_lc, value_rc = get_spatial_voltage_current_at_time(Time_Enquriey, Interface , False)
     zip_out = zip(pos_all, value_lv, value_rv, value_lc, value_rc)
-
+    
     for (position, left_voltage, right_voltage, left_current, right_current) in zip_out:
             
             x = -float(position)
@@ -1314,27 +1356,38 @@ def plot_spatial_voltage_and_current(Time_Enquriey : Decimal , Interface : Data_
     y_voltage.pop()
     
     # plot capacitor voltages and currents
-    ax_voltage.bar(x_position, dy_voltage, dx_position, align = 'edge',edgecolor = 'k')
-    ax_current.bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
+    ax['V'].bar(x_position, dy_voltage, dx_position, align = 'edge',edgecolor = 'k')
+    ax['I'].bar(x_position, dy_current, dx_position, align = 'edge',edgecolor = 'k')
     
     # return interconnect values
-    return interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor
+    if(kwargs['return_data']) :
+        return interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor
 
-def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_current,interconncet_voltage_capacitor=0, interconncet_voltage_inductor=0, interconnect_current_capacitor=0, interconnect_curent_inductor=0):
+def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_current):
 
+    # get closest index to event passed
+    index_closest,_ = closest_event_to_time(data_output_ordered.Time, time,False)
+    
     # Voltage
-    plot_time_interconnect(data_output_ordered,ax_voltage,'voltage inductor',True)
-    plot_time_interconnect(data_output_ordered,ax_voltage,'voltage capacitor',True)
+    data_VL = plot_time_interconnect(data_output_ordered,ax_voltage,'voltage inductor',True,return_data = True)
+    interconncet_voltage_inductor = data_VL[index_closest]
+    
+    data_VC = plot_time_interconnect(data_output_ordered,ax_voltage,'voltage capacitor',True,return_data = True)
+    interconncet_voltage_capacitor = data_VC[index_closest]
+    
     ax_voltage.legend(['Inductor','Capacitor'],loc='upper right')
     ax_voltage.axhline(interconncet_voltage_inductor,linestyle='--',c='C0')
     ax_voltage.axhline(interconncet_voltage_capacitor,linestyle='--',c='C1')
     ax_voltage.axvline(time,linestyle='--',c='gray')
     
     # Current
-    plot_time_interconnect(data_output_ordered,ax_current,'current inductor',True)
-    plot_time_interconnect(data_output_ordered,ax_current,'current capacitor',True)
+    data_IL = plot_time_interconnect(data_output_ordered,ax_current,'current inductor',True,return_data = True)
+    interconncet_current_inductor = data_IL[index_closest]
+    data_IC = plot_time_interconnect(data_output_ordered,ax_current,'current capacitor',True,return_data = True)
+    interconnect_current_capacitor = data_IC[index_closest]
+    
     ax_current.legend(['Inductor','Capacitor'],loc='upper right')
-    ax_current.axhline(interconnect_curent_inductor,linestyle='--',c='C0')
+    ax_current.axhline(interconncet_current_inductor,linestyle='--',c='C0')
     ax_current.axhline(interconnect_current_capacitor,linestyle='--',c='C1')
     ax_current.axvline(time,linestyle='--',c='gray')
     
@@ -1355,58 +1408,6 @@ def plot_time_interconnect_and_intercept(time,data_output_ordered,ax_voltage,ax_
     ax_current.yaxis.set_major_formatter(EngFormatter('A'))
     ax_current.set_xlabel('time')
     ax_current.set_ylabel('current')
-
-def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
-
-    #Default Values
-    kwarg_options = dict([
-        ('start_time','0'), ('end_time',Interface.data_input.Simulation_Stop_Time), 
-        ('fps','30'),('video_runtime','60'),('dpi','300'),
-        ('fig_size',(14, 8)),
-        ('meta_data',dict(title='Distributed Modelling', artist='Jonathan Meerholz')),
-        ('save_name',f'spatial_and_time_{Interface.data_input.Inductor_Impedance}_{Interface.data_input.Capacitor_Impedance}ohm_{Interface.data_input.Inductor_Time*2}_{Interface.data_input.Capacitor_Time*2}s')
-        ])
-         
-    kwarg_options = handle_default_kwargs(kwargs,kwarg_options)
-    
-    fig_save_2d, ax_save_2d = plt.subplots(2,2,figsize=kwarg_options['fig_size'],constrained_layout = True)
-
-    save_name = kwarg_options['save_name']
-    save_name = save_name.replace('.',',')
-
-    start_time = Decimal(kwarg_options['start_time'])
-    end_time = Decimal(kwarg_options['end_time'])
-
-    fps = Decimal(kwarg_options['fps'])
-    video_runtime = Decimal(kwarg_options['video_runtime'])
-    dpi = kwarg_options['dpi']
-
-    number_frames =  video_runtime*fps
-    time_increment = (end_time - start_time)/number_frames
-
-    metadata = kwarg_options['meta_data']
-    writer = FFMpegWriter(fps=float(fps), metadata=metadata)
-
-    time = start_time
-    frame_counter = 0
-    with writer.saving(fig_save_2d, (save_name+".mp4"), float(dpi)):
-
-        for i in tqdm(range(0,int(number_frames))):
-            interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor = plot_spatial_voltage_and_current(time,Interface,ax_save_2d[0,0],ax_save_2d[1,0])
-            plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_save_2d[0,1],ax_save_2d[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor)
-            
-            writer.grab_frame()
-            
-            time += time_increment
-            frame_counter +=1
-            
-            ax_save_2d[0,0].clear()
-            ax_save_2d[0,1].clear()
-            ax_save_2d[1,0].clear()
-            ax_save_2d[1,1].clear()
-            
-    plt.close(fig_save_2d)
-    print(f"Spatial video generation completed, video saved as {save_name}.mp4")
 
 def plot_3d_spatial(Time_Enquriey,interface,ax):
     
@@ -1517,15 +1518,69 @@ def plot_3d_spatial(Time_Enquriey,interface,ax):
 
     # plot capacitor currents and voltages
     ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
+
+def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
+
+    #Default Values
+    kwarg_options = dict([
+        ('start_time','0'), ('end_time',Interface.data_input.Simulation_Stop_Time), 
+        ('fps','30'),('video_runtime','60'),('dpi','300'),
+        ('fig_size',(14, 8)),
+        ('meta_data',dict(title='Distributed Modelling', artist='Jonathan Meerholz')),
+        ('save_name',f'spatial_and_time_{Interface.data_input.Inductor_Impedance}_{Interface.data_input.Capacitor_Impedance}ohm_{Interface.data_input.Inductor_Time*2}_{Interface.data_input.Capacitor_Time*2}s')
+        ])
+         
+    kwarg_options = handle_default_kwargs(kwargs,kwarg_options)
     
+    # fig_save_2d, ax_save_2d = plt.subplots(2,2,figsize=kwarg_options['fig_size'],constrained_layout = True)
+    fig_save_2d, ax_save_2d = plt.subplot_mosaic([['V', 'inter-V'],
+                                                  ['I', 'inter-I']],figsize=kwarg_options['fig_size'],constrained_layout = True)
+    
+
+    save_name = kwarg_options['save_name']
+    save_name = save_name.replace('.',',')
+
+    start_time = Decimal(kwarg_options['start_time'])
+    end_time = Decimal(kwarg_options['end_time'])
+
+    fps = Decimal(kwarg_options['fps'])
+    video_runtime = Decimal(kwarg_options['video_runtime'])
+    dpi = kwarg_options['dpi']
+
+    number_frames =  video_runtime*fps
+    time_increment = (end_time - start_time)/number_frames
+
+    metadata = kwarg_options['meta_data']
+    writer = FFMpegWriter(fps=float(fps), metadata=metadata)
+
+    time = start_time
+    frame_counter = 0
+    with writer.saving(fig_save_2d, (save_name+".mp4"), float(dpi)):
+
+        for i in tqdm(range(0,int(number_frames))):
+            make_spatial_voltage_and_current(time,Interface,ax=ax_save_2d)
+            plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_save_2d['inter-V'],ax_save_2d['inter-I'])
+            
+            writer.grab_frame()
+            
+            time += time_increment
+            frame_counter +=1
+            
+            clear_subplot(ax_save_2d.values())
+
+    plt.close(fig_save_2d)
+    print(f"Spatial video generation completed, video saved as {save_name}.mp4")
+
 def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage, slider_step_size:float = 0.1):
     
-    fig_s,ax_s = plt.subplots(2,2,figsize=(14, 8))
-    def clear_axes():
-        ax_s[0,0].clear()
-        ax_s[0,1].clear()
-        ax_s[1,0].clear()
-        ax_s[1,1].clear()
+    # fig_s,ax_s = plt.subplot_mosaic(2,2,figsize=(14, 8))
+    fig_s,ax_s = plt.subplot_mosaic([['V','inter-V'],
+                                     ['I','inter-I']],figsize=(14, 8))
+    
+    def handle_input(t:Decimal):
+        clear_subplot(ax_s.values())
+        make_spatial_voltage_and_current(t,Interface,ax=ax_s,fig_size=(14, 8))
+        plot_time_interconnect_and_intercept(t,Interface.data_output_ordered,ax_s['inter-V'],ax_s['inter-I'])
 
     increment_button = widgets.Button(description = "step forward", layout=widgets.Layout(width='auto'))
     decrement_button = widgets.Button(description = "step backward", layout=widgets.Layout(width='auto'))
@@ -1538,25 +1593,19 @@ def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage, sli
     def on_increment_click(b):
         time_slider.value += increment_text.value
         time = Decimal(str(time_slider.value))
-        clear_axes()
-        interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor = plot_spatial_voltage_and_current(time,Interface,ax_s[0,0],ax_s[1,0])
-        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor)
-        
+        handle_input(time)
         
     def on_decrement_click(b):
         time_slider.value -= increment_text.value
         time = Decimal(str(time_slider.value))
-        clear_axes()
-        interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor = plot_spatial_voltage_and_current(time,Interface,ax_s[0,0],ax_s[1,0])
-        plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor)
+        handle_input(time)
         
     def handle_slider_change(change):
         if(isinstance(change.new,dict)):
             if(len(change.new) > 0):
                 time = Decimal(str(change.new['value']))
-                clear_axes()
-                interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor = plot_spatial_voltage_and_current(time,Interface,ax_s[0,0],ax_s[1,0])
-                plot_time_interconnect_and_intercept(time,Interface.data_output_ordered,ax_s[0,1],ax_s[1,1],interconncet_voltage_capacitor, interconncet_voltage_inductor, interconnect_current_capacitor, interconnect_current_inductor)
+                handle_input(time)
+                
                 
     increment_button.on_click(on_increment_click)
     decrement_button.on_click(on_decrement_click)

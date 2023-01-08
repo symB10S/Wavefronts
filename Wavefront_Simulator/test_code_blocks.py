@@ -1,16 +1,22 @@
 from Wavefront_Generation import Full_Cycle
-from Wavefront_Plotting import plot_refelction_diagram
+from Wavefront_Plotting import save_spatial_interconnect
 import matplotlib.pyplot as plt
 
 # simulate interface
-interface = Full_Cycle(L_time = '27',C_time = '32')
+interface = Full_Cycle(L_time='0.34' , C_time='0.12', L_impedance = '700', C_impedance = '7')
 
-# create subplot
-fig,ax = plt.subplots(1,2,figsize=(18,8))
+# Make axes 
+fig,ax = plt.subplots(2,1,figsize=(8,8))
 
-# highlight sending wavefronts and make returning gray
-c = 'dimgray'
-plot_refelction_diagram(interface,ax[0],True, CR_colour=c, CR_style = '--', LR_colour=c, LR_style = '--')
-plot_refelction_diagram(interface,ax[1],False, CR_colour=c, CR_style = '--', LR_colour=c, LR_style = '--')
+# # make a handle for ordered data (very optional)
+# data = interface.data_output_ordered
 
-plt.show()
+# # plot accumulated data on ax[0]
+# plot_time_interconnect(data,ax[0],'current capacitor',True)
+
+# # plot change data on ax[1], use 'interface' instead of 'data' (for fun)
+# plot_time_interconnect(interface,ax[1],'current capacitor',False)
+
+# plt.show()
+
+save_spatial_interconnect(interface,video_runtime='1')

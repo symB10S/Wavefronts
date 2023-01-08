@@ -660,6 +660,8 @@ def get_spatial_voltage_current_at_time(Time_Enquriey : Decimal, Interface : Dat
     :rtype: tuple[list, list, list, list, list]
     """
     
+    Time_Enquriey = Decimal(Time_Enquriey)
+    
     # Exctract wavefront interceptions at a specific time
     # 1. get sending + returning wavefronts
     # 2. determine DC line values

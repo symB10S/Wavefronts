@@ -870,6 +870,32 @@ class Data_Output_Storage:
     
     has_merged : bool 
     
+    def get_interconnect_array(self,which_string):
+        """A method for getting interconnect arrays with a sting enquirey.
+
+        :param which_string: possible options: ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+        :type which_string: str
+        :raises ValueError: errors if incorrect string is given. 
+        :return: the matching interconnect array
+        :rtype: np.ndarray[Decimal]
+        """
+        allowed_strings = ["voltage inductor", "current inductor", "voltage capacitor", "current capacitor"]
+        if(which_string.lower() == allowed_strings[0] ):
+            return  self.Voltage_Interconnect_Inductor
+        
+        elif(which_string.lower() == allowed_strings[1] ):
+            return  self.Current_Interconnect_Inductor
+        
+        elif(which_string.lower() == allowed_strings[2] ):
+            return  self.Voltage_Interconnect_Capacitor
+        
+        elif(which_string.lower() == allowed_strings[3] ):
+            return  self.Current_Interconnect_Capacitor
+        
+        else:
+            raise ValueError("Incorrect plotting choice,\'"+which_string+"\' is not an option. Options are : "+ str(allowed_strings))
+        
+    
     def get_sending_wavefronts_magnitudes(self,which_string):
         """A method for extracting voltage or current from *sending* wavefronts.
 
