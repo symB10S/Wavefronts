@@ -28,35 +28,38 @@ default_Spice_parameters ={
 
 def get_Spice_Arrays(**new_Spice_values):
     """Runs a LTSpice simulation on a Circuit theory LC interface as well as a distributed LC interface. Returns associated arrays.
+    Useful for comparing distributed effects to lumped element effects, and the distributed soltuion made in using :py:func:`Wavefront_Generation.Full_Cycle`.
 
-    :param new_Spice_values: A set of key-value pairs used to configure the simulaiton.
-    default values are as follows and will be overwritten with provided key-values.
+    :param new_Spice_values: A set of key-value pairs used to configure the simulaiton. This dictonary is calculatedd on the creation of a :py:class:`Wavefront_Storage.Data_Input_Storage`, 
+    storete under the parameter of `SPICE_input_values`.
+    Default simulation values are as follows and will be overwritten with provided key-values. 
     
-    Default Parameters:
+    **new_Spice_values**:
     
-        'L_impedance': '100',
-        'L_time': '1',
-        'C_impedance': '1',
-        'C_time': '1',
-        'number_periods': '1',
-        'L_tot': 'L_impedance*L_time/2 ',
-        'C_tot': 'C_time/(2*C_impedance)',
-        'Simulation_stop_time': '2*number_periods*pi*sqrt(L_tot*C_tot)',
-        'Step_size': '0.01',
-        'V_source': '1'
+        - **L_impedance** (*str*) - The inductor impedance. Default is '100'.
+        - **L_time** (*str*) - The inductor time constant. Default is '1'.
+        - **C_impedance** (*str*) - The capacitor impedance. Default is '1'.
+        - **C_time** (*str*) - The capacitor time constant. Default is '1'.
+        - **number_periods** (*str*) - The number of periods to simulate. Default is '1'.
+        - **L_tot** (*str*) - The total inductance. Default is 'L_impedance*L_time/2 '.
+        - **C_tot** (*str*) - The total capacitance. Default is 'C_time/(2*C_impedance)'.
+        - **Simulation_stop_time** (*str*) - The simulation stop time. Default is '2*number_periods*pi*sqrt(L_tot*C_tot)'.
+        - **Step_size** (*str*) - The step size for the simulation. Default is '0.01'.
+        - **V_source** (*str*) - The voltage of the source. Default is '1'.
+
         
-    Returns dictionary of output arrays:
+    Returns dictionary of output arrays [np.ndarrays]:
     
         dict{ 
-            "time",  
-            "Inductor_Voltage_Circuit",  
-            "Inductor_Current_Circuit",  
-            "Capacitor_Voltage_Circuit",  
-            "Capacitor_Current_Circuit",  
-            "Inductor_Voltage_Tx",  
-            "Inductor_Current_Tx",  
-            "Capacitor_Voltage_Tx",  
-            "Capacitor_Current_Tx"  
+            - "time",  
+            - "Inductor_Voltage_Circuit",  
+            - "Inductor_Current_Circuit",  
+            - "Capacitor_Voltage_Circuit",  
+            - "Capacitor_Current_Circuit",  
+            - "Inductor_Voltage_Tx",  
+            - "Inductor_Current_Tx",  
+            - "Capacitor_Voltage_Tx",  
+            - "Capacitor_Current_Tx"  
         }
     
     .. code-block::

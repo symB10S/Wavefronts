@@ -847,7 +847,7 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
     else:
         transmisson_line_str = 'Capacitor '
         
-    if(which_string.lower() == allowed_strings[1] or which_string.lower() == allowed_strings[3]):
+    if(which_string.lower() == allowed_strings[0] or which_string.lower() == allowed_strings[2]):
         magnitude_str = 'voltage '
         ax.yaxis.set_major_formatter(EngFormatter('V'))
     else:

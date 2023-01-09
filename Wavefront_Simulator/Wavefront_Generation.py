@@ -1,3 +1,9 @@
+"""This module is responsible for processing various levels of wavefront simulaiton and storing them in their relevant Data_Storage arrays (see :py:mod:`Wavefront_Storage`).
+
+Notable functions are:
+    - :py:func:`Generate_Wavefronts_Commutatively` - generates the production of wavefronts from a Data_Input_Storage input variable array. Makes use of commutative merging (described in the associated paper) which make it possible for the efficient simualiton of wavefronts.  
+"""
+
 from decimal import *
 from collections import deque
 import numpy as np
@@ -567,9 +573,7 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
         latest_time = best_time
         x_index, y_index = best_time_index
     
-    # Crop merged to the maximum occuring index as it merged along this axis
-    # already cropped on the other axis
-    # if(Data_Input.is_Higher_Merging):
+    # Crop merged to the maximum occuring index as it merged along each axis
     
     max_x_index = np.max([x[0] for x in out_indexes])
     max_x_index += 1
@@ -606,12 +610,14 @@ def Order_Data_Output_Merged(Data_Input : Data_Input_Storage , Data_Output_Merge
         out_indexes
     )        
 
-def Full_Cycle(**input_values):
+def Full_Cycle(optional_data_input : Data_Input_Storage  = False,**input_values):
     """Do full simualiton of the interface and produce a Data_Interface_Storage object with all the simualted data.
     The simulation procedure is as follows: 
     calcualte input vatiables -> generate wavefront with commutative merging -> multiplicatively merge these wavefronts -> chronologically order wavefronts. 
 
-    Is initialised using the same key-word arguments to intitalise Data_Input_Storage. All values with the provided keys are of type string. 
+    Is initialised using the same key-word arguments to intitalise Data_Input_Storage. OPTIONALLY a Data_Input_Storage array can be supplied directly to bypass internal creation of input data if it has been customized.
+    
+    All values with the provided keys are of type string. 
     This each input variable is converterted to a Decimal value to be used for precision calculations.
     The possible parameters to change and their defualt values are as follows, parameters are all optional
     
@@ -642,8 +648,35 @@ def Full_Cycle(**input_values):
 
     :return: Interface Data object
     :rtype: Data_Interface_Storage
+    
+    .. code-block ::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_refelction_diagram
+        import matplotlib.pyplot as plt
+
+        # simulate an interface by providing key-values altered from the defaults
+        interface_data = Full_Cycle(L_time = '3.6',C_time = '3.2',L_impedance = '300')
+
+        # The interface object created stores all level of data from the simulation
+        data_input = interface_data.data_input
+        data_output_commutative = interface_data.data_output_commutative
+        data_output_multiplicative = interface_data.data_output_multiplicative
+        data_output_ordered = interface_data.data_output_ordered
+
+        # plot the current reflection diagram  of the interface
+        fig, ax = plt.subplots()
+        plot_refelction_diagram(interface_data,ax,False,stop_time='40')
+
+        plt.show()
     """
-    data_input = Data_Input_Storage(**input_values)
+    if ( isinstance(optional_data_input,bool)):
+        data_input = Data_Input_Storage(**input_values)
+    elif(isinstance(optional_data_input,Data_Input_Storage)):
+        data_input = optional_data_input
+    else:
+        raise TypeError("otional input data is of incorrect type. Either supply values using ke-word arguments or supply a Data_Input_Storag object.")
+    
     data_output_commutative = Generate_Wavefronts_Commutatively(data_input)
     data_output_merged = Higher_Order_Merging(data_input,data_output_commutative)
     data_output_ordered = Order_Data_Output_Merged(data_input,data_output_merged)
