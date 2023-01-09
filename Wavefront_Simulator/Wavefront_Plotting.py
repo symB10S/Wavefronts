@@ -1632,6 +1632,14 @@ def make_3d_spatial(Time_Enquriey: Decimal,interface: Data_Input_Storage,input_a
         interface_data = Full_Cycle(L_time='12' , C_time='13')
 
         make_3d_spatial(Decimal('53.56'),interface_data)
+        
+        # or
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        
+        make_3d_spatial(Decimal('67.07'),interface_data,ax)
+        
         plt.show()
         
     .. warning::
