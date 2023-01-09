@@ -1,3 +1,12 @@
+"""The module responsible for visualisation of distributed behaviours. 
+In general a function will either be a 'make' or a 'plot' type.
+'plot' functions require the creation of plotting  axes to be provided to the function to be 'plotted on'.
+These type of functions typically are plotted on a single axis, were the format of the axis is irrelavant and flexible.
+'make' functions on the other hand generate axes internally and can have axes passed to them, however they must be of a particualr format.
+Make functions oftens setup axes in a particular way and is why they handle the generation of the the axes.
+Internal creation of axes can potentially be problematic when doing multiple loops on a make function, in this case be sure to pass an in axes of the correct format as described per function.
+"""
+
 from Wavefront_Generation import get_spatial_voltage_current_at_time
 from Wavefront_Storage import *
 from Wavefront_Misc import *
@@ -18,6 +27,11 @@ import ipywidgets as widgets
 from IPython.display import display
 
 def clear_subplot(axs):
+    """a little loop that clears all axes of an axes object
+
+    :param axs: axes object array to be cleared
+    :type axs: matplotlib Axes 
+    """
     for ax in axs:
         ax.cla()
 
@@ -53,12 +67,13 @@ default_fanout_kwargs = {
     'custom_colour_bar_limits': False
 }
 
-def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
+def plot_fanout_magnitude(array_to_plot : np.ndarray , ax, **input_kwargs):
     """the core function for plotting the fanout diagram of a 2D numpy array.
     Points are coloured using the 'seismic' colour map with red being positive and blue negative.
+    See :py:func:`plot_fanout_interconnect` and :py:func:`plot_fanout_wavefronts` for prettier plots with more automation
 
-    :param input_array: The array to be plotted, can also accept lists of numerical data
-    :type input_array: np.ndarray or List
+    :param array_to_plot: The array to be plotted, can also accept lists of numerical data
+    :type array_to_plot: np.ndarray or List
     :param ax: a matplotlib Axe object to plot using 'imshow'
     :type ax: matplotlib.Axe
     
@@ -79,32 +94,66 @@ def plot_fanout_magnitude(input_array : np.ndarray , ax, **input_kwargs):
         Alternatively magnitdues from a **wavefront array** can be manually extracted by passing as an input parameter to 
         :py:func:`Wavefront_Misc.get_voltage_array` or :py:func:`Wavefront_Misc.get_current_array`
         
+    .. code-block::
+        :caption: simple use
+        
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_fanout_magnitude
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface_data = Full_Cycle(L_time='0.7' , C_time='3.2')
+
+        # plot the commutatiive capacitor interconnect voltage 
+        fig, ax = plt.subplots()
+        arr = interface_data.data_output_commutative.Voltage_Interconnect_Capacitor
+        # set units to 'V'
+        plot_fanout_magnitude(arr,ax, units = 'V')
+        plt.show()
+        
+    .. code-block::
+        :caption: manual wavefront fanout, see :py:func:`plot_fanout_wavefronts`
+        
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_fanout_magnitude
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface_data = Full_Cycle(L_time='23' , C_time='11')
+
+        # plot the multiplicative sending current capacitor wavefronts
+        fig, ax = plt.subplots()
+        arr = interface_data.data_output_multiplicative.get_sending_wavefronts_magnitudes('current capacitor')
+        # set units to 'V'
+        plot_fanout_magnitude(arr,ax, units = 'A')
+        plt.show()
+        
     :return: plots a magnitude fanout on the provided axis
     """
     
     default_kwargs = handle_default_kwargs(input_kwargs,default_fanout_kwargs)
     # convert Lists to image array if necessary 
-    input_array = convert_to_image_array(input_array)
+    array_to_plot = convert_to_image_array(array_to_plot)
     
     if(isinstance(default_kwargs['custom_colour_bar_limits'] ,tuple)):
         max_boundary = default_kwargs['custom_colour_bar_limits'][0]
         min_boundary = default_kwargs['custom_colour_bar_limits'][1]
     elif (default_kwargs['contrast']): 
-        Contrast = copy.copy(input_array.astype(float))
+        Contrast = copy.copy(array_to_plot.astype(float))
         max_index = np.unravel_index(np.argmax(Contrast, axis=None), Contrast.shape)
         Contrast[max_index] = 0
         max_boundary = get_array_absolute_maximum(Contrast)
         min_boundary = -max_boundary
     else:
-        max_boundary = get_array_absolute_maximum(input_array.astype(float))
+        max_boundary = get_array_absolute_maximum(array_to_plot.astype(float))
         min_boundary = -max_boundary
     
     if default_kwargs['transpose'] :
-        array_plot = np.pad(input_array.astype(float),(default_kwargs['padding'],default_kwargs['padding'])).transpose()
+        array_plot = np.pad(array_to_plot.astype(float),(default_kwargs['padding'],default_kwargs['padding'])).transpose()
         ax.set_xlabel('L - axis ')
         ax.set_ylabel('C - axis ')
     else:
-        array_plot = np.pad(input_array.astype(float),(default_kwargs['padding'],default_kwargs['padding']))
+        array_plot = np.pad(array_to_plot.astype(float),(default_kwargs['padding'],default_kwargs['padding']))
         ax.set_ylabel('L - axis ')
         ax.set_xlabel('C - axis ')
     
@@ -139,16 +188,26 @@ def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
         - same input kwargs as :py:func:`plot_fanout_magnitude`
         - **mask_zero** (*bool*) - if zeros values must be masked (default = True)
         
-    .. warning::
-        a **wavefront storage array** must be in their magnitude forms, these arrays can be fetched using :py:meth:`Wavefront_Storage.Data_Output_Storage.get_sending_wavefronts_magnitudes` 
-        or :py:meth:`Wavefront_Storage.Data_Output_Storage.get_returning_wavefronts_magnitudes`. 
-        Alternatively magnitdues from a **wavefront array** can be manually extracted by passing as an input parameter to 
-        :py:func:`Wavefront_Misc.get_voltage_array` or :py:func:`Wavefront_Misc.get_current_array`
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_fanout_time
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface_data = Full_Cycle(L_time='2' , C_time='7')
+
+        # plot the time fanout
+        fig, ax = plt.subplots()
+        plot_fanout_time(interface_data.data_output_commutative.Time, ax)
+
+        plt.show()
         
-    :return: plots a rainbow coloured image on the provided axis
     """
     default_kwargs = default_fanout_kwargs.copy()
     default_kwargs['mask_zero']  = True
+    default_kwargs['units'] = 'S'
+    default_kwargs['title'] = 'Time Fanout'
     
     default_kwargs = handle_default_kwargs(input_kwargs,default_kwargs)
     # convert Lists to image array if necessary 
@@ -195,7 +254,8 @@ def plot_fanout_time(input_array : np.ndarray ,ax , **input_kwargs):
 def plot_fanout_interconnect(data_output: Data_Output_Storage,ax, which_string :str, contrast_voltage = True,**kwargs):
     """A wrapper function for :py:func:`plot_fanout_magnitude` for plotting interconnect fanouts.
     Takes in a Data_Output_Storage object and a string to plot and auto format the fanout.
-    It will pass provided **kwargs to the underlying plot_fanout_magnitude fucntion.
+    It will pass provided **kwargs to the underlying plot_fanout_magnitude function.
+    To plot all interface interconnect fanouts at once see :py:func:`make_fanout_interconnect_all`
     
     :param data_output: The data output object that contians the interconnect arrays. Could be commutative or multiplicative data. 
     :type data_output: Data_Output_Storage
@@ -207,6 +267,29 @@ def plot_fanout_interconnect(data_output: Data_Output_Storage,ax, which_string :
     :type contrast_voltage: bool
     :raises ValueError: if incorrect 'which_string' is not provided.
     :raises warning: if 'title=', 'units=' or 'contrast=' keyword are included as they are auto assigned by this function
+    
+    .. code-block ::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_fanout_interconnect
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface_data = Full_Cycle(L_time='12' , C_time='13')
+
+        # compare commutative and multiplicative capacitor interconnect voltage
+        # (on the same subplot)
+        fig, ax = plt.subplots(1,2, figsize= (10,6))
+
+        # pass commutative data output
+        plot_fanout_interconnect(interface_data.data_output_commutative,
+                                ax[0], 'voltage capacitor')
+
+        # pass multiplicative data output 
+        plot_fanout_interconnect(interface_data.data_output_multiplicative,
+                                ax[1], 'voltage capacitor')
+
+        plt.show()
     
     .. warning::
         When providing the ****kwargs**, you cannot specify 'title=', 'units=' or ''contrast='  as these are auto assinged. Providing these values will result in an error. 
@@ -237,7 +320,9 @@ def plot_fanout_interconnect(data_output: Data_Output_Storage,ax, which_string :
 def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :str, is_sending : bool = True, **kwargs):
     """A wrapper function for :py:func:`plot_fanout_magnitude` for plotting wavefront fanouts.
     Takes in a Data_Output_Storage object, a string and a bool are passed to plot and auto format the fanout.
-    It will pass provided **kwargs to the underlying plot_fanout_magnitude fucntion.
+    It will pass provided **kwargs to the underlying plot_fanout_magnitude function.
+    To plot all wavefront fanouts at once see :py:func:`make_fanout_wavefronts_all`
+    
 
     :param data_output: The data output object that contians the interconnect arrays. Could be commutative or multiplicative data. 
     :type data_output: Data_Output_Storage
@@ -248,6 +333,29 @@ def plot_fanout_wavefronts(data_output: Data_Output_Storage,ax, which_string :st
     :raises ValueError: if incorrect 'which_string' is not provided.
     :param is_sending: determines if sending or returning wavefronts must be plotted, defaults to True
     :type is_sending: bool, optional
+    
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_fanout_wavefronts
+        import matplotlib.pyplot as plt
+
+        # simulate interface
+        interface_data = Full_Cycle(L_time='12' , C_time='13')
+
+        # compare sending and returning capacitor current wavefronts
+        # (on the same subplot)
+        fig, ax = plt.subplots(1,2, figsize= (10,6))
+
+        # sending current wavefronts
+        plot_fanout_wavefronts(interface_data.data_output_commutative,
+                                ax[0], 'current capacitor',True)
+
+        # returning current wavefront 
+        plot_fanout_wavefronts(interface_data.data_output_commutative,
+                                ax[1], 'current capacitor',False)
+
+        plt.show()
     
     .. warning::
         When providing the ****kwargs**, you cannot specify 'title=' or 'units=' as these are auto assinged. Providing these values will result in an error. 
@@ -293,7 +401,7 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
     :type L_intercept: int
     :param C_intercept: The value on the C-axis to intercept
     :type C_intercept: int
-    :return: the matplotlib Figure and Axes objects created in this fucntion
+    :return: the matplotlib Figure and Axes objects created in this function
     :rtype: tuple( fig , ax )
     :**kwargs for crossection**:
         - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form.The labels for these axes must inculde: 
@@ -329,7 +437,7 @@ def make_fanout_crossection(input_array : np.ndarray, L_intercept : int, C_inter
         
         
     .. warning::
-        if ax keyword is not provided, fucntion will make new subplot objects each time it is called.
+        if ax keyword is not provided, function will make new subplot objects each time it is called.
         These plots will not be closed by default, so if multiple calls are needed it is suggested you provide
         the appropriate subplot_mosaic Axes object.
     """
@@ -460,7 +568,7 @@ def make_fanout_interconnect_all(data_output: Data_Output_Storage,contrast_volta
         plt.show()
         
     .. warning::
-        if ax keyword is not provided, fucntion will make new subplot objects each time it is called.
+        if ax keyword is not provided, function will make new subplot objects each time it is called.
         These plots will not be closed by default, so if multiple calls are needed it is suggested you provide
         the appropriate subplot_mosaic Axes object.
     """
@@ -547,7 +655,7 @@ def make_fanout_wavefronts_all(data_output: Data_Output_Storage,is_Inductor: boo
         plt.show()
         
     .. warning::
-        if ax keyword is not provided, fucntion will make new subplot objects each time it is called.
+        if ax keyword is not provided, function will make new subplot objects each time it is called.
         These plots will not be closed by default, so if multiple calls are needed it is suggested you provide
         the appropriate subplot_mosaic Axes object.
     """   
@@ -604,6 +712,25 @@ def plot_trace_on_merged_fanout_axis(data_output_ordered : Data_Output_Storage_O
         - **width** (*float*) - The width of the arrow shaft. Default is 0.0005.
         - **facecolor** (*str*) - The face color of the arrow. Default is 'gray'.
         - **edgecolor** (*str*) - The edge color of the arrow. Default is 'black'.
+        
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_trace_on_merged_fanout_axis, plot_fanout_interconnect
+        import matplotlib.pyplot as plt
+
+        # simulate an interface
+        interface_data = Full_Cycle(L_time = '3.6',C_time = '3.2')
+
+        fig, ax = plt.subplots()
+        plot_fanout_interconnect(interface_data.data_output_multiplicative,ax,'voltage capacitor')
+        plot_trace_on_merged_fanout_axis(interface_data,ax)
+        plt.show()
+        
+    .. warning::
+
+        the trace plotted is compatible with *merged* fanouts. (fanout plots of data_output_multiplicative) 
+        
     """
     
     trace_default_kwargs : dict= {
@@ -743,7 +870,7 @@ def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax,
 
 def plot_time_wavefronts(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_sending :bool,is_integrated: bool = True ): 
     """Plots the time waveform of one of the wavefront metrics. 
-    It must be noted that interconnect values stored in the :Data_Output_Storage_Ordered: object signify the 'change' in interface values due to wavefronts.
+    It must be noted that interconnect values stored in the `Data_Output_Storage_Ordered` object signify the 'change' in interface values due to wavefronts.
     To see the full time wavefrom, the changes must be accumulated. This function shows both change and accumulated quantities. 
 
     :param data_output_ordered: The data object containing 1D ordered simulation data, also accepts full interface data
@@ -780,7 +907,8 @@ def plot_time_wavefronts(data_output_ordered : Data_Output_Storage_Ordered,ax, w
         # plot returning wavefronts (not accumulated)
         plot_time_wavefronts(data,ax,'current capacitor',False,False)
 
-plt.show()
+        plt.show()
+        
 
     .. warning::
     
@@ -1389,6 +1517,36 @@ def plot_time_interconnect_and_intercepts_at_time(Time_Enquriey : Decimal, data_
     :**kwargs**:
         - **ax_voltage** (*axis or bool*) - the axis to plot the voltage on, leave empty to not plot. Default is False.
         - **ax_current** (*axis or bool*) - the axis to plot the current on, leave empty to not plot. Default is False.
+    
+    
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_time_interconnect_and_intercepts_at_time
+        import matplotlib.pyplot as plt
+        from decimal import Decimal
+
+        # simulate interface
+        interface_data = Full_Cycle(L_time='0.7' , C_time='3.2')
+
+        time_enquirey = Decimal('25')
+
+        # plot both voltage and current
+
+        fig_both, ax_both = plt.subplots(2,1)
+        # define axes with kwargs 'ax_voltage=' and 'ax_current='
+        plot_time_interconnect_and_intercepts_at_time(time_enquirey,interface_data,
+                                                    ax_voltage = ax_both[0],
+                                                    ax_current = ax_both[1])
+
+        # lets plot just the voltage this time, also we will progress the time enquirey
+        # we will leave out 'ax_current='
+        fig_single,ax_single = plt.subplots()
+        time_enquirey += Decimal('5')
+        plot_time_interconnect_and_intercepts_at_time(time_enquirey,interface_data,ax_voltage = ax_single)
+
+        plt.show()
+        
     """
     
     default_kwargs = {
@@ -1398,7 +1556,7 @@ def plot_time_interconnect_and_intercepts_at_time(Time_Enquriey : Decimal, data_
     
     kwargs = handle_default_kwargs(kwargs,default_kwargs)
     
-    if (kwargs['ax_voltage']==False and kwargs['ax_voltage']==False ):
+    if (kwargs['ax_voltage']==False and kwargs['ax_current']==False ):
         raise ValueError('no axis was supplied for ax_voltage or for ax_current')
     
     data_output_ordered = handle_interface_to_ordered(data_output_ordered)
@@ -1451,7 +1609,41 @@ def plot_time_interconnect_and_intercepts_at_time(Time_Enquriey : Decimal, data_
     
     
 
-def plot_3d_spatial(Time_Enquriey,interface,ax):
+def make_3d_spatial(Time_Enquriey: Decimal,interface: Data_Input_Storage,input_ax = False):
+    """an experimanetal plot that shows spatial distribution of voltage and current at a time as a 3D bar graph.
+    One dimension is space, one dimenstion is voltage and the final dimension is current. 
+    See :py:func:`make_spatial_voltage_and_current` for a less dense representation of the same data. 
+
+    :param Time_Enquriey: time ate wwich the spatial information is investigated
+    :type Time_Enquriey: Decimal
+    :param interface: interface simulation storage object
+    :type interface: Data_Input_Storage
+    :param input_ax: an optional axis to prevent plotting object to be made internally, default is False
+    :type input_ax: matplotlib Axes (projection='3d')
+    
+    .. code-block ::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import make_3d_spatial
+        import matplotlib.pyplot as plt
+        from decimal import Decimal
+
+        # simulate interface
+        interface_data = Full_Cycle(L_time='12' , C_time='13')
+
+        make_3d_spatial(Decimal('53.56'),interface_data)
+        plt.show()
+        
+    .. warning::
+    
+        if `input_ax` is provided, it must have 'projection='3d' else the plot will error.
+    
+    """
+    if (isinstance(input_ax,bool)):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+    else:
+        ax = input_ax
     
     ax.xaxis.set_major_formatter(EngFormatter('m'))
     ax.yaxis.set_major_formatter(EngFormatter('A'))
@@ -1562,6 +1754,40 @@ def plot_3d_spatial(Time_Enquriey,interface,ax):
     ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
 
 def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
+    """a function that saves an animation of the spatial distribution of voltage and current compared to time interconncect plots.
+    Is the combination of :py:func:`make_spatial_voltage_and_current` and :py:func:`plot_time_interconnect_and_intercepts_at_time`.
+    It is effectively :py:func:`spatial_interconnect_investigator_ui`, however smoother as computation is not 'real-time'
+
+    :param Interface: the interface data to be saved.
+    :type Interface: Data_Interface_Storage
+    :**kwargs**:
+        - **auto_zoom** (*bool*) - Whether to automatically zoom the plot or to have the axes aligned. Default is False.
+        - **start_time** (*str*) - The start time enquirey for the plot. Default is '0'.
+        - **end_time** (*float*) - The end time enquirey for the plot. Default is the value of `Interface.data_input.Simulation_Stop_Time`.
+        - **fps** (*str*) - The frames per second for the video. Default is '30'.
+        - **video_runtime** (*str*) - The runtime of the video in seconds. Default is '60'.
+        - **dpi** (*str*) - The dots per inch for the video. Default is '300'.
+        - **fig_size** (*tuple of ints*) - The size of the figure. Default is (14, 8).
+        - **meta_data** (*dict*) - The metadata for the video. Default is {'title': 'Distributed Modelling', 'artist': 'Jonathan Meerholz'}.
+        - **save_name** (*str*) - The name to save the video as. Default is a string with the values of 'spatial_and_time_{ZL}_{ZC}ohm_{TL}_{TC}s'
+    
+    .. warning::
+    
+        the default values of 60s runtime with 30 fps will result in a computation that will often take longer than 10 mins. 
+        be sure to alter these values if you dont want to wait!
+        
+    .. code-block::
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import save_spatial_interconnect
+
+        # simulate an interface
+        interface_data = Full_Cycle(L_time = '3.6',C_time = '3.2')
+
+        save_spatial_interconnect(interface_data, video_runtime = '5',
+                                start_time = '0', end_time = '30')
+   
+    """
 
     #Default Values
     kwarg_options = dict([
@@ -1619,7 +1845,13 @@ def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
     print(f"Spatial video generation completed, video saved as {save_name}.mp4")
 
 def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage, slider_step_size:float = 0.1):
-    
+    """Creates an interactive spatial plot using ipywidgets. 
+
+    :param Interface: interface data storage object
+    :type Interface: Data_Interface_Storage
+    :param slider_step_size: the step size of the slider, make larger for smoother sliding, defaults to 0.1
+    :type slider_step_size: float, optional
+    """
     # define widgets
     increment_button = widgets.Button(description = "step forward", layout=widgets.Layout(width='auto'))
     decrement_button = widgets.Button(description = "step backward", layout=widgets.Layout(width='auto'))
