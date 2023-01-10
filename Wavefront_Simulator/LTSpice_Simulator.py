@@ -51,7 +51,7 @@ def get_Spice_Arrays(**new_Spice_values):
     Returns dictionary of output arrays [np.ndarrays]:
     
         dict{ 
-            - "time",  
+            - "Time",  
             - "Inductor_Voltage_Circuit",  
             - "Inductor_Current_Circuit",  
             - "Capacitor_Voltage_Circuit",  
@@ -74,7 +74,10 @@ def get_Spice_Arrays(**new_Spice_values):
         LTSpice_Arrays = get_Spice_Arrays(L_impedance = '500',C_impedance = '20', Step_size='0.1')
 
         # Plot Inductor votlage using Lumped circuit elements
-        plt.plot(LTSpice_Arrays['time'],LTSpice_Arrays['Inductor_Voltage_Circuit'])
+        plt.plot(LTSpice_Arrays['Time'],LTSpice_Arrays['Inductor_Voltage_Circuit'])
+        plt.title('Lumped Element analysis of Inductor Voltage')
+        plt.xlabel('time (s)')
+        plt.ylabel('Voltage (V)')
         plt.show()
 
 
@@ -100,10 +103,10 @@ def get_Spice_Arrays(**new_Spice_values):
         fig,ax = plt.subplots()
 
         # plot lumped current
-        ax.plot(LTSpice_outputs['time'],LTSpice_outputs['Capacitor_Current_Tx'])
+        ax.plot(LTSpice_outputs['Time'],LTSpice_outputs['Capacitor_Current_Tx'])
 
         # plot distributed from LTSpice
-        ax.plot(LTSpice_outputs['time'],LTSpice_outputs['Capacitor_Current_Circuit'])
+        ax.plot(LTSpice_outputs['Time'],LTSpice_outputs['Capacitor_Current_Circuit'])
 
         # plot distributed from simulator
         plot_time_interconnect(interface.data_output_ordered,ax,'Current Capacitor',True)
@@ -172,7 +175,7 @@ def get_Spice_Arrays(**new_Spice_values):
     Capacitor_Current_Tx = values[names.index(b"Ia(Capacitor_tx)")]
     
     return({
-        "time":time,
+        "Time":time,
         "Inductor_Voltage_Circuit":Inductor_Voltage_Circuit,
         "Inductor_Current_Circuit":Inductor_Current_Circuit,
         "Capacitor_Voltage_Circuit":Capacitor_Voltage_Circuit,
