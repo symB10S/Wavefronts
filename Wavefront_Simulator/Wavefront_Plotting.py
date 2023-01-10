@@ -158,7 +158,10 @@ def plot_fanout_magnitude(array_to_plot : np.ndarray , ax, **input_kwargs):
         ax.set_xlabel('C - axis ')
     
     def offset_formatter(x, pos):
-        return int(x - default_kwargs['padding'])
+        if (x - default_kwargs['padding'] >= 0):
+            return int(x - default_kwargs['padding'])
+        else:
+            return ""
 
     if(default_kwargs['show_ticks']):
         ax.xaxis.set_major_formatter(plt.FuncFormatter(offset_formatter))
@@ -753,7 +756,7 @@ def plot_trace_on_merged_fanout_axis(data_output_ordered : Data_Output_Storage_O
     if (isinstance(upto_time,bool)):
         Indexes = data_output_ordered.Indexes[1:]
     else:
-        i,_ = closest_event_to_time(data_output_ordered.Time,upto_time,False)
+        i,_ = closest_event_to_time(data_output_ordered.Time,upto_time,True)
         Indexes = data_output_ordered.Indexes[1:i]
     
     get_xy = lambda index : (index[0] + kwargs['padding'], index[1] + kwargs['padding'])
@@ -1713,6 +1716,7 @@ def make_3d_spatial(Time_Enquriey: Decimal,interface: Data_Input_Storage,input_a
     
     # plot inductor current and voltage
     ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
+    # ax.bar3d(x_position, y_current, z_voltage, dx_position, [-x for x in dy_current], dz_voltage )
     
     
     # The capacitor
@@ -1736,8 +1740,8 @@ def make_3d_spatial(Time_Enquriey: Decimal,interface: Data_Input_Storage,input_a
             x = -position
             
             x_position.append(x)
-            y_current.append(0)
             z_voltage.append(0)
+            y_current.append(0)
             
             if(is_first):
                     x_old = position
@@ -1760,6 +1764,7 @@ def make_3d_spatial(Time_Enquriey: Decimal,interface: Data_Input_Storage,input_a
 
     # plot capacitor currents and voltages
     ax.bar3d(x_position, y_current, z_voltage, dx_position, dy_current, dz_voltage )
+    # ax.bar3d(x_position, y_current, z_voltage, dx_position, [-x for x in dy_current], dz_voltage )
 
 def save_spatial_interconnect(Interface : Data_Interface_Storage,**kwargs):
     """a function that saves an animation of the spatial distribution of voltage and current compared to time interconncect plots.
