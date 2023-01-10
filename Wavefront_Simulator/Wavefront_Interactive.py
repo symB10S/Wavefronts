@@ -116,7 +116,15 @@ def interact_interconnect_time_and_fanout_path(Interface : Data_Interface_Storag
     inter = widgets.interact(plot_path,t=widgets.FloatSlider(min=0, max=float(Interface.data_input.Simulation_Stop_Time), step=0.1, value=0, layout=widgets.Layout(width='auto')))
     
     
-def interact_3D_spatial(Interface : Data_Interface_Storage):
+def interact_3D_spatial(Interface : Data_Interface_Storage,**kwargs):
+    
+    default_kwargs ={
+        'z_lim': False,
+        'y_lim': False
+    }
+    
+    kwargs = handle_default_kwargs(kwargs,default_kwargs)
+    
     fig_3d = plt.figure()
 
     ax_3d = fig_3d.add_subplot(111,projection='3d')
@@ -124,11 +132,20 @@ def interact_3D_spatial(Interface : Data_Interface_Storage):
     x_pos_lim_0 = -float(Interface.data_input.Capacitor_Length)
     x_pos_lim_1 = float(Interface.data_input.Inductor_Length)
 
-    y_current_lim_0 = float(min([min(np.cumsum(Interface.data_output_ordered.Current_Interconnect_Inductor)),min(np.cumsum(Interface.data_output_ordered.Current_Interconnect_Capacitor))]))
-    y_current_lim_1 = float(max([max(np.cumsum(Interface.data_output_ordered.Current_Interconnect_Inductor)),max(np.cumsum(Interface.data_output_ordered.Current_Interconnect_Capacitor))]))
-    
-    z_voltage_lim_0 = float(min([min(np.cumsum(Interface.data_output_ordered.Voltage_Interconnect_Inductor)),min(np.cumsum(Interface.data_output_ordered.Voltage_Interconnect_Capacitor))]))
-    z_voltage_lim_1 = float(max([max(np.cumsum(Interface.data_output_ordered.Voltage_Interconnect_Inductor)),max(np.cumsum(Interface.data_output_ordered.Voltage_Interconnect_Capacitor))]))
+    if(isinstance(kwargs['y_lim'],bool)):
+        
+        y_current_lim_0 = float(min([min(np.cumsum(Interface.data_output_ordered.Current_Interconnect_Inductor)),min(np.cumsum(Interface.data_output_ordered.Current_Interconnect_Capacitor))]))
+        y_current_lim_1 = float(max([max(np.cumsum(Interface.data_output_ordered.Current_Interconnect_Inductor)),max(np.cumsum(Interface.data_output_ordered.Current_Interconnect_Capacitor))]))
+    else:
+        y_current_lim_0 = kwargs['y_lim'][0]
+        y_current_lim_1 = kwargs['y_lim'][1]
+        
+    if(isinstance(kwargs['z_lim'],bool)):
+        z_voltage_lim_0 = float(min([min(np.cumsum(Interface.data_output_ordered.Voltage_Interconnect_Inductor)),min(np.cumsum(Interface.data_output_ordered.Voltage_Interconnect_Capacitor))]))
+        z_voltage_lim_1 = float(max([max(np.cumsum(Interface.data_output_ordered.Voltage_Interconnect_Inductor)),max(np.cumsum(Interface.data_output_ordered.Voltage_Interconnect_Capacitor))]))
+    else:
+        z_voltage_lim_0 = kwargs['z_lim'][0]
+        z_voltage_lim_1 = kwargs['z_lim'][1]
 
     def interact_3D_func(t):
         ax_3d.clear()
