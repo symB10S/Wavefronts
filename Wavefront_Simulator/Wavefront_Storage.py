@@ -1057,7 +1057,8 @@ class Data_Output_Storage_Ordered(Data_Output_Storage):
 
 @dataclass
 class Data_Interface_Storage:
-    """A Dataclass that holds all simulation data for a praticular interface. Contains four data storage components: 
+    """A Dataclass that holds all simulation data for a praticular interface. Contains four data storage components that are also the initialization parameters.
+    The best way to create this Data storage object is through :py:func:`Wavefront_Generation.Full_Cycle` 
     
     :param data_input: input data and calcualted parameters of the interface
     :type data_input: Data_Input_Storage
@@ -1067,6 +1068,28 @@ class Data_Interface_Storage:
     :type data_output_multiplicative: Data_Output_Storage
     :param data_output_ordered: Chronologically ordered merged data in a linear format 
     :type data_output_ordered: Data_Output_Storage_Ordered
+    
+    .. code-block::
+        :caption: make a `Data_Interface_Storage` object and plot it's refelction diagrm
+    
+        from Wavefront_Generation import Full_Cycle
+        from Wavefront_Plotting import plot_refelction_diagram
+        import matplotlib.pyplot as plt
+
+        # simulate an interface by providing key-values altered from the defaults
+        interface_data = Full_Cycle(L_time = '3.6',C_time = '3.2',L_impedance = '300')
+
+        # The interface object created stores all level of data from the simulation
+        data_input = interface_data.data_input
+        data_output_commutative = interface_data.data_output_commutative
+        data_output_multiplicative = interface_data.data_output_multiplicative
+        data_output_ordered = interface_data.data_output_ordered
+
+        # plot the current reflection diagram  of the interface
+        fig, ax = plt.subplots()
+        plot_refelction_diagram(interface_data,ax,False,stop_time='40')
+
+        plt.show()
     """
     data_input : Data_Input_Storage
     data_output_commutative : Data_Output_Storage

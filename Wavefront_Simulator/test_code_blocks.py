@@ -50,17 +50,17 @@
 
 # plt.show()
 
-from LTSpice_Simulator import get_Spice_Arrays
-import matplotlib.pyplot as plt
+# from LTSpice_Simulator import get_Spice_Arrays
+# import matplotlib.pyplot as plt
 
-# Do manual simulation
+# # Do manual simulation
             
-# Change Impedances and simulaiton timestep
-LTSpice_Arrays = get_Spice_Arrays(L_impedance = '500',C_impedance = '20', Step_size='0.1')
+# # Change Impedances and simulaiton timestep
+# LTSpice_Arrays = get_Spice_Arrays(L_impedance = '500',C_impedance = '20', Step_size='0.1')
 
-# Plot Inductor votlage using Lumped circuit elements
-plt.plot(LTSpice_Arrays['Time'],LTSpice_Arrays['Inductor_Voltage_Circuit'])
-plt.title('Lumped Element analysis of Inductor Voltage')
-plt.xlabel('time (s)')
-plt.ylabel('Voltage (V)')
-plt.show()
+# # Plot Inductor votlage using Lumped circuit elements
+# plt.plot(LTSpice_Arrays['Time'],LTSpice_Arrays['Inductor_Voltage_Circuit'])
+# plt.title('Lumped Element analysis of Inductor Voltage')
+# plt.xlabel('time (s)')
+# plt.ylabel('Voltage (V)')
+# plt.show()

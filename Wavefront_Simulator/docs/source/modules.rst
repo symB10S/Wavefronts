@@ -6,6 +6,10 @@ Wavefront_Simulator
 
    LTSpice_Simulator
    Wavefront_Generation
+   Wavefront_Interactive
    Wavefront_Misc
    Wavefront_Plotting
    Wavefront_Storage
+   dot_plots
+   ltspy3
+   test_code_blocks
