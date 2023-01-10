@@ -7,21 +7,23 @@ Make functions oftens setup axes in a particular way and is why they handle the 
 Internal creation of axes can potentially be problematic when doing multiple loops on a make function, in this case be sure to pass an in axes of the correct format as described per function.
 """
 
-from Wavefront_Generation import get_spatial_voltage_current_at_time
+from Wavefront_Generation import get_spatial_voltage_current_at_time, transform_merged_array_to_C_axis
 from Wavefront_Storage import *
 from Wavefront_Misc import *
+
 from decimal import Decimal, ROUND_HALF_DOWN
 import copy
 from warnings import warn
-
 import numpy as np
+from tqdm import tqdm
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, EngFormatter)
 from matplotlib.animation import FFMpegWriter
-from tqdm import tqdm
-
 plt.rcParams['animation.ffmpeg_path'] = 'ffmpeg\\ffmpeg.exe'
+
+
 
 def clear_subplot(axs):
     """a little loop that clears all axes of an axes object
@@ -55,7 +57,7 @@ def handle_interface_to_ordered(data) -> Data_Output_Storage_Ordered:
 default_fanout_kwargs = {
     'title': "Magnitude Fanout",
     'show_colour_bar': True,
-    'contrast' : False,
+    'contrast' : True,
     'padding' : 0,
     'units' : 'A',
     'origin' : 'lower',
@@ -786,6 +788,108 @@ def plot_trace_on_merged_fanout_axis(data_output_ordered : Data_Output_Storage_O
         ax.axhline(y=last_y,c='k')
         ax.axvline(x=last_x,c='k')
 
+def plot_merging_lines_on_fanout(array_to_plot: np.ndarray , KL :int, KC: int, ax,**kwargs):
+    """Plots the borders of merging regions for a given array_to_plot onto an axis that is plotting a fanout.
+
+    :param array_to_plot: The data array contianing fanout magnitude information
+    :type array_to_plot: np.ndarray
+    :param KL: Inductor LCM factor
+    :type KL: int
+    :param KC: Capacitor LCM factor
+    :type KC: int
+    :param ax: Axis with a fanout plot on it
+    :type ax: matplotlib Axes object
+    :**kwargs**:
+        - **transpose** (*bool*) - Whether the plot is transposed (L-axis is horizontal axis). Default is True
+        - **padding** (*int*) - The padding of the plot. Default is 0
+        - **line_colour** (*str*) - The color of the lines. Default is 'k'
+        - **line_width** (*float*) - The width of the lines. Default is 0.5
+    """
+    
+    default_kwargs = {
+        'transpose' : True,
+        'padding' : 0,
+        'line_colour' : 'k',
+        'line_width' : 0.5
+    }
+    
+    kwargs = handle_default_kwargs(kwargs,default_kwargs)
+    
+    # get index limits of L and C axes 
+    L_max, C_max = array_to_plot.shape
+    
+    number_KL = math.floor(L_max/KL) +1
+    number_KC = math.floor(C_max/KC) +1
+    
+    for i in range (number_KL):
+        if(kwargs['transpose']): # L-axis is horizontal 
+            line_position = i*KL - 0.5 + kwargs['padding']
+            ax.axvline(x=line_position, linewidth=kwargs['line_width'],c=kwargs['line_colour'])
+        else: 
+            ax.axhline(y=line_position, linewidth=kwargs['line_width'],c=kwargs['line_colour'])
+            
+    for i in range (number_KC):
+        if(kwargs['transpose']): # C-axis is vertical
+            line_position = i*KC - 0.5 + kwargs['padding']
+            ax.axhline(y=line_position, linewidth=kwargs['line_width'],c=kwargs['line_colour'])
+        else: 
+            ax.axvline(x=line_position, linewidth=kwargs['line_width'],c=kwargs['line_colour'])
+
+def make_commutative_merged_lines(interface_data : Data_Interface_Storage ,which_operation : str ,which_string : str):
+    """Make 3 - magnitude fanouts with their merging regions shown.
+    Fanout 1 is the commutative fanout before merging.
+    Fanout 2 is the merged fanout along the L-axis.
+    Fanout 3 is the merged fanout along the C-axis.
+
+    :param interface_data: the interface data to be plotted
+    :type interface_data: Data_Interface_Storage
+    :param which_operation: the operation for fetching fanout data, options are 'interconnect','sending' or 'returning'.
+    :type which_operation: str
+    :param which_string: which specific magnitude to extract in form '{voltage or current} {inductor or capacitor}'
+    :type which_string: str
+    :raises ValueError: if incorrect 'which_operation' or 'which_string' information is provided.
+    """
+    
+    fig, ax = plt.subplots(1,3)
+    allowed_operations = ['interconnect','sending','returning']
+    
+    if (which_operation.lower() == allowed_operations[0]):
+        commutative_array = interface_data.data_output_commutative.get_interconnect_array(which_string)
+        merged_array = interface_data.data_output_multiplicative.get_interconnect_array(which_string)
+    elif(which_operation.lower() == allowed_operations[1]):
+        commutative_array = interface_data.data_output_commutative.get_sending_wavefronts_magnitudes(which_string)
+        merged_array = interface_data.data_output_multiplicative.get_sending_wavefronts_magnitudes(which_string)
+    elif(which_operation.lower() == allowed_operations[3]):
+        commutative_array = interface_data.data_output_commutative.get_returning_wavefronts_magnitudes(which_string)
+        merged_array = interface_data.data_output_multiplicative.get_returning_wavefronts_magnitudes(which_string)
+    else:
+        raise ValueError(f'the provided which_operation paramters was incorrect, possible options are : {allowed_operations}')
+        
+    C_axis_merged_array = transform_merged_array_to_C_axis(interface_data.data_input, merged_array)
+    
+    if (which_string.find('voltage') > 0 ):
+        units = 'V'
+    else:
+        units = 'A'
+
+    padding =10
+
+    plot_fanout_magnitude(commutative_array,ax[0], show_colour_bar = False, show_ticks = True)
+    plot_fanout_magnitude(merged_array,ax[1], padding=padding, show_colour_bar = False, show_ticks = True)
+    plot_fanout_magnitude(C_axis_merged_array,ax[2], units = units,padding=padding, show_ticks = True)
+
+    ax[0].set_title(which_operation+' '+which_string)
+    ax[1].set_title('Merged on L-axis')
+    ax[2].set_title('Merged on C-axis')
+
+    KL = interface_data.data_input.Inductor_LCM_Factor
+    KC = interface_data.data_input.Capacitor_LCM_Factor
+
+    plot_merging_lines_on_fanout(commutative_array,KL,KC,ax[0])
+    plot_merging_lines_on_fanout(merged_array,KL,KC,ax[1],padding=padding)
+    plot_merging_lines_on_fanout(C_axis_merged_array,KL,KC,ax[2],padding=padding)
+    
+
 def plot_time_interconnect(data_output_ordered : Data_Output_Storage_Ordered,ax, which_string :str, is_integrated: bool = True,**kwarg): 
     """Plots the time waveform of one of the interconncet metrics. 
     It must be noted that interconnect values stored in the :Data_Output_Storage_Ordered: object signify the 'change' in interface values due to wavefronts.
@@ -1345,6 +1449,7 @@ def make_spatial_voltage_and_current(Time_Enquriey : Decimal , Interface : Data_
         This means that if you plan to run the function such that it called multiple timea, like a loop, 
         it is advised to pass axes object to avoid uneccassary creation of supblots each interation.
     """
+    Time_Enquriey = Decimal(Time_Enquriey)
     
     default_make_kwargs : dict = {'ax':False,
                                   'fig_size':(12,10),
