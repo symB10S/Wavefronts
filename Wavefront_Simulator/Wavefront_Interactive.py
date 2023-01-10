@@ -132,9 +132,9 @@ def interact_3D_spatial(Interface : Data_Interface_Storage):
 
     def interact_3D_func(t):
         ax_3d.clear()
-        ax_3d.set_xlim(x_pos_lim_1,x_pos_lim_0)
+        ax_3d.set_xlim(x_pos_lim_0,x_pos_lim_1)
         ax_3d.set_ylim(y_current_lim_1,y_current_lim_0)
-        ax_3d.set_zlim(z_voltage_lim_1,z_voltage_lim_0)
+        ax_3d.set_zlim(z_voltage_lim_0,z_voltage_lim_1)
         make_3d_spatial(str(t),Interface,ax_3d)
         
     inter = widgets.interact(interact_3D_func,t=widgets.FloatSlider(min=0, max=float(Interface.data_input.Simulation_Stop_Time), step=0.1, value=0, layout=widgets.Layout(width='auto')))
