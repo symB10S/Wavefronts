@@ -1,9 +1,0 @@
-{
-    "jupyter.jupyterServerType": "local",
-    "python.autoComplete.extraPaths": [
-        "./Archive"
-    ],
-    "python.analysis.extraPaths": [
-        "./Archive"
-    ]
-}
