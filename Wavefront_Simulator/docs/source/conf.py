@@ -8,11 +8,11 @@
 import os
 import sys
 
-import mock
+# import mock
  
-MOCK_MODULES = ['numpy',  'matplotlib','matplotlib.ticker', 'matplotlib.pyplot','tqdm','ipywidgets','IPython.display','matplotlib.animation']
-for mod_name in MOCK_MODULES:
- sys.modules[mod_name] = mock.Mock()
+# MOCK_MODULES = ['numpy',  'matplotlib','matplotlib.ticker', 'matplotlib.pyplot','tqdm','ipywidgets','IPython.display','matplotlib.animation']
+# for mod_name in MOCK_MODULES:
+#  sys.modules[mod_name] = mock.Mock()
 
 sys.path.insert(0, os.path.abspath('../..'))
 # sys.path.insert(0, os.path.abspath('.'))
@@ -33,8 +33,8 @@ extensions = [
     # "autodocsumm"
     ]
 
-pdf_documents = [('index', u'rst2pdf', u'Sample rst2pdf doc', u'Your Name'),]
-pdf_stylesheets = ['twocolumn']
+# pdf_documents = [('index', u'rst2pdf', u'Sample rst2pdf doc', u'Your Name'),]
+# pdf_stylesheets = ['twocolumn']
 
 templates_path = ['_templates']
 exclude_patterns = []
