@@ -4,9 +4,10 @@ Wavefront_Simulator
 .. toctree::
    :maxdepth: 4
 
-   LTSpice_Simulator
+   Wavefront_Storage
    Wavefront_Generation
+   Wavefront_Plotting
    Wavefront_Interactive
    Wavefront_Misc
-   Wavefront_Plotting
-   Wavefront_Storage
+   LTSpice_Simulator
+   
