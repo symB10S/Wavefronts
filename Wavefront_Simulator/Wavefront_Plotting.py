@@ -1410,7 +1410,7 @@ def make_spatial_voltage_and_current(Time_Enquriey : Decimal , Interface : Data_
     :type Time_Enquriey: Decimal
     :param Interface: the data storage object for the interface simulation
     :type Interface: Data_Interface_Storage
-    :return: interconnect values of voltage for capacitor and inductor and current for capacitor and inductor in that order if 'return-data' keyword set to True.
+    :return: interconnect values of voltage for capacitor and inductor and current for capacitor and inductor in that order if 'return-data' keyword set to True, default is False
     :rtype: tuple ( Decimal[VC], Decimal[VL], Decimal[IC], Decimal[IL] )
     :**kwargs for figure creation**:
         - **ax** (*Dict(Axes)*) - Whether to create a subpot or use exsiting subplot axes.If left blank default is 'False' and subplot is created internally.If axes are provided, the must be of a matplotlib.pyplot.subplot_mosaic() form or a 1D np.ndarray of two items. The first will be assigned voltage and the other current.The labels for these axes must inculde: 

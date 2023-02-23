@@ -53,7 +53,7 @@ class Data_Input_Storage :
             - **self.Number_of_Wavefronts** (*int*) - The total number of sending and returning wavefronts calculated
             - **self.Number_of_Layers** (*int*) - The total number of fanout-layers simulated
             - **self.Voltage_Souce_Magnitude** (*Decimal*) - the magnitude of the voltage excitation (V)
-            - **self.Load_Resistance** (*Decimal*) - the magnitude of the load resistor (Ω)
+            - **self.Load_Resistance** (*Decimal*) - the magnitude of the load resistor (Ohm)
             
         :**Stored Inductor Parameters**:
             - **self.Inductor_Inductance_Per_Length** (*Decimal*) - the per length inductance of the inductor (H/m)
@@ -63,7 +63,7 @@ class Data_Input_Storage :
             - **self.Inductor_Total_Capacitance** (*Decimal*) - the total capacitance of the inductor (F)
             - **self.Inductor_Velocity** (*Decimal*) - the propagation velocity of the inductor (m/s)
             - **self.Inductor_Time** (*Decimal*) - the *one way* transit time of the inductor (s)
-            - **self.Inductor_Impedance** (*Decimal*) - the characteristic impedance of the inductor (Ω)
+            - **self.Inductor_Impedance** (*Decimal*) - the characteristic impedance of the inductor (Ohm)
             
         :**Stored Capacitor Parameters**:
             - **self.Capacitor_Inductance_Per_Length** (*Decimal*) - the per length inductance of the capacitor (H/m)
@@ -73,7 +73,7 @@ class Data_Input_Storage :
             - **self.Capacitor_Total_Capacitance** (*Decimal*) - the total capacitance of the capacitor (F)
             - **self.Capacitor_Velocity** (*Decimal*) - the propagation velocity of the capacitor (m/s)
             - **self.Capacitor_Time** (*Decimal*) - the *one way* transit time of the capacitor (s)
-            - **self.Capacitor_Impedance** (*Decimal*) - the characteristic impedance of the capacitor (Ω)
+            - **self.Capacitor_Impedance** (*Decimal*) - the characteristic impedance of the capacitor (Ohm)
             
         :**Dictionary for Spice simulation**:
             - **SPICE_input_values** (*dict*) - a list of altered input parameters compatible with :py:func:`LTSpice_Simulator.get_Spice_Arrays`.
