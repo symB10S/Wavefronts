@@ -10,7 +10,7 @@ import sys
 
 import mock
  
-MOCK_MODULES = ['numpy',  'matplotlib', 'matplotlib.pyplot','tqdm']
+MOCK_MODULES = ['numpy',  'matplotlib','matplotlib.ticker', 'matplotlib.pyplot','tqdm','ipywidgets','IPython.display','matplotlib.animation']
 for mod_name in MOCK_MODULES:
  sys.modules[mod_name] = mock.Mock()
 
