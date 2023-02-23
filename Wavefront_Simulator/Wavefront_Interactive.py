@@ -5,29 +5,41 @@ import ipywidgets as widgets
 from IPython.display import display
 
 
-def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage, slider_step_size:float = 0.1):
+def spatial_interconnect_investigator_ui(Interface : Data_Interface_Storage, number_of_steps:int = 1000):
     """Creates an interactive spatial plot using ipywidgets. 
 
     :param Interface: interface data storage object
     :type Interface: Data_Interface_Storage
-    :param slider_step_size: the step size of the slider, make larger for smoother sliding, defaults to 0.1
-    :type slider_step_size: float, optional
+    :param number_of_steps: the number of steps in the slider, defaults to 1000
+    :type number_of_steps: int, optional
     """
     # define widgets
     increment_button = widgets.Button(description = "step forward", layout=widgets.Layout(width='auto'))
     decrement_button = widgets.Button(description = "step backward", layout=widgets.Layout(width='auto'))
     increment_text = widgets.FloatText(description = 'increment', value=0.1)
     auto_zoom_toggle = widgets.Checkbox(value=False,description='Auto-Zoom',disabled=False,tooltip='if spatial plots axes must zoom to features or be constant')
-    time_slider = widgets.FloatSlider(value=0, min =0, max = Interface.data_input.Simulation_Stop_Time-1, step = slider_step_size, layout=widgets.Layout(width='auto'))
+    # time_slider = widgets.FloatSlider(value=0, min =0, max = Interface.data_input.Simulation_Stop_Time, step = slider_step_size, layout=widgets.Layout(width='auto'))
+    time_slider = widgets.FloatSlider(value=0, min =0, max = number_of_steps, step = 1, layout=widgets.Layout(width='auto'))
     # output = widgets.Output()
     
     fig_s,ax_s = plt.subplot_mosaic([['V','inter-V'],
                                      ['I','inter-I']],figsize=(14, 8))
     
     def handle_input(t:Decimal):
+        t= Interface.data_input.Simulation_Stop_Time* t / Decimal(str(number_of_steps))
         clear_subplot(ax_s.values())
-        make_spatial_voltage_and_current(t,Interface,ax=ax_s,fig_size=(14, 8))
+        VC,VL,IC,IL =make_spatial_voltage_and_current(t,Interface,ax=ax_s,fig_size=(14, 8),return_data=True)
         plot_time_interconnect_and_intercepts_at_time(t,Interface.data_output_ordered,ax_voltage=ax_s['inter-V'],ax_current=ax_s['inter-I'])
+
+        x_v_edge = ax_s['V'].get_xlim()[1]
+        x_i_edge = ax_s['I'].get_xlim()[1]
+        
+        ax_s['V'].plot([0,x_v_edge],[VL,VL],linestyle='--')
+        ax_s['V'].plot([0,x_v_edge],[VC,VC],linestyle='--')
+        
+        ax_s['I'].plot([0,x_i_edge],[IL,IL],linestyle='--')
+        ax_s['I'].plot([0,x_i_edge],[IC,IC],linestyle='--')
+        
         if(auto_zoom_toggle.value == False):
             ax_s['V'].set_ylim(ax_s['inter-V'].get_ylim())
             ax_s['I'].set_ylim(ax_s['inter-I'].get_ylim())
@@ -106,6 +118,8 @@ def interact_interconnect_time_and_fanout_path(Interface : Data_Interface_Storag
         lims = remember_lims(ax_path.values())
         clear_subplot(ax_path.values())
         set_lims(ax_path.values(),lims)
+        t = Decimal(str(t))
+        t = Interface.data_input.Simulation_Stop_Time * t/Decimal('1000')
         
         plot_time_interconnect_and_intercepts_at_time(t,Interface,ax_voltage=ax_voltage,ax_current=ax_current)
         plot_fanout_interconnect(Interface.data_output_multiplicative,ax_path['LF'],which_str_prefix+'inductor',show_colour_bar=False,padding=padding)
@@ -113,7 +127,9 @@ def interact_interconnect_time_and_fanout_path(Interface : Data_Interface_Storag
         plot_trace_on_merged_fanout_axis(Interface,ax_path['LF'],t,show_cross=True,padding=padding)
         plot_trace_on_merged_fanout_axis(Interface,ax_path['CF'],t,show_cross=True,padding=padding)
         
-    inter = widgets.interact(plot_path,t=widgets.FloatSlider(min=0, max=float(Interface.data_input.Simulation_Stop_Time), step=0.1, value=0, layout=widgets.Layout(width='auto')))
+    # inter = widgets.interact(plot_path,t=widgets.FloatSlider(min=0, max=float(Interface.data_input.Simulation_Stop_Time), step=float(Interface.data_input.Simulation_Stop_Time/Decimal('500')), value=0, layout=widgets.Layout(width='auto')))
+    inter = widgets.interact(plot_path,t=widgets.FloatSlider(min=0, max=1000, step=1, value=0, layout=widgets.Layout(width='auto')))
+
     
     
 def interact_3D_spatial(Interface : Data_Interface_Storage,**kwargs):
