@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'Wavefronts'
 copyright = '2022, Jonathan Meerholz'
 author = 'Jonathan Meerholz'
-release = '0.1'
+release = '1.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
