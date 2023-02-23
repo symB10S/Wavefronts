@@ -23,7 +23,7 @@ release = '0.1'
 extensions = [
     'sphinx.ext.autodoc',
     # "nbsphinx",
-    'rst2pdf.pdfbuilder'
+    # 'rst2pdf.pdfbuilder'
     # "autodocsumm"
     ]
 
