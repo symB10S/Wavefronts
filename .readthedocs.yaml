@@ -8,6 +8,10 @@ build:
 # Build from the docs/ directory with Sphinx
 sphinx:
   configuration: Wavefront_Simulator/docs/source/conf.py
+  
+formats:
+  - pdf
+  - epub
 
 # Explicitly set the version of Python and its requirements
 python:
