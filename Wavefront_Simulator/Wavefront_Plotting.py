@@ -21,7 +21,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, EngFormatter)
 from matplotlib.animation import FFMpegWriter
-#plt.rcParams['animation.ffmpeg_path'] = 'ffmpeg\\ffmpeg.exe'
+plt.rcParams['animation.ffmpeg_path'] = 'ffmpeg\\ffmpeg.exe'
 
 
 
