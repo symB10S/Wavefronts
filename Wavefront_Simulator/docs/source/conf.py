@@ -22,9 +22,13 @@ release = '0.1'
 # import autodocsumm
 extensions = [
     'sphinx.ext.autodoc',
-    "nbsphinx",
+    # "nbsphinx",
+    'rst2pdf.pdfbuilder'
     # "autodocsumm"
     ]
+
+pdf_documents = [('index', u'rst2pdf', u'Sample rst2pdf doc', u'Your Name'),]
+pdf_stylesheets = ['twocolumn']
 
 templates_path = ['_templates']
 exclude_patterns = []

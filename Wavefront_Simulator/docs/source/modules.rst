@@ -10,6 +10,3 @@ Wavefront_Simulator
    Wavefront_Misc
    Wavefront_Plotting
    Wavefront_Storage
-   dot_plots
-   ltspy3
-   test_code_blocks
